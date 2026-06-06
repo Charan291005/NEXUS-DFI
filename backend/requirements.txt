@@ -10,3 +10,5 @@ passlib[bcrypt]
 reportlab
 aiofiles
 google-genai
+psycopg2-binary
+firebase-admin

@@ -1,11 +1,12 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../firebase';
 import type { NexusUser } from '../types';
-import { authApi } from '../utils/api';
 
 interface AuthCtx {
   user: NexusUser | null;
   token: string | null;
-  login:  (username: string, password: string) => Promise<void>;
+  login: () => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -13,52 +14,57 @@ interface AuthCtx {
 const AuthContext = createContext<AuthCtx>({} as AuthCtx);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user,    setUser]    = useState<NexusUser | null>(null);
-  const [token,   setToken]   = useState<string | null>(null);
+  const [user, setUser] = useState<NexusUser | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('nexus_token');
-    const storedUser  = localStorage.getItem('nexus_user');
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const idToken = await firebaseUser.getIdToken();
+          setToken(idToken);
+          localStorage.setItem('nexus_token', idToken);
+          // In a real app, you might sync the user profile with the backend
+          // using the idToken here, but for now we construct the NexusUser
+          const u = {
+            id: 1,
+            username: firebaseUser.email || 'user',
+            is_admin: true,
+            created_at: new Date().toISOString()
+          };
+          setUser(u);
+          localStorage.setItem('nexus_user', JSON.stringify(u));
+        } catch (err) {
+          console.error("Failed to get ID token", err);
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem('nexus_token');
+          localStorage.removeItem('nexus_user');
+        }
+      } else {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('nexus_token');
+        localStorage.removeItem('nexus_user');
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async () => {
     try {
-      const res = await authApi.login(username, password);
-      const { access_token, user: u } = res.data;
-      setToken(access_token);
-      setUser(u);
-      localStorage.setItem('nexus_token', access_token);
-      localStorage.setItem('nexus_user', JSON.stringify(u));
+      await signInWithPopup(auth, googleProvider);
     } catch (err) {
-      if (username === 'admin' && password === 'admin123') {
-        const mockUser: NexusUser = {
-          id: 1,
-          username: 'admin',
-          is_admin: true,
-          created_at: new Date().toISOString()
-        };
-        const mockToken = 'mock-jwt-token-nexusdfi';
-        setToken(mockToken);
-        setUser(mockUser);
-        localStorage.setItem('nexus_token', mockToken);
-        localStorage.setItem('nexus_user', JSON.stringify(mockUser));
-      } else {
-        throw err;
-      }
+      console.error("Login failed", err);
+      throw err;
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('nexus_token');
-    localStorage.removeItem('nexus_user');
+  const logout = async () => {
+    await auth.signOut();
   };
 
   return (

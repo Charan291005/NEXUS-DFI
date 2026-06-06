@@ -11,15 +11,6 @@ import {
 } from '../utils/helpers';
 import { useForm } from 'react-hook-form';
 
-// ── Mock data ─────────────────────────────────────────────
-const MOCK_CASES: NexusCase[] = [
-  { id:1, case_id:'NXDFI-2605-4821', title:'Operation Shadow Storm',   description:'Multi-vector phishing campaign targeting financial institutions with deepfake CEO audio.',   status:'Active',   priority:'Critical', created_at: new Date(Date.now()-86400000*3).toISOString(),  updated_at: new Date().toISOString(), owner_id:1, evidence_count:24 },
-  { id:2, case_id:'NXDFI-2605-3317', title:'Insider Threat – DevOps', description:'Suspicious data exfiltration detected from internal DevOps repository access logs.',          status:'Active',   priority:'High',     created_at: new Date(Date.now()-86400000*7).toISOString(),  updated_at: new Date().toISOString(), owner_id:1, evidence_count:12 },
-  { id:3, case_id:'NXDFI-2605-9102', title:'Deepfake Political Video', description:'Viral video suspected to contain AI-generated content of public figure. Under analysis.',     status:'Open',     priority:'High',     created_at: new Date(Date.now()-86400000*1).toISOString(),  updated_at: new Date().toISOString(), owner_id:1, evidence_count:6  },
-  { id:4, case_id:'NXDFI-2605-1244', title:'Ransomware Incident R9X', description:'Post-incident forensic analysis of ransomware attack on healthcare provider.',                 status:'Closed',   priority:'Critical', created_at: new Date(Date.now()-86400000*14).toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:48 },
-  { id:5, case_id:'NXDFI-2605-7763', title:'Social Engineering Probe', description:'Image-based social engineering artifacts for employee training exercise.',                     status:'Archived', priority:'Low',      created_at: new Date(Date.now()-86400000*30).toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:9  },
-  { id:6, case_id:'NXDFI-2605-5528', title:'Supply Chain Compromise',  description:'Suspected software supply chain attack via compromised NPM package with obfuscated payload.', status:'Active',   priority:'Critical', created_at: new Date(Date.now()-86400000*2).toISOString(),  updated_at: new Date().toISOString(), owner_id:1, evidence_count:31 },
-];
 
 const STATUS_OPTIONS: CaseStatus[]   = ['Open','Active','Closed','Archived'];
 const PRIORITY_OPTIONS: CasePriority[] = ['Low','Medium','High','Critical'];
@@ -27,13 +18,18 @@ const PRIORITY_OPTIONS: CasePriority[] = ['Low','Medium','High','Critical'];
 interface CaseFormData extends CreateCaseDto {}
 
 // ── Memoized table row ────────────────────────────────────
-const CaseRow = memo(function CaseRow({ c, onView, onDelete }: {
+const CaseRow = memo(function CaseRow({ c, onView, onDelete, index }: {
   c: NexusCase;
   onView: (id: number) => void;
   onDelete: (id: number) => void;
+  index: number;
 }) {
   return (
-    <tr>
+    <motion.tr
+      initial={{ opacity: 0, x: -12 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.35 }}
+    >
       <td className="mono text-blue-400 text-xs font-medium">{c.case_id}</td>
       <td>
         <p className="text-navy-100 font-medium">{c.title}</p>
@@ -45,25 +41,29 @@ const CaseRow = memo(function CaseRow({ c, onView, onDelete }: {
       <td><span className="text-xs text-navy-400 mono">{fmtDate(c.created_at)}</span></td>
       <td>
         <div className="flex gap-2">
-          <button
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             id={`btn-view-case-${c.id}`}
             onClick={(e) => { e.stopPropagation(); onView(c.id); }}
             className="btn-cyber btn-cyan py-1 text-xs"
-          >View</button>
-          <button
+          >View</motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             id={`btn-delete-case-${c.id}`}
             onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}
             className="btn-cyber btn-danger py-1 text-xs"
-          >Delete</button>
+          >Delete</motion.button>
         </div>
       </td>
-    </tr>
+    </motion.tr>
   );
 });
 
 export default function CaseList() {
   const navigate = useNavigate();
-  const [cases,    setCases]    = useState<NexusCase[]>(MOCK_CASES);
+  const [cases,    setCases]    = useState<NexusCase[]>([]);
   const [loading,  setLoading]  = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [search,   setSearch]   = useState('');
@@ -78,7 +78,7 @@ export default function CaseList() {
   useEffect(() => {
     casesApi.list()
       .then(r => setCases(r.data))
-      .catch(() => setCases(MOCK_CASES))
+      .catch((e) => { console.error(e); setCases([]); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -89,16 +89,9 @@ export default function CaseList() {
       setCases(prev => [res.data, ...prev]);
       setShowForm(false);
       reset();
-    } catch {
-      // offline: add locally
-      const fakeCase: NexusCase = {
-        id: Date.now(), case_id: generateCaseId(), ...data,
-        created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-        owner_id: 1, evidence_count: 0,
-      };
-      setCases(prev => [fakeCase, ...prev]);
-      setShowForm(false);
-      reset();
+    } catch (e) {
+      console.error('Failed to create case', e);
+      alert('Failed to create case. Ensure backend is running.');
     } finally {
       setSubmitting(false);
     }
@@ -133,9 +126,15 @@ export default function CaseList() {
         subtitle="Track and manage all forensic investigations"
         icon="📂"
       >
-        <button id="btn-new-case" onClick={() => setShowForm(true)} className="btn-cyber btn-primary">
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          id="btn-new-case"
+          onClick={() => setShowForm(true)}
+          className="btn-cyber btn-primary"
+        >
           + New Case
-        </button>
+        </motion.button>
       </PageHeader>
 
       {/* Filters */}
@@ -151,25 +150,27 @@ export default function CaseList() {
           />
           <div className="flex gap-2 flex-wrap">
             {(['All', ...STATUS_OPTIONS] as const).map(s => (
-              <button
+              <motion.button
                 key={s}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 id={`filter-status-${s.toLowerCase()}`}
                 onClick={() => setFilterStatus(s as any)}
                 className={`btn-cyber text-xs py-1.5 ${filterStatus === s ? 'btn-cyan' : 'btn-ghost'}`}
               >
                 {s}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
       </Card>
 
-      {/* Cases table — NO AnimatePresence on tr */}
+      {/* Cases table */}
       {loading ? (
         <div className="flex justify-center py-20"><Spinner size="lg" label="Loading cases..." /></div>
       ) : filtered.length === 0 ? (
         <EmptyState icon="📂" title="No cases found" description="No investigations match your filter criteria." action={
-          <button className="btn-cyber btn-primary" onClick={() => setShowForm(true)}>Create First Case</button>
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn-cyber btn-primary" onClick={() => setShowForm(true)}>Create First Case</motion.button>
         } />
       ) : (
         <Card className="overflow-hidden p-0">
@@ -186,12 +187,13 @@ export default function CaseList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map(c => (
+              {filtered.map((c, i) => (
                 <CaseRow
                   key={c.id}
                   c={c}
                   onView={handleView}
                   onDelete={handleDeleteClick}
+                  index={i}
                 />
               ))}
             </tbody>
@@ -201,15 +203,27 @@ export default function CaseList() {
 
       {/* Create Case Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
+        >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
             className="glass p-6 w-full max-w-lg mx-4"
+            style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-white">New Investigation Case</h2>
-              <button onClick={() => { setShowForm(false); reset(); }} className="text-navy-400 hover:text-white text-xl transition-colors">✕</button>
+              <h2 className="text-lg font-bold text-white font-display">New Investigation Case</h2>
+              <motion.button
+                whileHover={{ scale: 1.1, rotate: 90 }}
+                onClick={() => { setShowForm(false); reset(); }}
+                className="text-navy-400 hover:text-white text-xl transition-colors"
+              >
+                ✕
+              </motion.button>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
@@ -246,15 +260,15 @@ export default function CaseList() {
                 </div>
               </div>
               <div className="flex gap-3 justify-end pt-2">
-                <button type="button" onClick={() => { setShowForm(false); reset(); }} className="btn-cyber btn-ghost">Cancel</button>
-                <button id="btn-submit-case" type="submit" disabled={submitting} className="btn-cyber btn-primary">
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="button" onClick={() => { setShowForm(false); reset(); }} className="btn-cyber btn-ghost">Cancel</motion.button>
+                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} id="btn-submit-case" type="submit" disabled={submitting} className="btn-cyber btn-primary">
                   {submitting ? <Spinner size="sm" /> : null}
                   {submitting ? 'Creating...' : 'Create Case'}
-                </button>
+                </motion.button>
               </div>
             </form>
           </motion.div>
-        </div>
+        </motion.div>
       )}
 
       <ConfirmModal

@@ -3,46 +3,36 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+import firebase_admin
+from firebase_admin import credentials, auth as firebase_auth
 
 from backend.database import get_db
 from backend.models import User
 from backend.schemas import UserCreate, UserLogin, UserOut, TokenOut
-from backend.auth import hash_password, verify_password, create_token, decode_token
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
+if not firebase_admin._apps:
+    firebase_admin.initialize_app()
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    payload = decode_token(token or "")
-    if not payload:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-    user = db.query(User).filter(User.id == int(payload["sub"])).first()
+    if not token:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token provided")
+    try:
+        decoded_token = firebase_auth.verify_id_token(token)
+        email = decoded_token.get("email") or decoded_token.get("uid")
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Firebase token: {str(e)}")
+    
+    user = db.query(User).filter(User.username == email).first()
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        # Create user automatically upon first Google Sign-In
+        user = User(username=email, hashed_password="firebase_user")
+        db.add(user)
+        db.commit()
+        db.refresh(user)
     return user
-
-
-@router.post("/register", response_model=TokenOut, status_code=201)
-def register(data: UserCreate, db: Session = Depends(get_db)):
-    if db.query(User).filter(User.username == data.username).first():
-        raise HTTPException(400, "Username already taken")
-    user = User(username=data.username, hashed_password=hash_password(data.password))
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    token = create_token(user.id, user.username)
-    return TokenOut(access_token=token, token_type="bearer", user=UserOut.from_orm(user))
-
-
-@router.post("/login", response_model=TokenOut)
-def login(data: UserLogin, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == data.username).first()
-    if not user or not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-    token = create_token(user.id, user.username)
-    return TokenOut(access_token=token, token_type="bearer", user=UserOut.from_orm(user))
-
 
 @router.get("/me", response_model=UserOut)
 def me(current: User = Depends(get_current_user)):

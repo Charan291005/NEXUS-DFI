@@ -131,7 +131,7 @@ function renderMarkdown(text: string): string {
     const ulMatch = line.match(/^(\s*)[-•]\s+(.+)$/);
     if (ulMatch) {
       if (!inUL) { html += '<ul class="list-disc list-inside space-y-0.5 my-1">'; inUL = true; }
-      html += `<li class="text-slate-300">${inlineFormat(ulMatch[2])}</li>`;
+      html += `<li class="text-navy-300">${inlineFormat(ulMatch[2])}</li>`;
       continue;
     } else if (inUL) {
       html += '</ul>'; inUL = false;
@@ -141,7 +141,7 @@ function renderMarkdown(text: string): string {
     const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
     if (olMatch) {
       if (!inOL) { html += '<ol class="list-decimal list-inside space-y-0.5 my-1">'; inOL = true; }
-      html += `<li class="text-slate-300">${inlineFormat(olMatch[2])}</li>`;
+      html += `<li class="text-navy-300">${inlineFormat(olMatch[2])}</li>`;
       continue;
     } else if (inOL) {
       html += '</ol>'; inOL = false;
@@ -149,7 +149,7 @@ function renderMarkdown(text: string): string {
 
     // Horizontal rule
     if (/^---+$/.test(line.trim())) {
-      html += '<hr class="border-slate-700 my-2" />';
+      html += '<hr class="border-navy-700 my-2" />';
       continue;
     }
 
@@ -174,7 +174,7 @@ function inlineFormat(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code class="mono text-blue-400 bg-blue-400/10 px-1 py-0.5 rounded text-xs">$1</code>');
+    .replace(/`(.*?)`/g, '<code class="mono text-blue-400 bg-blue-400/8 px-1.5 py-0.5 rounded text-xs">$1</code>');
 }
 
 // ── Format timestamp for hover display ────────────────────
@@ -291,29 +291,45 @@ export default function AssistantPage() {
 
   const messageCount = messages.filter(m => m.role === 'user').length;
 
+  const promptStagger = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.06 } },
+  };
+  const promptItem = {
+    hidden: { opacity: 0, y: 12 },
+    show:   { opacity: 1, y: 0, transition: { duration: 0.35 } },
+  };
+
   return (
     <div className="space-y-4 h-[calc(100vh-10rem)] flex flex-col">
       <div className="flex justify-between items-start">
         <PageHeader title="AI Assistant" subtitle="Forensics Intelligence Engine" icon="🤖" />
         <div className="flex items-center gap-2">
           {messageCount > 0 && (
-            <button
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               id="btn-clear-chat"
               onClick={clearConversation}
               className="btn-cyber btn-ghost text-xs py-1.5"
             >
               🗑 Clear
-            </button>
+            </motion.button>
           )}
-          <button onClick={() => setShowSettings(!showSettings)} className="btn-cyber btn-ghost text-xs py-1.5">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowSettings(!showSettings)}
+            className="btn-cyber btn-ghost text-xs py-1.5"
+          >
             ⚙️ API Key
-          </button>
+          </motion.button>
         </div>
       </div>
 
       {showSettings && (
-        <Card className="p-4 bg-navy-800/50 border border-accent-500/20">
-          <h3 className="text-sm font-semibold text-white mb-2">Configure Gemini AI</h3>
+        <Card className="p-4 bg-navy-800/40 border border-accent-500/15">
+          <h3 className="text-sm font-semibold text-white mb-2 font-display">Configure Gemini AI</h3>
           <p className="text-xs text-navy-300 mb-3">
             Enter your Google Gemini API key for advanced AI analysis. Without it, the assistant uses built-in forensic heuristics.
           </p>
@@ -329,49 +345,59 @@ export default function AssistantPage() {
 
       {/* Quick prompts — grid of cards */}
       {messages.length <= 1 && (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+        <motion.div variants={promptStagger} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-3 gap-2">
           {QUICK_PROMPTS.map((p, i) => (
-            <button
+            <motion.button
               key={i}
+              variants={promptItem}
+              whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}
+              whileTap={{ scale: 0.97 }}
               id={`quick-prompt-${i}`}
               onClick={() => sendMessage(p.label)}
               className="quick-prompt-card"
             >
               <span className="text-lg flex-shrink-0">{p.icon}</span>
               <span>{p.label}</span>
-            </button>
+            </motion.button>
           ))}
-        </div>
+        </motion.div>
       )}
 
       {/* Chat area */}
-      <Card className="flex-1 overflow-y-auto p-4 space-y-4" style={{ background: 'rgba(11,17,32,0.8)' }}>
+      <Card className="flex-1 overflow-y-auto p-5 space-y-4" style={{ background: 'rgba(8,14,28,0.7)' }}>
         {messages.map(msg => (
           <div
             key={msg.id}
             className={`chat-msg chat-bubble flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
           >
             {/* Avatar */}
-            <div
+            <motion.div
+              whileHover={{ scale: 1.1 }}
               className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 font-bold ${
                 msg.role === 'assistant'
                   ? ''
                   : 'bg-navy-700'
               }`}
-              style={msg.role === 'assistant' ? { background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)' } : undefined}
+              style={msg.role === 'assistant' ? {
+                background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)',
+                boxShadow: '0 2px 8px rgba(79,110,247,0.2)',
+              } : undefined}
             >
               {msg.role === 'assistant' ? '🤖' : '👤'}
-            </div>
+            </motion.div>
 
             {/* Bubble */}
             <div className={`max-w-[80%] ${msg.role === 'user' ? 'text-right' : ''}`}>
               <div
                 className={`p-4 rounded-2xl text-sm leading-relaxed inline-block text-left ${
                   msg.role === 'assistant'
-                    ? 'bg-navy-800 text-navy-200 border border-navy-700/80'
-                    : 'text-white border border-accent-400/60'
+                    ? 'bg-navy-800/60 text-navy-200 border border-navy-700/60'
+                    : 'text-white border border-accent-400/40'
                 }`}
-                style={msg.role === 'user' ? { background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)' } : undefined}
+                style={msg.role === 'user' ? {
+                  background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)',
+                  boxShadow: '0 4px 16px rgba(79,110,247,0.2)',
+                } : undefined}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) + (msg.typing ? '<span class="typing-cursor"></span>' : '') }}
               />
               {/* Timestamp — visible on hover */}
@@ -383,13 +409,13 @@ export default function AssistantPage() {
         ))}
 
         {loading && !messages.some(m => m.typing) && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)' }}>🤖</div>
-            <div className="p-4 rounded-2xl bg-navy-800 border border-navy-700/80">
+            <div className="p-4 rounded-2xl bg-navy-800/60 border border-navy-700/60">
               <div className="flex gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-accent-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 rounded-full bg-accent-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 rounded-full bg-accent-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} className="w-2 h-2 rounded-full bg-accent-400" />
+                <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }} className="w-2 h-2 rounded-full bg-accent-400" />
+                <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }} className="w-2 h-2 rounded-full bg-accent-400" />
               </div>
             </div>
           </motion.div>
@@ -409,14 +435,16 @@ export default function AssistantPage() {
           className="input-cyber flex-1"
           disabled={loading}
         />
-        <button
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
           id="btn-send-message"
           onClick={() => sendMessage(input)}
           disabled={loading || !input.trim()}
           className="btn-cyber btn-primary px-6"
         >
           {loading ? <Spinner size="sm" /> : '➤'}
-        </button>
+        </motion.button>
         <span className="text-[10px] text-navy-500 hidden sm:inline whitespace-nowrap">Enter ↵</span>
       </div>
     </div>

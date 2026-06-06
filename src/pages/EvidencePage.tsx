@@ -1,36 +1,44 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader, Card, SectionHeader, RiskMeter, RiskBadge, Spinner } from '../components/ui';
-
-const MOCK_EVIDENCE = [
-  { id:1, filename:'suspect_image_001.jpg', type:'image' },
-  { id:2, filename:'deepfake_video.mp4',    type:'video' },
-  { id:3, filename:'server_access.log',     type:'log'   },
-];
+import { evidenceApi, analysisApi } from '../utils/api';
+import type { NexusEvidence } from '../types';
 
 export default function EvidencePage() {
-  const [selected, setSelected]   = useState<number | null>(null);
+  const [evidence, setEvidence]   = useState<NexusEvidence[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult]       = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const runAll = async () => {
+  useEffect(() => {
+    evidenceApi.listAll().then(res => setEvidence(res.data)).catch(console.error).finally(() => setLoading(false));
+  }, []);
+
+  const selected = evidence.find(e => e.id === selectedId);
+
+  const runAnalysis = async (module: string) => {
+    if (!selected) return;
     setAnalyzing(true);
-    setResult(null);
-    await new Promise(r => setTimeout(r, 2000));
-    setResult({
-      risk_score: 82,
-      module: 'image_forensics',
-      result: {
-        summary: 'Comprehensive analysis complete. High-confidence tampering detected.',
-        findings: [
-          { category:'ELA',            severity:'High',     description:'Compression artifacts indicate digital manipulation', value:'82%' },
-          { category:'Metadata',       severity:'Medium',   description:'Timestamp inconsistency between EXIF and file system',value:'Δ 2h' },
-          { category:'Steganography',  severity:'Low',      description:'No hidden data detected in image LSB',               value:'Clean' },
-        ],
-        recommendation: 'Submit to forensics lab for court-admissible verification.',
-      }
-    });
+    try {
+      let res;
+      if (module === 'image_forensics') res = await analysisApi.runImageForensics(selected.id);
+      else if (module === 'deepfake_detection') res = await analysisApi.runDeepfake(selected.id);
+      else res = await analysisApi.runLogAnalysis(selected.id);
+      setEvidence(prev => prev.map(e => e.id === selected.id ? { ...e, analysis: res.data } : e));
+    } catch (e) {
+      console.error(e);
+      alert('Analysis failed');
+    }
     setAnalyzing(false);
+  };
+
+  const containerVariants = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.08 } },
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, y: 16 },
+    show:   { opacity: 1, y: 0, transition: { duration: 0.4 } },
   };
 
   return (
@@ -39,68 +47,107 @@ export default function EvidencePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Evidence list */}
-        <div className="space-y-3">
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-3">
           <p className="label-cyber">Evidence Files</p>
-          {MOCK_EVIDENCE.map(ev => (
+          {loading ? <Spinner /> : evidence.length === 0 ? <p className="text-navy-400 text-sm">No evidence uploaded yet.</p> : evidence.map(ev => (
             <motion.div
               key={ev.id}
-              whileHover={{ x: 4 }}
-              onClick={() => { setSelected(ev.id); setResult(null); }}
-              className={`glass p-4 cursor-pointer transition-colors ${selected === ev.id ? 'border-glow' : ''}`}
+              variants={itemVariants}
+              whileHover={{ x: 6, boxShadow: '0 8px 24px rgba(0,0,0,0.3)' }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setSelectedId(ev.id)}
+              className={`glass p-4 cursor-pointer transition-all ${selectedId === ev.id ? 'border-glow' : ''}`}
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{ev.type === 'image' ? '🖼️' : ev.type === 'video' ? '🎬' : '📋'}</span>
+                <motion.span
+                  whileHover={{ scale: 1.15, rotate: 5 }}
+                  className="text-2xl"
+                >
+                  {ev.file_type === 'image' ? '🖼️' : ev.file_type === 'video' ? '🎬' : '📋'}
+                </motion.span>
                 <div>
                   <p className="text-sm text-navy-100 font-medium">{ev.filename}</p>
-                  <p className="text-xs text-navy-400 capitalize">{ev.type}</p>
+                  <p className="text-xs text-navy-400 capitalize">{ev.file_type}</p>
                 </div>
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
 
         {/* Analysis panel */}
         <div className="lg:col-span-2">
           {!selected ? (
             <Card className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <div className="text-4xl mb-3">🔍</div>
-                <p className="text-navy-300">Select an evidence file to run analysis</p>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-center"
+              >
+                <motion.div
+                  animate={{ y: [0, -6, 0] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="text-4xl mb-3 opacity-50"
+                >
+                  🔍
+                </motion.div>
+                <p className="text-navy-300 font-display">Select an evidence file to run analysis</p>
+              </motion.div>
             </Card>
           ) : (
             <Card>
               <SectionHeader title="Analysis Modules" subtitle="Run AI-powered forensic analysis" icon="⚡" action={
-                <button id="btn-run-all" onClick={() => runAll()} disabled={analyzing} className="btn-cyber btn-primary text-sm">
-                  {analyzing ? <Spinner size="sm" /> : '🚀'} Run All Modules
-                </button>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  id="btn-run-all"
+                  onClick={() => {
+                    if (selected?.file_type === 'image') runAnalysis('image_forensics');
+                    else if (selected?.file_type === 'video') runAnalysis('deepfake_detection');
+                    else runAnalysis('log_analysis');
+                  }}
+                  disabled={analyzing}
+                  className="btn-cyber btn-primary text-sm"
+                >
+                  {analyzing ? <Spinner size="sm" /> : '🚀'} Run Default Module
+                </motion.button>
               } />
 
               {/* Module cards */}
               <div className="grid grid-cols-3 gap-3 mb-6">
                 {[
-                  { name:'Image Forensics', icon:'🖼️', color:'#00d4ff', desc:'ELA, metadata, clone detection' },
-                  { name:'Deepfake AI',     icon:'🤖', color:'#7b2fff', desc:'GAN fingerprint, facial analysis' },
-                  { name:'Log Analysis',    icon:'📋', color:'#00ff88', desc:'Anomaly detection, timeline' },
+                  { name:'Image Forensics', icon:'🖼️', color:'#3b82f6', desc:'ELA, metadata, clone detection' },
+                  { name:'Deepfake AI',     icon:'🤖', color:'#8b5cf6', desc:'GAN fingerprint, facial analysis' },
+                  { name:'Log Analysis',    icon:'📋', color:'#10b981', desc:'Anomaly detection, timeline' },
                 ].map(m => (
-                  <div key={m.name} className="glass p-3 text-center" style={{ borderColor: `${m.color}20` }}>
-                    <div className="text-2xl mb-2">{m.icon}</div>
-                    <p className="text-xs font-semibold text-navy-200">{m.name}</p>
+                  <motion.div
+                    key={m.name}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    transition={{ duration: 0.25 }}
+                    className="glass p-4 text-center cursor-default"
+                    style={{ borderColor: `${m.color}15` }}
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.15, rotate: 5 }}
+                      className="text-2xl mb-2"
+                    >
+                      {m.icon}
+                    </motion.div>
+                    <p className="text-xs font-semibold text-navy-200 font-display">{m.name}</p>
                     <p className="text-[10px] text-navy-400 mt-1">{m.desc}</p>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
 
               {analyzing && (
                 <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} className="flex flex-col items-center gap-4 py-12">
                   <div className="relative">
-                    <div className="w-16 h-16 rounded-full border-2 border-accent-400/20 border-t-accent-400 animate-spin" />
-                    <div className="absolute inset-2 rounded-full border-2 border-purple-400/20 border-b-purple-400 animate-spin" style={{ animationDirection:'reverse', animationDuration:'0.8s' }} />
+                    <div className="w-16 h-16 rounded-full border-2 border-accent-400/15 border-t-accent-400 animate-spin" />
+                    <div className="absolute inset-2 rounded-full border-2 border-purple-400/15 border-b-purple-400 animate-spin" style={{ animationDirection:'reverse', animationDuration:'0.8s' }} />
                   </div>
-                  <p className="text-sm text-navy-300">Running forensic analysis pipeline...</p>
-                  <div className="flex gap-2 text-xs text-navy-500">
+                  <p className="text-sm text-navy-300 font-display">Running forensic analysis pipeline...</p>
+                  <div className="flex gap-3 text-xs text-navy-500">
                     {['ELA','Metadata','Deepfake','Integrity'].map((s,i) => (
-                      <motion.span key={s} animate={{ color: ['#3d4f6f','#4f6ef7','#3d4f6f'] }} transition={{ delay: i * 0.4, duration:1.2, repeat:Infinity }}>
+                      <motion.span key={s} animate={{ color: ['#384a6d','#4f6ef7','#384a6d'] }} transition={{ delay: i * 0.4, duration:1.2, repeat:Infinity }}>
                         {s}
                       </motion.span>
                     ))}
@@ -108,27 +155,36 @@ export default function EvidencePage() {
                 </motion.div>
               )}
 
-              {result && !analyzing && (
-                <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} className="space-y-4">
-                  <RiskMeter score={result.risk_score} />
-                  <div className="glass p-3 rounded-xl">
-                    <p className="text-xs text-navy-400 mb-1">Summary</p>
-                    <p className="text-sm text-navy-200">{result.result.summary}</p>
+              {selected?.analysis && !analyzing && (
+                <motion.div
+                  initial={{ opacity:0, y:12 }}
+                  animate={{ opacity:1, y:0 }}
+                  transition={{ duration: 0.45 }}
+                  className="space-y-4"
+                >
+                  <RiskMeter score={selected.analysis.risk_score} />
+                  <div className="glass p-4 rounded-xl">
+                    <p className="text-xs text-navy-400 mb-1.5 font-semibold">Summary</p>
+                    <p className="text-sm text-navy-200 leading-relaxed">{selected.analysis.result.summary}</p>
                   </div>
-                  <div className="space-y-2">
-                    {result.result.findings.map((f: any, i: number) => (
-                      <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02]">
+                  <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-2">
+                    {selected.analysis.result.findings?.map((f: any, i: number) => (
+                      <motion.div
+                        key={i}
+                        variants={itemVariants}
+                        className="flex items-center gap-3 p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                      >
                         <RiskBadge level={f.severity} />
                         <div className="flex-1">
                           <p className="text-xs font-semibold text-navy-200">{f.category}</p>
-                          <p className="text-[11px] text-navy-300">{f.description}</p>
+                          <p className="text-[11px] text-navy-300 mt-0.5">{f.description}</p>
                         </div>
-                        <span className="mono text-xs text-accent-400">{f.value}</span>
-                      </div>
+                        <span className="mono text-xs text-accent-400 font-medium">{f.value}</span>
+                      </motion.div>
                     ))}
-                  </div>
-                  <div className="p-3 rounded-xl bg-accent-500/5 border border-accent-500/15 text-xs text-navy-200">
-                    🧠 <strong className="text-accent-400">AI Recommendation:</strong> {result.result.recommendation}
+                  </motion.div>
+                  <div className="p-3.5 rounded-xl bg-accent-500/5 border border-accent-500/12 text-xs text-navy-200">
+                    🧠 <strong className="text-accent-400">AI Recommendation:</strong> {selected.analysis.result.recommendation}
                   </div>
                 </motion.div>
               )}

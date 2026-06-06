@@ -77,6 +77,16 @@ def list_evidence(case_id: int, db: Session = Depends(get_db), current: User = D
     return case.evidences
 
 
+@router.get("/all", response_model=List[EvidenceOut])
+def list_all_evidence(db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    user_cases = db.query(Case).filter(Case.owner_id == current.id).all()
+    case_ids = [c.id for c in user_cases]
+    if not case_ids:
+        return []
+    evidences = db.query(Evidence).filter(Evidence.case_id.in_(case_ids)).all()
+    return evidences
+
+
 @router.delete("/{evidence_id}")
 def delete_evidence(evidence_id: int, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
     ev = db.query(Evidence).filter(Evidence.id == evidence_id).first()

@@ -4,79 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { casesApi, evidenceApi, analysisApi } from '../utils/api';
 import type { NexusEvidence, NexusCase } from '../types';
 import { PageHeader, SectionHeader, RiskMeter, RiskBadge, Badge, Spinner } from '../components/ui';
-import { fileIcon, fileType, fmtDateTime, riskColor, riskLabel, STATUS_COLORS, PRIORITY_COLORS } from '../utils/helpers';
+import { fileIcon, fmtDateTime, riskColor, riskLabel, STATUS_COLORS, PRIORITY_COLORS } from '../utils/helpers';
 
-// ── Mock data ─────────────────────────────────────────────
-const MOCK_EVIDENCE: NexusEvidence[] = [
-  {
-    id: 1, filename: 'suspect_image_001.jpg', file_path: '/uploads/1.jpg', file_type: 'image',
-    sha256_hash: 'a3f2c8d9e1b4f6a7c2d5e8b1f4a7c2d5e8b1f4a7c2d5e8b1f4a7c2d5e8b1f4a7',
-    uploaded_at: new Date(Date.now()-3600000*2).toISOString(), case_id: 1,
-    analysis: {
-      id:1, evidence_id:1, module:'image_forensics', risk_score: 78,
-      created_at: new Date().toISOString(),
-      result: {
-        summary: 'High probability of tampering detected via Error Level Analysis. Multiple JPEG compression artifacts suggest image regions were composited from different sources.',
-        findings: [
-          { category:'ELA Analysis',     severity:'High',   description:'Inconsistent compression artifacts detected in lower-right quadrant', value:'78%' },
-          { category:'Metadata',         severity:'Medium', description:'GPS coordinates stripped — possible evidence of manipulation', value:'Missing' },
-          { category:'Color Histogram',  severity:'Low',    description:'Slight histogram discontinuity at image boundary', value:'Δ=0.12' },
-          { category:'Clone Detection',  severity:'High',   description:'Duplicate pixel patterns detected — possible region cloning', value:'2 regions' },
-        ],
-        metadata: { 'Camera Model':'Canon EOS 5D', 'Software':'Adobe Photoshop 2024', 'Date Taken':'2026-05-28', 'Resolution':'4800×3200' },
-        ela_risk: 78,
-        recommendation: 'Immediate manual review recommended. Submit to certified forensics lab for secondary analysis.',
-      }
-    }
-  },
-  {
-    id: 2, filename: 'deepfake_video_evidence.mp4', file_path: '/uploads/2.mp4', file_type: 'video',
-    sha256_hash: 'b4e5f6a7c8d9e1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6',
-    uploaded_at: new Date(Date.now()-3600000*5).toISOString(), case_id: 1,
-    analysis: {
-      id:2, evidence_id:2, module:'deepfake_detection', risk_score: 91,
-      created_at: new Date().toISOString(),
-      result: {
-        summary: 'AI model detects strong deepfake indicators. Face swap artifacts visible in temporal blending analysis.',
-        findings: [
-          { category:'Facial Blending', severity:'Critical', description:'Inconsistent facial skin tone across frames — deepfake signature', value:'91%' },
-          { category:'Eye Blink Pattern', severity:'High',  description:'Unnatural eye blink frequency detected (0.4x normal)', value:'Abnormal' },
-          { category:'Temporal Coherence', severity:'High', description:'Frame-to-frame facial landmark inconsistency detected', value:'87% confidence' },
-          { category:'GAN Fingerprint',  severity:'Critical', description:'StyleGAN2 generation fingerprint identified', value:'Detected' },
-        ],
-        deepfake_confidence: 91,
-        recommendation: 'Content is very likely AI-generated. Do not use as authentic evidence without further verification.',
-      }
-    }
-  },
-  {
-    id: 3, filename: 'server_access.log', file_path: '/uploads/3.log', file_type: 'log',
-    sha256_hash: 'c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6',
-    uploaded_at: new Date(Date.now()-3600000*8).toISOString(), case_id: 1,
-    analysis: {
-      id:3, evidence_id:3, module:'log_analysis', risk_score: 62,
-      created_at: new Date().toISOString(),
-      result: {
-        summary: 'Log analysis complete. 14 suspicious events detected including multiple failed logins, unusual off-hours access, and potential data exfiltration patterns.',
-        findings: [
-          { category:'Brute Force',      severity:'High',   description:'247 failed login attempts from IP 192.168.1.45 in 3 minutes', value:'247 attempts' },
-          { category:'Off-Hours Access', severity:'Medium', description:'Admin account accessed at 03:42 AM — outside business hours', value:'03:42 UTC' },
-          { category:'Data Transfer',    severity:'High',   description:'Anomalous outbound transfer: 2.3GB to unknown external IP', value:'2.3 GB' },
-          { category:'Privilege Escalation', severity:'Critical', description:'sudo privilege elevation without valid session', value:'Detected' },
-        ],
-        log_events: [
-          { timestamp: '2026-05-28T03:42:17Z', type:'AUTH_FAILURE',    message:'Multiple authentication failures', severity:'High' },
-          { timestamp: '2026-05-28T03:45:02Z', type:'AUTH_SUCCESS',    message:'Successful login after 247 failures', severity:'Critical' },
-          { timestamp: '2026-05-28T03:46:11Z', type:'DATA_TRANSFER',   message:'Large outbound transfer initiated', severity:'High' },
-          { timestamp: '2026-05-28T03:48:33Z', type:'PRIVILEGE_ESCALATION', message:'Sudo access granted', severity:'Critical' },
-        ],
-        recommendation: 'Incident escalation required. Isolate affected systems immediately. Preserve logs for chain-of-custody.',
-      }
-    }
-  },
-];
 
-const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEvidence; onAnalyze: (id: number, module: string) => void }) {
+
+const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze, index }: { ev: NexusEvidence; onAnalyze: (id: number, module: string) => void; index: number }) {
   const [expanded, setExpanded] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
 
@@ -90,6 +22,9 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
 
   return (
     <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.4 }}
       layout
       className="glass glass-hover overflow-hidden"
     >
@@ -98,19 +33,22 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
         className="p-4 cursor-pointer select-none flex items-center gap-3"
         onClick={() => setExpanded(!expanded)}
       >
-        <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center text-xl flex-shrink-0">
+        <motion.div
+          whileHover={{ scale: 1.1, rotate: 5 }}
+          className="w-10 h-10 rounded-xl bg-white/[0.03] flex items-center justify-center text-xl flex-shrink-0"
+        >
           {fileIcon(ev.file_type)}
-        </div>
+        </motion.div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-navy-100 truncate">{ev.filename}</p>
-          <p className="text-[11px] text-slate-500 mono mt-0.5 truncate">
+          <p className="text-[11px] text-navy-500 mono mt-0.5 truncate">
             SHA256: {ev.sha256_hash.substring(0, 24)}…
           </p>
         </div>
         <div className="flex items-center gap-2">
           {r && (
             <div className="text-right">
-              <p className="text-sm font-bold" style={{ color: riskColor(r.risk_score) }}>
+              <p className="text-sm font-bold font-display" style={{ color: riskColor(r.risk_score) }}>
                 {r.risk_score}/100
               </p>
               <p className="text-[10px]" style={{ color: riskColor(r.risk_score) }}>
@@ -118,7 +56,13 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
               </p>
             </div>
           )}
-          <span className="text-navy-400 text-sm">{expanded ? '▲' : '▼'}</span>
+          <motion.span
+            animate={{ rotate: expanded ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+            className="text-navy-400 text-sm"
+          >
+            ▼
+          </motion.span>
         </div>
       </div>
 
@@ -129,10 +73,10 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            transition={{ duration: 0.35 }}
             className="overflow-hidden"
           >
-            <div className="px-4 pb-4 border-t border-white/[0.05] pt-4 space-y-4">
+            <div className="px-4 pb-4 border-t border-white/[0.04] pt-4 space-y-4">
               {/* File info */}
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div className="glass p-3 rounded-xl">
@@ -154,19 +98,19 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
                 <div className="flex gap-2 flex-wrap">
                   <p className="w-full text-xs text-navy-300 mb-1">Run Analysis Modules:</p>
                   {ev.file_type === 'image' && (
-                    <button onClick={() => runAnalysis('image_forensics')} disabled={analyzing} className="btn-cyber btn-cyan text-xs py-1.5">
+                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => runAnalysis('image_forensics')} disabled={analyzing} className="btn-cyber btn-cyan text-xs py-1.5">
                       {analyzing ? <Spinner size="sm" /> : '🔍'} Image Forensics
-                    </button>
+                    </motion.button>
                   )}
                   {(ev.file_type === 'image' || ev.file_type === 'video') && (
-                    <button onClick={() => runAnalysis('deepfake_detection')} disabled={analyzing} className="btn-cyber btn-primary text-xs py-1.5">
+                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => runAnalysis('deepfake_detection')} disabled={analyzing} className="btn-cyber btn-primary text-xs py-1.5">
                       {analyzing ? <Spinner size="sm" /> : '🤖'} Deepfake Detection
-                    </button>
+                    </motion.button>
                   )}
                   {ev.file_type === 'log' && (
-                    <button onClick={() => runAnalysis('log_analysis')} disabled={analyzing} className="btn-cyber btn-cyan text-xs py-1.5">
+                    <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => runAnalysis('log_analysis')} disabled={analyzing} className="btn-cyber btn-cyan text-xs py-1.5">
                       {analyzing ? <Spinner size="sm" /> : '📋'} Log Analysis
-                    </button>
+                    </motion.button>
                   )}
                 </div>
               )}
@@ -176,24 +120,30 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
                 <div className="space-y-4">
                   <RiskMeter score={r.risk_score} />
 
-                  <div className="glass p-3 rounded-xl">
-                    <p className="text-xs text-navy-400 mb-2">AI Summary</p>
+                  <div className="glass p-4 rounded-xl">
+                    <p className="text-xs text-navy-400 mb-2 font-semibold">AI Summary</p>
                     <p className="text-sm text-navy-200 leading-relaxed">{r.result.summary}</p>
                   </div>
 
                   {/* Findings */}
                   <div>
-                    <p className="text-xs text-navy-400 mb-2">Findings</p>
+                    <p className="text-xs text-navy-400 mb-2 font-semibold">Findings</p>
                     <div className="space-y-2">
                       {r.result.findings.map((f, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02]">
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.06 }}
+                          className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] transition-colors"
+                        >
                           <RiskBadge level={f.severity} />
                           <div className="flex-1">
                             <p className="text-xs font-semibold text-navy-200">{f.category}</p>
                             <p className="text-[11px] text-navy-300 mt-0.5">{f.description}</p>
                           </div>
-                          {f.value && <span className="text-xs mono text-accent-400">{f.value}</span>}
-                        </div>
+                          {f.value && <span className="text-xs mono text-accent-400 font-medium">{f.value}</span>}
+                        </motion.div>
                       ))}
                     </div>
                   </div>
@@ -201,10 +151,10 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
                   {/* Metadata */}
                   {r.result.metadata && (
                     <div>
-                      <p className="text-xs text-navy-400 mb-2">File Metadata</p>
+                      <p className="text-xs text-navy-400 mb-2 font-semibold">File Metadata</p>
                       <div className="grid grid-cols-2 gap-2">
                         {Object.entries(r.result.metadata).map(([k, v]) => (
-                          <div key={k} className="flex justify-between p-2 rounded-lg bg-white/[0.02] text-xs">
+                          <div key={k} className="flex justify-between p-2.5 rounded-lg bg-white/[0.02] text-xs hover:bg-white/[0.04] transition-colors">
                             <span className="text-navy-400">{k}</span>
                             <span className="text-navy-200 font-medium mono">{v}</span>
                           </div>
@@ -216,23 +166,29 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
                   {/* Log events */}
                   {r.result.log_events && (
                     <div>
-                      <p className="text-xs text-navy-400 mb-2">Timeline Events</p>
+                      <p className="text-xs text-navy-400 mb-2 font-semibold">Timeline Events</p>
                       <div className="space-y-1">
                         {r.result.log_events.map((ev, i) => (
-                          <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-white/[0.02] text-xs">
+                          <motion.div
+                            key={i}
+                            initial={{ opacity: 0, x: -8 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.06 }}
+                            className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.02] text-xs hover:bg-white/[0.04] transition-colors"
+                          >
                             <RiskBadge level={ev.severity} />
                             <span className="mono text-navy-300">{ev.timestamp.substring(11, 19)}</span>
                             <span className="text-navy-200">{ev.message}</span>
-                          </div>
+                          </motion.div>
                         ))}
                       </div>
                     </div>
                   )}
 
                   {/* Recommendation */}
-                  <div className="p-3 rounded-xl bg-accent-500/5 border border-accent-500/15">
+                  <div className="p-3.5 rounded-xl bg-accent-500/5 border border-accent-500/12">
                     <p className="text-xs text-accent-400 font-semibold mb-1">🧠 AI Recommendation</p>
-                    <p className="text-xs text-navy-200">{r.result.recommendation}</p>
+                    <p className="text-xs text-navy-200 leading-relaxed">{r.result.recommendation}</p>
                   </div>
                 </div>
               )}
@@ -246,7 +202,7 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze }: { ev: NexusEv
 
 export default function CaseDetail() {
   const { id } = useParams();
-  const [evidence, setEvidence] = useState<NexusEvidence[]>(MOCK_EVIDENCE);
+  const [evidence, setEvidence] = useState<NexusEvidence[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragOver,  setDragOver]  = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -260,39 +216,18 @@ export default function CaseDetail() {
       .then(res => {
         setCurrentCase(res.data);
       })
-      .catch(() => {
-        const fallback = [
-          { id:1, case_id:'NXDFI-2605-4821', title:'Operation Shadow Storm',   description:'Multi-vector phishing campaign targeting financial institutions with deepfake CEO audio.',   status:'Active' as const,   priority:'Critical' as const, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:3 },
-          { id:2, case_id:'NXDFI-2605-3317', title:'Insider Threat – DevOps', description:'Suspicious data exfiltration detected from internal DevOps repository access logs.',          status:'Active' as const,   priority:'High' as const,     created_at: new Date().toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:0 },
-          { id:3, case_id:'NXDFI-2605-9102', title:'Deepfake Political Video', description:'Viral video suspected to contain AI-generated content of public figure. Under analysis.',     status:'Open' as const,     priority:'High' as const,     created_at: new Date().toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:0 },
-          { id:4, case_id:'NXDFI-2605-1244', title:'Ransomware Incident R9X', description:'Post-incident forensic analysis of ransomware attack on healthcare provider.',                 status:'Closed' as const,   priority:'Critical' as const, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:0 },
-          { id:5, case_id:'NXDFI-2605-7763', title:'Social Engineering Probe', description:'Image-based social engineering artifacts for employee training exercise.',                     status:'Archived' as const, priority:'Low' as const,      created_at: new Date().toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:0 },
-          { id:6, case_id:'NXDFI-2605-5528', title:'Supply Chain Compromise',  description:'Suspected software supply chain attack via compromised NPM package with obfuscated payload.', status:'Active' as const,   priority:'Critical' as const, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), owner_id:1, evidence_count:0 },
-        ].find(c => c.id === Number(id)) || {
-          id: Number(id) || 1,
-          case_id: `NXDFI-2605-${id ?? '4821'}`,
-          title: `Investigation Case #${id ?? '1'}`,
-          description: 'Forensic investigation details and evidence file repository.',
-          status: 'Active' as const,
-          priority: 'Medium' as const,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          owner_id: 1,
-          evidence_count: 0
-        };
-        setCurrentCase(fallback);
+      .catch((e) => {
+        console.error(e);
+        setCurrentCase(null);
       });
 
     evidenceApi.list(Number(id) || 1)
       .then(res => {
         setEvidence(res.data);
       })
-      .catch(() => {
-        if (Number(id) === 1 || !id) {
-          setEvidence(MOCK_EVIDENCE);
-        } else {
-          setEvidence([]);
-        }
+      .catch((e) => {
+        console.error(e);
+        setEvidence([]);
       })
       .finally(() => {
         setLoading(false);
@@ -306,16 +241,9 @@ export default function CaseDetail() {
       try {
         const res = await evidenceApi.upload(Number(id) || 1, file);
         setEvidence(prev => [res.data, ...prev]);
-      } catch {
-        // Mock upload
-        const fakeEv: NexusEvidence = {
-          id: Date.now(), filename: file.name, file_path: `/uploads/${file.name}`,
-          sha256_hash: Array.from(crypto.getRandomValues(new Uint8Array(32)))
-            .map(b => b.toString(16).padStart(2, '0')).join(''),
-          file_type: fileType(file.name) as any,
-          uploaded_at: new Date().toISOString(), case_id: Number(id) || 1,
-        };
-        setEvidence(prev => [fakeEv, ...prev]);
+      } catch (e) {
+        console.error('Failed to upload evidence', e);
+        alert(`Failed to upload ${file.name}. Backend error.`);
       }
     }
     setUploading(false);
@@ -328,8 +256,9 @@ export default function CaseDetail() {
       else if (module === 'deepfake_detection') res = await analysisApi.runDeepfake(evidenceId);
       else res = await analysisApi.runLogAnalysis(evidenceId);
       setEvidence(prev => prev.map(e => e.id === evidenceId ? { ...e, analysis: res.data } : e));
-    } catch {
-      // keep existing mock analysis
+    } catch (e) {
+      console.error('Analysis failed', e);
+      alert('Analysis failed. Backend might be offline.');
     }
   };
 
@@ -346,13 +275,19 @@ export default function CaseDetail() {
       <PageHeader title={currentCase.title} subtitle={currentCase.case_id} icon="📂">
         <Badge label={currentCase.status} variant={STATUS_COLORS[currentCase.status]} dot />
         <Badge label={currentCase.priority} variant={PRIORITY_COLORS[currentCase.priority]} />
-        <button id="btn-generate-report" className="btn-cyber btn-primary" onClick={() => analysisApi.generateReport(Number(id)||1).then(r => {
-          const url = window.URL.createObjectURL(new Blob([r.data]));
-          const a = document.createElement('a'); a.href = url;
-          a.download = `${currentCase.case_id}_report.pdf`; a.click();
-        }).catch(() => alert('Backend offline – PDF generation requires the FastAPI server.'))}>
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          id="btn-generate-report"
+          className="btn-cyber btn-primary"
+          onClick={() => analysisApi.generateReport(Number(id)||1).then(r => {
+            const url = window.URL.createObjectURL(new Blob([r.data]));
+            const a = document.createElement('a'); a.href = url;
+            a.download = `${currentCase.case_id}_report.pdf`; a.click();
+          }).catch(() => alert('Backend offline – PDF generation requires the FastAPI server.'))}
+        >
           📑 Generate Report
-        </button>
+        </motion.button>
       </PageHeader>
 
       {/* Upload drop zone */}
@@ -360,13 +295,23 @@ export default function CaseDetail() {
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
         onDrop={e => { e.preventDefault(); setDragOver(false); handleUpload(e.dataTransfer.files); }}
-        animate={{ borderColor: dragOver ? 'rgba(0,212,255,0.5)' : 'rgba(0,212,255,0.1)' }}
-        className="glass p-8 text-center cursor-pointer border-2 border-dashed border-cyan-400/10 rounded-2xl transition-colors"
+        animate={{
+          borderColor: dragOver ? 'rgba(79,110,247,0.5)' : 'rgba(79,110,247,0.1)',
+          boxShadow: dragOver ? '0 0 30px rgba(79,110,247,0.1)' : '0 0 0 rgba(0,0,0,0)',
+        }}
+        whileHover={{ borderColor: 'rgba(79,110,247,0.25)' }}
+        className="glass p-8 text-center cursor-pointer border-2 border-dashed border-accent-400/10 rounded-2xl transition-all"
         onClick={() => fileRef.current?.click()}
       >
         <input ref={fileRef} type="file" multiple accept="image/*,video/*,.pdf,.zip,.log,.txt,.csv" className="hidden" onChange={e => handleUpload(e.target.files)} />
-        <div className="text-4xl mb-3">{uploading ? '⏳' : dragOver ? '📂' : '📁'}</div>
-        <p className="text-navy-200 font-medium">{uploading ? 'Uploading & hashing evidence...' : 'Drop evidence files here or click to upload'}</p>
+        <motion.div
+          animate={uploading ? { rotate: 360 } : dragOver ? { scale: 1.1 } : { y: [0, -4, 0] }}
+          transition={uploading ? { duration: 2, repeat: Infinity, ease: 'linear' } : { duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          className="text-4xl mb-3 inline-block"
+        >
+          {uploading ? '⏳' : dragOver ? '📂' : '📁'}
+        </motion.div>
+        <p className="text-navy-200 font-medium font-display">{uploading ? 'Uploading & hashing evidence...' : 'Drop evidence files here or click to upload'}</p>
         <p className="text-xs text-navy-400 mt-2">Supports: Images, Videos, PDFs, ZIPs, Log files — SHA-256 hashed automatically</p>
         {uploading && <div className="mt-4 flex justify-center"><Spinner /></div>}
       </motion.div>
@@ -379,8 +324,8 @@ export default function CaseDetail() {
           icon="🔍"
         />
         <div className="space-y-3">
-          {evidence.map(ev => (
-            <EvidenceCard key={ev.id} ev={ev} onAnalyze={handleAnalyze} />
+          {evidence.map((ev, i) => (
+            <EvidenceCard key={ev.id} ev={ev} onAnalyze={handleAnalyze} index={i} />
           ))}
         </div>
       </div>

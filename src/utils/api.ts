@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const BASE_URL = import.meta.env.PROD ? 'https://nexusdfi-backend-741401327113.us-central1.run.app' : (import.meta.env.VITE_API_URL || 'http://localhost:8000');
 
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
@@ -51,6 +51,7 @@ export const casesApi = {
 // ── Evidence ────────────────────────────────────────────
 export const evidenceApi = {
   list:   (caseId: number) => api.get(`/evidence/case/${caseId}`),
+  listAll: () => api.get('/evidence/all'),
   upload: (caseId: number, file: File) => {
     const fd = new FormData();
     fd.append('file', file);

@@ -19,12 +19,21 @@ const MOCK_TIMELINE: TimelineEvent[] = [
 ];
 
 const TYPE_ICON: Record<string, string>  = { case:'📂', evidence:'💾', analysis:'🔍', alert:'🚨' };
-const TYPE_COLOR: Record<string, string> = { case:'#7b2fff', evidence:'#00d4ff', analysis:'#00ff88', alert:'#ff3366' };
+const TYPE_COLOR: Record<string, string> = { case:'#8b5cf6', evidence:'#3b82f6', analysis:'#10b981', alert:'#ef4444' };
 
 export default function TimelinePage() {
   const [filter, setFilter] = useState<'all'|'case'|'evidence'|'analysis'|'alert'>('all');
 
   const filtered = MOCK_TIMELINE.filter(e => filter === 'all' || e.type === filter);
+
+  const containerVariants = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.06 } },
+  };
+  const itemVariants = {
+    hidden: { opacity: 0, x: -24 },
+    show:   { opacity: 1, x: 0, transition: { duration: 0.45 } },
+  };
 
   return (
     <div className="space-y-6">
@@ -35,54 +44,66 @@ export default function TimelinePage() {
       />
 
       {/* Filter tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap items-center">
         {(['all','case','evidence','analysis','alert'] as const).map(f => (
-          <button
+          <motion.button
             key={f}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
             id={`filter-timeline-${f}`}
             onClick={() => setFilter(f)}
             className={`btn-cyber text-xs py-1.5 capitalize ${filter === f ? 'btn-cyan' : 'btn-ghost'}`}
           >
             {f !== 'all' && TYPE_ICON[f]} {f}
-          </button>
+          </motion.button>
         ))}
-        <span className="ml-auto text-xs text-slate-500 self-center">{filtered.length} events</span>
+        <span className="ml-auto text-xs text-navy-500 self-center mono">{filtered.length} events</span>
       </div>
 
       {/* Timeline */}
       <Card className="relative">
-        {/* Vertical line */}
-        <div className="absolute left-[2.75rem] top-6 bottom-6 w-px bg-gradient-to-b from-cyan-400/40 via-cyan-400/20 to-transparent" />
+        {/* Animated vertical line */}
+        <motion.div
+          initial={{ height: 0 }}
+          animate={{ height: '100%' }}
+          transition={{ duration: 1.2 }}
+          className="absolute left-[2.75rem] top-6 bottom-6 w-px"
+          style={{ background: 'linear-gradient(180deg, #4f6ef7, rgba(79,110,247,0.1), transparent)' }}
+        />
 
-        <div className="space-y-1">
-          {filtered.map((ev, i) => (
+        <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-1">
+          {filtered.map((ev) => (
             <motion.div
               key={ev.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.06 }}
-              className="flex gap-4 py-4 px-2 rounded-xl hover:bg-navy-800/50 transition-colors group"
+              variants={itemVariants}
+              whileHover={{ x: 6 }}
+              className="flex gap-4 py-4 px-2 rounded-xl hover:bg-navy-800/40 transition-all group cursor-default"
             >
               {/* Icon */}
-              <div
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-lg flex-shrink-0 relative z-10"
-                style={{ background: `${TYPE_COLOR[ev.type]}15`, border: `1px solid ${TYPE_COLOR[ev.type]}30` }}
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0 relative z-10"
+                style={{
+                  background: `${TYPE_COLOR[ev.type]}10`,
+                  border: `1px solid ${TYPE_COLOR[ev.type]}20`,
+                  boxShadow: `0 0 16px ${TYPE_COLOR[ev.type]}08`,
+                }}
               >
                 {TYPE_ICON[ev.type]}
-              </div>
+              </motion.div>
 
               {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">{ev.title}</p>
+                  <p className="text-sm font-semibold text-navy-200 group-hover:text-white transition-colors font-display">{ev.title}</p>
                   {ev.severity && <RiskBadge level={ev.severity} />}
                 </div>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{ev.description}</p>
-                <p className="text-[11px] text-slate-600 mono mt-1.5">{fmtDateTime(ev.timestamp)}</p>
+                <p className="text-xs text-navy-400 mt-1 leading-relaxed">{ev.description}</p>
+                <p className="text-[11px] text-navy-500 mono mt-1.5">{fmtDateTime(ev.timestamp)}</p>
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </Card>
     </div>
   );

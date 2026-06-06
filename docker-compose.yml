@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: nexusdfi_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nexusadmin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexuspass}
+      POSTGRES_DB: ${POSTGRES_DB:-nexusdfi}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: nexusdfi_backend
+    restart: always
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-nexusadmin}:${POSTGRES_PASSWORD:-nexuspass}@db:5432/${POSTGRES_DB:-nexusdfi}
+      - SECRET_KEY=${SECRET_KEY:-super-secret-key-for-nexusdfi}
+    volumes:
+      - uploads_data:/app/uploads
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: nexusdfi_frontend
+    restart: always
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:
+  uploads_data:
