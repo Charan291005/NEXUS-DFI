@@ -7,6 +7,7 @@ and AI Assistant responses.
 import io
 import os
 import re
+import requests
 import random
 import hashlib
 from pathlib import Path

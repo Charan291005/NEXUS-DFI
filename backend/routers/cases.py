@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func
+from sqlalchemy import func, Integer
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -23,8 +23,8 @@ def dashboard_stats(db: Session = Depends(get_db), current: User = Depends(get_c
     # Optimized: single query per table instead of many separate counts
     case_stats = db.query(
         func.count(Case.id).label("total"),
-        func.sum(func.cast(Case.status == "Active", int)).label("active"),
-        func.sum(func.cast(Case.created_at >= week_ago, int)).label("this_week"),
+        func.sum(func.cast(Case.status == "Active", Integer)).label("active"),
+        func.sum(func.cast(Case.created_at >= week_ago, Integer)).label("this_week"),
     ).filter(Case.owner_id == current.id).first()
 
     total_cases   = case_stats.total or 0
@@ -83,7 +83,7 @@ def dashboard_stats(db: Session = Depends(get_db), current: User = Depends(get_c
     )
 
 
-@router.get("/", response_model=List[CaseOut])
+@router.get("", response_model=List[CaseOut])
 def list_cases(
     status: Optional[str] = None,
     priority: Optional[str] = None,
@@ -115,7 +115,7 @@ def list_cases(
     return result
 
 
-@router.post("/", response_model=CaseOut, status_code=201)
+@router.post("", response_model=CaseOut, status_code=201)
 def create_case(data: CaseCreate, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
     if db.query(Case).filter(Case.case_id == data.case_id).first():
         raise HTTPException(400, "Case ID already exists")
