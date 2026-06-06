@@ -366,20 +366,45 @@ ASSISTANT_RESPONSES = {
     "default":   "Based on the current case evidence, I've identified multiple forensic indicators. The highest-risk items are the deepfake video (91% confidence) and the tampered image (ELA 78%). Immediate evidence preservation and lab verification are recommended.",
 }
 
+import requests
+
+import os
+
 def ask_assistant(question: str, context: str, api_key: str = None) -> str:
-    if GENAI_AVAILABLE and api_key:
-        try:
-            client = genai.Client(api_key=api_key)
-            prompt = f"Context about digital forensics case:\n{context}\n\nUser Question: {question}\n\nYou are NexusDFI Assistant, a highly professional cybersecurity AI. Provide a concise, professional, and actionable forensic analysis response."
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=prompt,
-            )
-            return response.text
-        except Exception as e:
-            return f"Error communicating with AI model: {str(e)}\n\nFallback response: {_fallback_ask_assistant(question)}"
-    else:
-        return _fallback_ask_assistant(question)
+    # Use the API key provided by the user or fallback to environment variable
+    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
+    if not gemini_api_key:
+        return "Error: Gemini API key not configured on the backend."
+        
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
+    
+    headers = {
+        "Content-Type": "application/json",
+        "X-goog-api-key": gemini_api_key
+    }
+    
+    prompt = f"Context about digital forensics case:\n{context}\n\nUser Question: {question}\n\nYou are NexusDFI Assistant, a highly professional cybersecurity AI. Provide a concise, professional, and actionable forensic analysis response."
+    
+    payload = {
+        "contents": [
+            {
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ]
+            }
+        ]
+    }
+    
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status()
+        data = response.json()
+        # Extract the text from the Gemini response structure
+        return data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception as e:
+        return f"Error communicating with AI model: {str(e)}\n\nFallback response: {_fallback_ask_assistant(question)}"
 
 def _fallback_ask_assistant(question: str) -> str:
     q = question.lower()
