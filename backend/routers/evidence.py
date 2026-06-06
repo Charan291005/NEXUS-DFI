@@ -1,7 +1,7 @@
 """Evidence router — file upload with SHA-256 hashing."""
 
 import os
-import shutil
+import hashlib
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
@@ -9,12 +9,13 @@ from sqlalchemy.orm import Session
 from backend.database import get_db
 from backend.models import Case, Evidence
 from backend.schemas import EvidenceOut
-from backend.auth import sha256_bytes
 from backend.routers.auth import get_current_user
 from backend.models import User
 
 router = APIRouter()
 UPLOAD_DIR = "uploads"
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB limit
+
 ALLOWED_EXTENSIONS = {
     "image": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".tiff"],
     "video": [".mp4", ".avi", ".mov", ".mkv", ".webm"],
@@ -30,6 +31,9 @@ def detect_file_type(filename: str) -> str:
             return ft
     return "other"
 
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
 
 @router.post("/upload/{case_id}", response_model=EvidenceOut, status_code=201)
 async def upload_evidence(
@@ -44,7 +48,11 @@ async def upload_evidence(
 
     contents = await file.read()
 
-    # SHA-256 hash for integrity
+    # Enforce file size limit
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(413, f"File too large. Maximum allowed size is 100 MB.")
+
+    # SHA-256 hash for integrity verification
     file_hash = sha256_bytes(contents)
 
     # Save file

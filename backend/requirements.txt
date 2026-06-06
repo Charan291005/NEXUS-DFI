@@ -3,12 +3,11 @@ uvicorn[standard]
 sqlalchemy
 pydantic
 python-multipart
-python-jose[cryptography]
 PyJWT
 passlib[bcrypt]
-
+requests
 reportlab
 aiofiles
-google-genai
-psycopg2-binary
 firebase-admin
+Pillow
+numpy

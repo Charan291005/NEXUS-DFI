@@ -351,12 +351,7 @@ def _mock_log_analysis(filepath: str) -> Dict[str, Any]:
     }
 
 
-import os
-try:
-    from google import genai
-    GENAI_AVAILABLE = True
-except ImportError:
-    GENAI_AVAILABLE = False
+
 
 # ── AI Assistant ──────────────────────────────────────────
 ASSISTANT_RESPONSES = {
@@ -366,15 +361,11 @@ ASSISTANT_RESPONSES = {
     "default":   "Based on the current case evidence, I've identified multiple forensic indicators. The highest-risk items are the deepfake video (91% confidence) and the tampered image (ELA 78%). Immediate evidence preservation and lab verification are recommended.",
 }
 
-import requests
-
-import os
-
 def ask_assistant(question: str, context: str, api_key: str = None) -> str:
-    # Use the API key provided by the user or fallback to environment variable
+    # Use the API key from env (set on Cloud Run) or the one passed per request
     gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
     if not gemini_api_key:
-        return "Error: Gemini API key not configured on the backend."
+        return _fallback_ask_assistant(question)
         
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
     
@@ -398,13 +389,15 @@ def ask_assistant(question: str, context: str, api_key: str = None) -> str:
     }
     
     try:
-        response = requests.post(url, headers=headers, json=payload)
+        response = requests.post(url, headers=headers, json=payload, timeout=15)
         response.raise_for_status()
         data = response.json()
         # Extract the text from the Gemini response structure
         return data["candidates"][0]["content"]["parts"][0]["text"]
+    except requests.exceptions.Timeout:
+        return f"AI model timed out. {_fallback_ask_assistant(question)}"
     except Exception as e:
-        return f"Error communicating with AI model: {str(e)}\n\nFallback response: {_fallback_ask_assistant(question)}"
+        return f"Error: {str(e)}. {_fallback_ask_assistant(question)}"
 
 def _fallback_ask_assistant(question: str) -> str:
     q = question.lower()

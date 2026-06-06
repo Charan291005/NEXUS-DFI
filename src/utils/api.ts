@@ -5,6 +5,7 @@ const BASE_URL = import.meta.env.PROD ? 'https://nexusdfi-backend-741401327113.u
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
   headers: { 'Content-Type': 'application/json' },
+  timeout: 20000, // 20 second global timeout
 });
 
 // Attach JWT token to every request
@@ -17,8 +18,10 @@ api.interceptors.request.use((config) => {
 // Handle 401 - clear token and redirect to login
 api.interceptors.response.use(
   (res) => res,
-  (err) => {
-    if (err.response?.status === 401) {
+  async (err) => {
+    const originalRequest = err.config;
+    if (err.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
       localStorage.removeItem('nexus_token');
       localStorage.removeItem('nexus_user');
       window.location.href = '/login';
@@ -52,11 +55,17 @@ export const casesApi = {
 export const evidenceApi = {
   list:   (caseId: number) => api.get(`/evidence/case/${caseId}`),
   listAll: () => api.get('/evidence/all'),
-  upload: (caseId: number, file: File) => {
+  upload: (caseId: number, file: File, onProgress?: (pct: number) => void) => {
     const fd = new FormData();
     fd.append('file', file);
     return api.post(`/evidence/upload/${caseId}`, fd, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120000, // 2 min for large uploads
+      onUploadProgress: (evt) => {
+        if (onProgress && evt.total) {
+          onProgress(Math.round((evt.loaded * 100) / evt.total));
+        }
+      },
     });
   },
   delete: (id: number) => api.delete(`/evidence/${id}`),
@@ -65,17 +74,18 @@ export const evidenceApi = {
 // ── Analysis ────────────────────────────────────────────
 export const analysisApi = {
   runImageForensics: (evidenceId: number) =>
-    api.post(`/analysis/image-forensics/${evidenceId}`),
+    api.post(`/analysis/image-forensics/${evidenceId}`, {}, { timeout: 60000 }),
   runDeepfake:       (evidenceId: number) =>
-    api.post(`/analysis/deepfake/${evidenceId}`),
+    api.post(`/analysis/deepfake/${evidenceId}`, {}, { timeout: 60000 }),
   runLogAnalysis:    (evidenceId: number) =>
-    api.post(`/analysis/log-analysis/${evidenceId}`),
+    api.post(`/analysis/log-analysis/${evidenceId}`, {}, { timeout: 60000 }),
   getResult:         (evidenceId: number) =>
     api.get(`/analysis/result/${evidenceId}`),
   generateReport:    (caseId: number) =>
-    api.get(`/analysis/report/${caseId}`, { responseType: 'blob' }),
+    api.get(`/analysis/report/${caseId}`, { responseType: 'blob', timeout: 60000 }),
   askAssistant:      (question: string, context: string, apiKey?: string) =>
     api.post('/analysis/assistant', { question, context }, {
-      headers: apiKey ? { 'x-api-key': apiKey } : {}
+      timeout: 30000, // 30s for AI responses
+      ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
     }),
 };
