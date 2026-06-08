@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, Integer
+from sqlalchemy import func, Integer, or_
 from sqlalchemy.orm import Session
 
 from backend.database import get_db
@@ -74,12 +74,59 @@ def dashboard_stats(db: Session = Depends(get_db), current: User = Depends(get_c
         key = d.strftime("%Y-%m-%d")
         weekly_cases.append({"day": d.strftime("%a"), "count": weekly_map.get(key, 0)})
 
+    # Recent activity — last 10 events across cases, evidence, analysis
+    activity = []
+
+    # Case creations
+    recent_cases = db.query(Case).filter(
+        Case.owner_id == current.id
+    ).order_by(Case.created_at.desc()).limit(5).all()
+    for c in recent_cases:
+        activity.append({
+            "id": f"case-{c.id}",
+            "type": "case_created",
+            "message": f"Case '{c.title}' created (ID: {c.case_id})",
+            "timestamp": c.created_at.isoformat() if c.created_at else datetime.utcnow().isoformat(),
+            "severity": c.priority if c.priority in ["Critical", "High"] else None,
+        })
+
+    # Evidence uploads
+    recent_ev = db.query(Evidence).join(Case).filter(
+        Case.owner_id == current.id
+    ).order_by(Evidence.uploaded_at.desc()).limit(5).all()
+    for e in recent_ev:
+        activity.append({
+            "id": f"ev-{e.id}",
+            "type": "evidence_uploaded",
+            "message": f"Evidence '{e.filename}' uploaded to case {e.case_id}",
+            "timestamp": e.uploaded_at.isoformat() if e.uploaded_at else datetime.utcnow().isoformat(),
+            "severity": None,
+        })
+
+    # Analysis completions
+    recent_analysis = db.query(AnalysisResult).join(Evidence).join(Case).filter(
+        Case.owner_id == current.id
+    ).order_by(AnalysisResult.created_at.desc()).limit(5).all()
+    for a in recent_analysis:
+        sev = "Critical" if a.risk_score >= 80 else ("High" if a.risk_score >= 60 else None)
+        activity.append({
+            "id": f"analysis-{a.id}",
+            "type": "analysis_complete",
+            "message": f"{a.module.replace('_', ' ').title()} completed — Risk score: {a.risk_score}/100",
+            "timestamp": a.created_at.isoformat() if a.created_at else datetime.utcnow().isoformat(),
+            "severity": sev,
+        })
+
+    # Sort by timestamp desc and take top 10
+    activity.sort(key=lambda x: x["timestamp"], reverse=True)
+    activity = activity[:10]
+
     return DashboardStats(
         total_cases=total_cases, active_investigations=active_count,
         evidence_files=ev_count, high_risk_findings=high_risk,
         deepfake_detections=deepfakes, cases_this_week=cases_week,
         risk_distribution=risk_dist, evidence_by_type=evidence_by_type,
-        recent_activity=[], weekly_cases=weekly_cases,
+        recent_activity=activity, weekly_cases=weekly_cases,
     )
 
 

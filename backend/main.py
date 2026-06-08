@@ -25,10 +25,17 @@ app = FastAPI(
     redoc_url="/api/redoc",
 )
 
-# CORS — allow all origins for development
+# CORS — allow frontend origins explicitly
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",           # Vite dev server
+    "http://localhost:4173",           # Vite preview
+    "https://nexusdfi.web.app",        # Firebase Hosting (production)
+    "https://nexusdfi.firebaseapp.com", # Firebase alternate domain
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

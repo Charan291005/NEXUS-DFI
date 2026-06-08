@@ -64,7 +64,7 @@ const CaseRow = memo(function CaseRow({ c, onView, onDelete, index }: {
 export default function CaseList() {
   const navigate = useNavigate();
   const [cases,    setCases]    = useState<NexusCase[]>([]);
-  const [loading,  setLoading]  = useState(false);
+  const [loading,  setLoading]  = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [search,   setSearch]   = useState('');
   const [filterStatus, setFilterStatus] = useState<CaseStatus | 'All'>('All');

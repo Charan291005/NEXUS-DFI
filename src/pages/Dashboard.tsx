@@ -24,7 +24,7 @@ const DEFAULT_STATS: DashboardStats = {
 };
 
 const RISK_PIE_COLORS: Record<string, string> = {
-  Critical: '#ef4444', High: '#ea580c', Medium: '#f59e0b', Low: '#3b82f6', Safe: '#10b981',
+  Critical: '#ef4444', High: '#F05A28', Medium: '#F59E0B', Low: '#00D4AA', Safe: '#10b981',
 };
 
 const ACTIVITY_ICON: Record<string, string> = {
@@ -36,11 +36,11 @@ const ACTIVITY_ICON: Record<string, string> = {
 };
 
 const ACTIVITY_COLOR: Record<string, string> = {
-  evidence_uploaded: '#3b82f6',
+  evidence_uploaded: '#00D4AA',
   alert: '#ef4444',
-  analysis_complete: '#10b981',
-  case_created: '#8b5cf6',
-  report_generated: '#f59e0b',
+  analysis_complete: '#F05A28',
+  case_created: '#FF7A3D',
+  report_generated: '#F59E0B',
 };
 
 const AnimatedCounter = memo(function AnimatedCounter({ target, duration = 1.5 }: { target: number; duration?: number }) {
@@ -64,15 +64,16 @@ const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: an
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="px-4 py-3 text-xs rounded-xl border border-navy-700/50"
+      className="px-4 py-3 text-xs rounded-xl"
       style={{
-        background: 'rgba(12,19,34,0.95)',
+        background: 'rgba(10,16,32,0.97)',
         backdropFilter: 'blur(12px)',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
+        border: '1px solid rgba(240,90,40,0.18)',
       }}
     >
       <p className="text-navy-300 font-medium">{label}</p>
-      <p className="text-accent-400 font-bold text-sm mt-0.5">{payload[0]?.value} cases</p>
+      <p className="font-bold text-sm mt-0.5" style={{ color: '#F05A28' }}>{payload[0]?.value} cases</p>
     </div>
   );
 });
@@ -120,10 +121,10 @@ export default function Dashboard() {
 
       {/* ── Stat Cards ───────────────────────────────────── */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Cases" value={<AnimatedCounter target={stats.total_cases} />}       icon="📂" color="#3b82f6"  delta={`+${stats.cases_this_week}`} />
-        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats.active_investigations} />} icon="🔍" color="#8b5cf6" />
-        <StatCard label="Evidence Files" value={<AnimatedCounter target={stats.evidence_files} />} icon="💾" color="#10b981"  />
-        <StatCard label="High Risk Findings" value={<AnimatedCounter target={stats.high_risk_findings} />}     icon="⚠️" color="#ea580c"  />
+        <StatCard label="Total Cases" value={<AnimatedCounter target={stats.total_cases} />}       icon="📂" color="#F05A28"  delta={`+${stats.cases_this_week}`} />
+        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats.active_investigations} />} icon="🔍" color="#00D4AA" />
+        <StatCard label="Evidence Files" value={<AnimatedCounter target={stats.evidence_files} />} icon="💾" color="#FF7A3D"  />
+        <StatCard label="High Risk Findings" value={<AnimatedCounter target={stats.high_risk_findings} />}     icon="⚠️" color="#ef4444"  />
       </motion.div>
 
       {/* ── Charts Row ───────────────────────────────────── */}
@@ -137,15 +138,15 @@ export default function Dashboard() {
               <AreaChart data={stats.weekly_cases}>
                 <defs>
                   <linearGradient id="caseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#4f6ef7" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#4f6ef7" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#F05A28" stopOpacity={0.28} />
+                    <stop offset="95%" stopColor="#F05A28" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(79,110,247,0.05)" />
-                <XAxis dataKey="day" tick={{ fill:'#556b8a', fontSize:11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill:'#556b8a', fontSize:11 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(240,90,40,0.06)" />
+                <XAxis dataKey="day" tick={{ fill:'#4A6080', fontSize:11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill:'#4A6080', fontSize:11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="count" stroke="#4f6ef7" strokeWidth={2.5} fill="url(#caseGrad)" />
+                <Area type="monotone" dataKey="count" stroke="#F05A28" strokeWidth={2.5} fill="url(#caseGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </Card>

@@ -1,0 +1,14 @@
+.gcloudignore
+.git
+.gitignore
+node_modules/
+venv/
+.venv/
+dist/
+uploads/
+*.db
+.env
+.firebase/
+.gemini/
+*.pyc
+__pycache__/

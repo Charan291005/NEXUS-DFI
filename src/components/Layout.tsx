@@ -4,21 +4,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/dashboard', icon: '⬡',  label: 'Dashboard'  },
-  { to: '/cases',     icon: '📂', label: 'Cases'       },
-  { to: '/evidence',  icon: '🔍', label: 'Evidence'    },
-  { to: '/timeline',  icon: '⏱',  label: 'Timeline'   },
-  { to: '/reports',   icon: '📑', label: 'Reports'     },
-  { to: '/assistant', icon: '🤖', label: 'AI Assistant'},
+  { to: '/dashboard', icon: '⬡',  label: 'Dashboard',    color: '#F05A28' },
+  { to: '/cases',     icon: '📂', label: 'Cases',         color: '#00D4AA' },
+  { to: '/evidence',  icon: '🔍', label: 'Evidence',      color: '#F05A28' },
+  { to: '/timeline',  icon: '⏱',  label: 'Timeline',      color: '#00D4AA' },
+  { to: '/reports',   icon: '📑', label: 'Reports',       color: '#F05A28' },
+  { to: '/assistant', icon: '🤖', label: 'AI Assistant',  color: '#00D4AA' },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Dashboard',
-  '/cases':     'Cases',
-  '/evidence':  'Evidence',
-  '/timeline':  'Timeline',
-  '/reports':   'Reports',
-  '/assistant': 'AI Assistant',
+  '/dashboard': 'Intelligence Dashboard',
+  '/cases':     'Case Management',
+  '/evidence':  'Evidence Analysis',
+  '/timeline':  'Event Timeline',
+  '/reports':   'Report Generator',
+  '/assistant': 'AI Investigation Assistant',
 };
 
 export default function Layout() {
@@ -52,23 +52,31 @@ export default function Layout() {
 
       {/* ── Sidebar ─────────────────────────────────────── */}
       <motion.aside
-        animate={{ width: collapsed ? 72 : 250 }}
-        transition={{ duration: 0.35 }}
+        animate={{ width: collapsed ? 72 : 256 }}
+        transition={{ duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
         className="sidebar flex flex-col h-screen flex-shrink-0 overflow-hidden relative"
         style={{ borderRadius: 0 }}
       >
+        {/* Scan-line effect */}
+        <div className="scanline-effect" />
+
         {/* Ambient glow inside sidebar */}
-        <div className="absolute top-0 left-0 w-32 h-32 rounded-full opacity-[0.06]" style={{ background: 'radial-gradient(circle, #4f6ef7, transparent 70%)', filter: 'blur(40px)' }} />
+        <div className="absolute top-0 left-0 w-40 h-40 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(240,90,40,0.07), transparent 70%)', filter: 'blur(40px)' }}
+        />
+        <div className="absolute bottom-20 right-0 w-32 h-32 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(0,212,170,0.05), transparent 70%)', filter: 'blur(30px)' }}
+        />
 
         {/* Logo */}
         <div className="flex items-center gap-3 px-4 py-5 border-b border-navy-700/40 relative z-10">
           <motion.div
             whileHover={{ scale: 1.05, rotate: 2 }}
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center"
+            className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center logo-pulse"
             style={{
-              background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)',
-              boxShadow: '0 4px 16px rgba(79,110,247,0.3)',
+              background: 'linear-gradient(135deg, #F05A28, #C84820)',
+              boxShadow: '0 4px 16px rgba(240,90,40,0.35)',
             }}
           >
             <span className="text-white font-bold text-sm font-display">NX</span>
@@ -82,7 +90,7 @@ export default function Layout() {
                 transition={{ duration: 0.2 }}
               >
                 <p className="text-white font-bold text-sm leading-tight font-display tracking-wide">NexusDFI</p>
-                <p className="text-[10px] text-accent-400 tracking-[0.2em] mono">FORENSICS INTEL</p>
+                <p className="text-[10px] tracking-[0.2em] mono" style={{ color: '#F05A28' }}>FORENSICS INTEL</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -99,7 +107,7 @@ export default function Layout() {
             >
               <NavLink
                 to={item.to}
-                id={`nav-${item.label.toLowerCase().replace(' ','-')}`}
+                id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
                 className={({ isActive }) =>
                   `nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center' : ''}`
                 }
@@ -133,8 +141,8 @@ export default function Layout() {
             <div
               className="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-bold text-white"
               style={{
-                background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)',
-                boxShadow: '0 2px 8px rgba(79,110,247,0.2)',
+                background: 'linear-gradient(135deg, #F05A28, #C84820)',
+                boxShadow: '0 2px 8px rgba(240,90,40,0.25)',
               }}
             >
               {user?.username?.[0]?.toUpperCase() ?? 'U'}
@@ -186,21 +194,26 @@ export default function Layout() {
           className="sticky top-0 z-10 px-6 py-3 flex items-center justify-between border-b border-navy-700/40"
           style={{
             borderRadius: 0,
-            background: 'rgba(8,14,28,0.85)',
+            background: 'rgba(7,11,20,0.88)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
           }}
         >
           <div className="flex items-center gap-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent-400 pulse-dot" />
+            <div className="w-1.5 h-1.5 rounded-full bg-accent-400 pulse-dot" style={{ background: '#F05A28' }} />
             <h2 className="text-sm font-semibold text-navy-100 font-display tracking-wide">{currentPage}</h2>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            {/* System status pill */}
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-teal-500/20 bg-teal-500/5">
+              <span className="status-dot" />
+              <span className="text-[10px] font-mono font-semibold tracking-widest" style={{ color: '#00D4AA' }}>SYS ONLINE</span>
+            </div>
             <span className="text-[11px] text-navy-400 mono">
               {time.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
             </span>
             <div className="h-4 w-px bg-navy-700/60" />
-            <span className="text-[11px] text-accent-400/80 mono tabular-nums">
+            <span className="text-[11px] mono tabular-nums font-semibold" style={{ color: '#F05A28' }}>
               {time.toLocaleTimeString('en-IN', { hour12: false })}
             </span>
           </div>
