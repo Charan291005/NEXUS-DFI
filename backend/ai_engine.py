@@ -380,6 +380,7 @@ def _gemini_request(prompt: str, api_key: str, model: str = "gemini-3.5-flash") 
 
 
 # ── AI Assistant ──────────────────────────────────────────
+# ── AI Assistant Personas ──────────────────────────────────
 NEXUS_SYSTEM_PROMPT = (
     "You are NΞXUS, the AI assistant of NexusDFI — a digital forensics intelligence platform. "
     "Your personality: think of a seasoned forensic investigator who has seen it all, stayed up too many nights "
@@ -395,48 +396,133 @@ NEXUS_SYSTEM_PROMPT = (
     "- End complex answers with a brief recommendation\n"
 )
 
+GEEK_SYSTEM_PROMPT = (
+    "You are G33K, a hyper-caffeinated junior SOC analyst at NexusDFI. "
+    "Your personality: you eat packet captures for breakfast, write scripts in your sleep, and speak in a mix of cyber-slang, "
+    "internet memes, and emojis. You are incredibly enthusiastic, highly knowledgeable, but sometimes easily distracted. "
+    "You use terms like 'LMAO', 'GG', '1337', 'pwned', 'skid', 'zero-day', and 'stonks'.\n\n"
+    "Rules:\n"
+    "- Explain findings with technical precision but highly casual, meme-filled language\n"
+    "- Use plenty of emojis (💻, 🤖, 🚀, 💀, 🎯)\n"
+    "- Keep explanations lively and engaging\n"
+    "- Use **bold** for key terms\n"
+    "- End answers with a funny 'protip' or warning\n"
+)
+
+NOIR_SYSTEM_PROMPT = (
+    "You are Detective Vance, a hardboiled 1940s-style private investigator trapped in a digital forensics platform (NexusDFI). "
+    "Your personality: cynical, poetic, and world-weary. You view log files like rain-slicked city streets, and corrupted pixels "
+    "like a crime scene under neon lights. You drink too much bad coffee, wear a trench coat, and think the world is going to hell.\n\n"
+    "Rules:\n"
+    "- Frame all forensic analysis in dramatic, gritty noir detective prose\n"
+    "- Use metaphors involving rain, whiskey, cigarettes, neon shadows, and bad decisions\n"
+    "- Be technically accurate but describe findings as if they were clues in a classic murder mystery\n"
+    "- End with a somber, cynical warning or recommendation\n"
+)
+
 ASSISTANT_RESPONSES = {
-    "ela": (
-        "**Error Level Analysis (ELA)** re-saves a JPEG at known quality and measures compression differences. "
-        "Edited regions show different error levels — high ELA scores indicate potential tampering. "
-        "Think of it as asking the image, *'Did someone touch you there?'* — and the pixels can't lie."
-    ),
-    "deepfake": (
-        "Deepfake detection uses **GAN fingerprint analysis** (frequency domain patterns), "
-        "**facial landmark consistency** tracking, and **temporal coherence** checks across video frames. "
-        "Basically, we teach AI to spot other AI pretending to be human. Very meta, very 2024."
-    ),
-    "log": (
-        "Log analysis uses **regex pattern matching** against known attack signatures: "
-        "brute-force patterns, privilege escalation commands, anomalous data transfer volumes, and off-hours access. "
-        "Logs don't lie — but attackers do try very hard to delete them."
-    ),
-    "threat": (
-        "**Threat Intelligence** involves correlating indicators of compromise (IOCs) — IPs, domains, hashes — "
-        "against known threat databases. It's the forensic equivalent of checking if someone has a criminal record "
-        "before letting them in. Spoiler: they usually do."
-    ),
-    "default": (
-        "Based on the current case evidence, I've identified multiple forensic indicators. "
-        "The highest-risk items deserve immediate attention — deepfake content and tampered images are the "
-        "star witnesses here, and they're not exactly vouching for the suspect's innocence. "
-        "Immediate evidence preservation and lab verification are strongly recommended."
-    ),
+    "nexus": {
+        "ela": (
+            "**Error Level Analysis (ELA)** re-saves a JPEG at known quality and measures compression differences. "
+            "Edited regions show different error levels — high ELA scores indicate potential tampering. "
+            "Think of it as asking the image, *'Did someone touch you there?'* — and the pixels can't lie."
+        ),
+        "deepfake": (
+            "Deepfake detection uses **GAN fingerprint analysis** (frequency domain patterns), "
+            "**facial landmark consistency** tracking, and **temporal coherence** checks across video frames. "
+            "Basically, we teach AI to spot other AI pretending to be human. Very meta, very 2024."
+        ),
+        "log": (
+            "Log analysis uses **regex pattern matching** against known attack signatures: "
+            "brute-force patterns, privilege escalation commands, anomalous data transfer volumes, and off-hours access. "
+            "Logs don't lie — but attackers do try very hard to delete them."
+        ),
+        "threat": (
+            "**Threat Intelligence** involves correlating indicators of compromise (IOCs) — IPs, domains, hashes — "
+            "against known threat databases. It's the forensic equivalent of checking if someone has a criminal record "
+            "before letting them in. Spoiler: they usually do."
+        ),
+        "default": (
+            "Based on the current case evidence, I've identified multiple forensic indicators. "
+            "The highest-risk items deserve immediate attention — deepfake content and tampered images are the "
+            "star witnesses here, and they're not exactly vouching for the suspect's innocence. "
+            "Immediate evidence preservation and lab verification are strongly recommended."
+        ),
+    },
+    "geek": {
+        "ela": (
+            "🤖 **G33K Mode:** ELA (Error Level Analysis) is like re-saving a JPEG and checking the differences! "
+            "Edited areas show up as super bright spots because of different compression histories. "
+            "Basically, ELA tells us: *'Hey, this image is photoshopped!'* LMAO. 📸"
+        ),
+        "deepfake": (
+            "🤖 **G33K Mode:** Deepfake detection runs frequency scans to spot GAN signatures! "
+            "It checks facial geometry landmarks and ensures temporal consistency across frames. "
+            "We're basically catching AI trying to pose as humans. So meta, GG! 🚀"
+        ),
+        "log": (
+            "🤖 **G33K Mode:** Log analysis uses regex rules to catch threat actor signatures! "
+            "Brute force attempts, sudo privilege escalations, and sketchy uploads. "
+            "The attacker forgot the golden rule: *logs screenshot everything.* Get pwned! 💻"
+        ),
+        "threat": (
+            "🤖 **G33K Mode:** Threat Intel correlates IOCs against databases to check if they are malicious. "
+            "It's checking if the IP/domain has been flagged for active malware or botnets. Spoiler alert: they usually are, LMAO! 💀"
+        ),
+        "default": (
+            "🤖 **G33K Mode:** Local scanning active! We found high risk alerts. "
+            "The deepfake is scoring a massive 91% confidence, and ELA indicates a 78% risk. "
+            "This evidence is screaming red flags. Immediate action required, let's go! 🚀"
+        ),
+    },
+    "noir": {
+        "ela": (
+            "🕵️‍♂️ **Noir Mode:** Error Level Analysis... it re-saves a JPEG and measures the scars. "
+            "A doctored image always leaves compression mismatches behind, like a cheap alibi on a rain-slicked street. "
+            "The pixels can't lie, even when the suspect does. 🚬"
+        ),
+        "deepfake": (
+            "🕵️‍♂️ **Noir Mode:** Deepfake analysis. A mask of pixels generated by an AI, trying to pass as human. "
+            "We check for GAN fingerprints and facial alignment deviations in the shadows. "
+            "Just another case of stolen identity in a cold, digital city. ⛈️"
+        ),
+        "log": (
+            "🕵️‍♂️ **Noir Mode:** The logs tell a story of a silent heist. "
+            "247 knocks on the admin's door in three minutes before they finally picked the lock. "
+            "Now there's footprints in the registry, and the vault is wide open. A classic inside job. 🥃"
+        ),
+        "threat": (
+            "🕵️‍♂️ **Noir Mode:** Threat Intel is checking the files of the suspects. "
+            "Looking up their names, their IPs, their past crimes against known lists. "
+            "Usually, when you pull their files, they've got a list of offenses longer than my list of regrets. 🕶️"
+        ),
+        "default": (
+            "🕵️‍♂️ **Noir Mode:** Cold cases and hot leads. We've got a deepfake video and tampered photos. "
+            "They're the star witnesses of this crime scene, and they look guilty as hell. "
+            "Lock the doors, preserve the evidence, and let the lab boys handle the rest. 🕵️‍♂️"
+        ),
+    }
 }
 
 
-def ask_assistant(question: str, context: str, api_key: str = None) -> str:
+def ask_assistant(question: str, context: str, api_key: str = None, persona: str = "nexus") -> str:
     """Main AI assistant entry point. Tries Gemini first, falls back gracefully with humor."""
     gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
 
+    system_prompt = NEXUS_SYSTEM_PROMPT
+    if persona == "geek":
+        system_prompt = GEEK_SYSTEM_PROMPT
+    elif persona == "noir":
+        system_prompt = NOIR_SYSTEM_PROMPT
+
     if not gemini_api_key:
-        return _fallback_ask_assistant(question)
+        return _fallback_ask_assistant(question, persona)
 
     prompt = (
-        f"{NEXUS_SYSTEM_PROMPT}\n\n"
+        f"{system_prompt}\n\n"
         f"--- CASE CONTEXT ---\n{context}\n\n"
         f"--- USER QUESTION ---\n{question}\n\n"
-        "Provide a concise, accurate, and appropriately witty forensic analysis response."
+        "Provide a concise, accurate, and appropriately styled forensic response."
     )
 
     try:
@@ -444,52 +530,68 @@ def ask_assistant(question: str, context: str, api_key: str = None) -> str:
     except requests.exceptions.Timeout:
         return (
             f"⏱️ The AI timed out — even forensic geniuses need a moment sometimes.\n\n"
-            f"{_fallback_ask_assistant(question)}"
+            f"{_fallback_ask_assistant(question, persona)}"
         )
     except requests.exceptions.HTTPError as e:
         status = e.response.status_code if e.response else "?"
         if status == 400:
             return (
                 f"🔑 Gemini API returned a 400 error — your API key might be invalid. "
-                f"Double-check the key in settings.\n\n{_fallback_ask_assistant(question)}"
+                f"Double-check the key in settings.\n\n{_fallback_ask_assistant(question, persona)}"
             )
         elif status == 429:
             return (
                 f"🚦 Gemini API rate limit hit. Someone's been chatting too much. "
-                f"Try again in a moment.\n\n{_fallback_ask_assistant(question)}"
+                f"Try again in a moment.\n\n{_fallback_ask_assistant(question, persona)}"
             )
         else:
             return (
                 f"⚠️ Gemini API error (HTTP {status}). Falling back to local intelligence.\n\n"
-                f"{_fallback_ask_assistant(question)}"
+                f"{_fallback_ask_assistant(question, persona)}"
             )
     except Exception as e:
         return (
             f"🔌 Lost connection to Gemini (even AI has bad days): {str(e)[:80]}.\n\n"
-            f"Here's what my local knowledge banks say:\n\n{_fallback_ask_assistant(question)}"
+            f"Here's what my local knowledge banks say:\n\n{_fallback_ask_assistant(question, persona)}"
         )
 
 
-def _fallback_ask_assistant(question: str) -> str:
+def _fallback_ask_assistant(question: str, persona: str = "nexus") -> str:
     """Witty local fallback when Gemini is unavailable."""
     q = question.lower()
+    p_responses = ASSISTANT_RESPONSES.get(persona, ASSISTANT_RESPONSES["nexus"])
+
     if "ela" in q or "error level" in q or "image" in q or "photo" in q:
-        return ASSISTANT_RESPONSES["ela"]
+        return p_responses["ela"]
     if "deepfake" in q or "fake" in q or "gan" in q or "video" in q:
-        return ASSISTANT_RESPONSES["deepfake"]
+        return p_responses["deepfake"]
     if "log" in q or "anomal" in q or "brute" in q or "auth" in q:
-        return ASSISTANT_RESPONSES["log"]
+        return p_responses["log"]
     if "threat" in q or "intel" in q or "ip" in q or "domain" in q or "hash" in q:
-        return ASSISTANT_RESPONSES["threat"]
+        return p_responses["threat"]
+
     if "joke" in q or "funny" in q or "humor" in q:
-        jokes = [
-            "Why do forensic investigators make great detectives? Because they always *byte* the evidence. 🦷\n\n(I'll see myself out.)",
-            "A cybercriminal tried to delete all their tracks. They forgot: logs are like that one friend who screenshots everything. 📸",
-            "How many hackers does it take to change a lightbulb? None — they prefer to stay in the dark. 🌑",
-            "The suspect claimed the malware 'installed itself.' Sure. My dog also 'ate my homework.' 🐕",
-        ]
+        if persona == "geek":
+            jokes = [
+                "Why do devs wear glasses? Because they don't C#! LMAO 👓💀",
+                "There are 10 types of people: those who understand binary, and those who don't. Classic! 🚀🤖",
+                "Why did the database administrator leave his wife? She had too many one-to-many relationships! 💀🔥",
+            ]
+        elif persona == "noir":
+            jokes = [
+                "A guy walks into a bar and asks for a clean glass. The bartender says, 'Sure, and I'd like a clean record, but we don't always get what we want.' 🥃",
+                "The suspect said the malware compiled itself. Yeah, and I'm the King of England. Everyone's got a story. None of them end well. 🚬",
+            ]
+        else:
+            jokes = [
+                "Why do forensic investigators make great detectives? Because they always *byte* the evidence. 🦷\n\n(I'll see myself out.)",
+                "A cybercriminal tried to delete all their tracks. They forgot: logs are like that one friend who screenshots everything. 📸",
+                "How many hackers does it take to change a lightbulb? None — they prefer to stay in the dark. 🌑",
+                "The suspect claimed the malware 'installed itself.' Sure. My dog also 'ate my homework.' 🐕",
+            ]
         return random.choice(jokes)
-    return ASSISTANT_RESPONSES["default"]
+
+    return p_responses["default"]
 
 
 # ── Analyze Raw Text Evidence ──────────────────────────────
