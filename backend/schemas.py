@@ -104,6 +104,7 @@ class DashboardStats(BaseModel):
 class AssistantQuery(BaseModel):
     question: str
     context:  Optional[str] = ""
+    persona:  Optional[str] = "nexus"
 
 class AssistantResponse(BaseModel):
     response: str
