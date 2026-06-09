@@ -212,7 +212,7 @@ export default function AssistantPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_gemini_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [geminiLive, setGeminiLive] = useState<boolean | null>(null); // null=unknown, true=live, false=fallback
   const [mood, setMood] = useState(0);
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -291,6 +291,41 @@ export default function AssistantPage() {
     }, speed);
   }, []);
 
+  // ── Direct Gemini call from browser (bypasses backend) ──
+  const callGeminiDirect = async (question: string): Promise<string> => {
+    if (!apiKey) throw new Error('No API key');
+    const NEXUS_PROMPT = `You are NΞXUS, the AI assistant of NexusDFI — a digital forensics intelligence platform.
+Your personality: a seasoned forensic investigator with dry wit and occasional sarcasm. Highly professional but not boring.
+Rules: Use **bold** for key terms. Be concise. Use bullets for steps. Occasional dry humor is encouraged. End complex answers with a recommendation.
+
+Case context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.
+
+User question: ${question}
+
+Respond as NΞXUS with forensic expertise and appropriate wit.`;
+
+    const res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: NEXUS_PROMPT }] }],
+          generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
+        }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(`HTTP ${res.status}: ${err?.error?.message || res.statusText}`);
+    }
+    const data = await res.json();
+    return data.candidates[0].content.parts[0].text;
+  };
+
   const sendMessage = async (question: string) => {
     if (!question.trim() || loading) return;
     const userMsg: Message = { id: Date.now(), role: 'user', content: question, timestamp: new Date().toISOString() };
@@ -299,14 +334,30 @@ export default function AssistantPage() {
     setLoading(true);
 
     let response: string;
+
+    // Tier 1: Call Gemini directly from the browser (fastest, most reliable)
+    if (apiKey) {
+      try {
+        response = await callGeminiDirect(question);
+        setGeminiLive(true);
+        const aiMsgId = Date.now() + 1;
+        typeResponse(response, aiMsgId);
+        return;
+      } catch (directErr) {
+        console.warn('Direct Gemini call failed:', directErr);
+        // Fall through to backend
+      }
+    }
+
+    // Tier 2: Try backend API
     try {
       const res = await analysisApi.askAssistant(question, 'Case NXDFI-2605-4821', apiKey);
       response = res.data.response;
-      // Check if response has a Gemini error prefix
       const isLive = !response.startsWith('⏱️') && !response.startsWith('🔑') &&
                      !response.startsWith('🚦') && !response.startsWith('🔌') && !response.startsWith('⚠️');
       setGeminiLive(isLive);
     } catch {
+      // Tier 3: Local fallback
       response = getAIResponse(question);
       setGeminiLive(false);
     }
@@ -432,9 +483,20 @@ export default function AssistantPage() {
                 {apiKey && (
                   <span className="text-xs text-emerald-400 whitespace-nowrap">✓ Key saved</span>
                 )}
+                {localStorage.getItem('nexus_gemini_key') && (
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('nexus_gemini_key');
+                      setApiKey(import.meta.env.VITE_GEMINI_API_KEY || '');
+                    }}
+                    className="btn-cyber btn-ghost text-xs px-2.5 py-1.5 hover:text-white"
+                  >
+                    Reset
+                  </button>
+                )}
               </div>
               <p className="text-[10px] text-navy-500 mt-2">
-                Get a free key at <span className="text-accent-400">aistudio.google.com</span> — gemini-1.5-flash is free tier friendly.
+                Get a free key at <span className="text-accent-400">aistudio.google.com</span> — gemini-3.5-flash is free tier friendly.
               </p>
             </Card>
           </motion.div>
