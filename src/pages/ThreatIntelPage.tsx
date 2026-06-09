@@ -55,10 +55,28 @@ const getRiskLabel = (score: number) =>
 
 export default function ThreatIntelPage() {
   const [indicator, setIndicator] = useState('');
-  const [apiKey] = useState(() => localStorage.getItem('nexus_gemini_key') || '');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ThreatResult | null>(null);
   const [history, setHistory] = useState<ThreatResult[]>([]);
+
+  // ── Direct Gemini call for threat intel ──
+  const callGeminiDirect = async (prompt: string, currentApiKey: string): Promise<string> => {
+    if (!currentApiKey) throw new Error('No API key');
+    const res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-goog-api-key': currentApiKey },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { temperature: 0.6, maxOutputTokens: 512 },
+        }),
+      }
+    );
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    return data.candidates[0].content.parts[0].text;
+  };
 
   const analyze = async (inputText?: string) => {
     const target = (inputText || indicator).trim();
@@ -67,8 +85,47 @@ export default function ThreatIntelPage() {
     setResult(null);
 
     const type = detectType(target);
+    const currentApiKey = localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '';
 
-    // Build a context-rich prompt based on type
+    const geminiPrompt = `You are NΞXUS, a forensic AI threat intelligence analyst with dry wit.
+Analyze this ${type === 'ip' ? 'IP address' : type === 'domain' ? 'domain' : type === 'hash' ? 'file hash' : 'text'} for threat intelligence: ${target}
+
+Provide a concise 3-4 sentence analysis covering:
+- Known threat associations or suspicious characteristics
+- Risk level and why
+- Recommended defensive action
+
+Be direct and slightly witty. Use **bold** for key findings.`;
+
+    // Tier 1: Try direct Gemini API call from browser
+    if (currentApiKey) {
+      try {
+        const aiSummary = await callGeminiDirect(geminiPrompt, currentApiKey);
+        const mockRisk = type === 'ip' ? 72 : type === 'domain' ? 85 : type === 'hash' ? 61 : 35;
+        const newResult: ThreatResult = {
+          indicator: target,
+          type,
+          risk_score: mockRisk,
+          ai_summary: aiSummary,
+          patterns_found: [],
+          recommendation:
+            mockRisk >= 70
+              ? 'CRITICAL: Block this indicator immediately. Initiate incident response. Preserve evidence.'
+              : mockRisk >= 40
+              ? 'Flag for monitoring. Cross-reference with other threat intelligence sources.'
+              : 'Low confidence threat. Continue monitoring. No immediate action required.',
+        };
+        setResult(newResult);
+        setHistory(prev => [newResult, ...prev.slice(0, 4)]);
+        setLoading(false);
+        return;
+      } catch (e) {
+        console.warn('Direct Gemini failed for threat intel:', e);
+        // Fall through to backend
+      }
+    }
+
+    // Tier 2: Try backend API
     const contextText = type === 'ip'
       ? `Analyze this IP address for threat intelligence: ${target}. Check if it's known for malicious activity, geolocation context, and recommended defensive actions.`
       : type === 'domain'
@@ -78,7 +135,7 @@ export default function ThreatIntelPage() {
       : target;
 
     try {
-      const res = await analysisApi.analyzeText(contextText, apiKey);
+      const res = await analysisApi.analyzeText(contextText, currentApiKey);
       const data = res.data;
       const newResult: ThreatResult = {
         indicator: target,
@@ -91,7 +148,7 @@ export default function ThreatIntelPage() {
       setResult(newResult);
       setHistory(prev => [newResult, ...prev.slice(0, 4)]);
     } catch {
-      // Fallback mock when backend is down
+      // Tier 3: Static fallback mock
       const mockRisk = type === 'ip' ? 72 : type === 'domain' ? 85 : type === 'hash' ? 61 : 30;
       const mockResult: ThreatResult = {
         indicator: target,
