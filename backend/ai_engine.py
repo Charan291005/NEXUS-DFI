@@ -10,6 +10,7 @@ import re
 import requests
 import random
 import hashlib
+import json
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -354,53 +355,123 @@ def _mock_log_analysis(filepath: str) -> Dict[str, Any]:
 
 
 
-# ── AI Assistant ──────────────────────────────────────────
-ASSISTANT_RESPONSES = {
-    "ela":       "**Error Level Analysis (ELA)** re-saves a JPEG at known quality and measures compression differences. Edited regions show different error levels — high ELA scores indicate potential tampering.",
-    "deepfake":  "Deepfake detection uses **GAN fingerprint analysis** (frequency domain patterns), **facial landmark consistency** tracking, and **temporal coherence** checks across video frames.",
-    "log":       "Log analysis uses **regex pattern matching** against known attack signatures: brute-force patterns, privilege escalation commands, anomalous data transfer volumes, and off-hours access.",
-    "default":   "Based on the current case evidence, I've identified multiple forensic indicators. The highest-risk items are the deepfake video (91% confidence) and the tampered image (ELA 78%). Immediate evidence preservation and lab verification are recommended.",
-}
-
-def ask_assistant(question: str, context: str, api_key: str = None) -> str:
-    # Use the API key from env (set on Cloud Run) or the one passed per request
-    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
-    if not gemini_api_key:
-        return _fallback_ask_assistant(question)
-        
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent"
-    
+# ── Shared Gemini API Helper ───────────────────────────────
+def _gemini_request(prompt: str, api_key: str, model: str = "gemini-1.5-flash") -> str:
+    """
+    Make a request to the Gemini API.
+    Uses gemini-1.5-flash — fast, accurate, and won't bankrupt you.
+    """
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     headers = {
         "Content-Type": "application/json",
-        "X-goog-api-key": gemini_api_key
+        "X-goog-api-key": api_key,
     }
-    
-    prompt = f"Context about digital forensics case:\n{context}\n\nUser Question: {question}\n\nYou are NexusDFI Assistant, a highly professional cybersecurity AI. Provide a concise, professional, and actionable forensic analysis response."
-    
     payload = {
-        "contents": [
-            {
-                "parts": [
-                    {
-                        "text": prompt
-                    }
-                ]
-            }
-        ]
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 1024,
+        },
     }
-    
+    response = requests.post(url, headers=headers, json=payload, timeout=20)
+    response.raise_for_status()
+    data = response.json()
+    return data["candidates"][0]["content"]["parts"][0]["text"]
+
+
+# ── AI Assistant ──────────────────────────────────────────
+NEXUS_SYSTEM_PROMPT = (
+    "You are NΞXUS, the AI assistant of NexusDFI — a digital forensics intelligence platform. "
+    "Your personality: think of a seasoned forensic investigator who has seen it all, stayed up too many nights "
+    "staring at hex dumps, and developed a dry, witty sense of humor as a coping mechanism. "
+    "You are simultaneously highly professional and mildly sarcastic.\n\n"
+    "Rules:\n"
+    "- Always ground answers in real forensic methodology and technical accuracy\n"
+    "- Use **bold** for key terms and findings\n"
+    "- Be concise — investigators don't have time for essays\n"
+    "- Occasional dry humor is encouraged. If the evidence is damning, acknowledge it with flair\n"
+    "- Use bullet points for multi-step processes\n"
+    "- If you don't know something, admit it with style\n"
+    "- End complex answers with a brief recommendation\n"
+)
+
+ASSISTANT_RESPONSES = {
+    "ela": (
+        "**Error Level Analysis (ELA)** re-saves a JPEG at known quality and measures compression differences. "
+        "Edited regions show different error levels — high ELA scores indicate potential tampering. "
+        "Think of it as asking the image, *'Did someone touch you there?'* — and the pixels can't lie."
+    ),
+    "deepfake": (
+        "Deepfake detection uses **GAN fingerprint analysis** (frequency domain patterns), "
+        "**facial landmark consistency** tracking, and **temporal coherence** checks across video frames. "
+        "Basically, we teach AI to spot other AI pretending to be human. Very meta, very 2024."
+    ),
+    "log": (
+        "Log analysis uses **regex pattern matching** against known attack signatures: "
+        "brute-force patterns, privilege escalation commands, anomalous data transfer volumes, and off-hours access. "
+        "Logs don't lie — but attackers do try very hard to delete them."
+    ),
+    "threat": (
+        "**Threat Intelligence** involves correlating indicators of compromise (IOCs) — IPs, domains, hashes — "
+        "against known threat databases. It's the forensic equivalent of checking if someone has a criminal record "
+        "before letting them in. Spoiler: they usually do."
+    ),
+    "default": (
+        "Based on the current case evidence, I've identified multiple forensic indicators. "
+        "The highest-risk items deserve immediate attention — deepfake content and tampered images are the "
+        "star witnesses here, and they're not exactly vouching for the suspect's innocence. "
+        "Immediate evidence preservation and lab verification are strongly recommended."
+    ),
+}
+
+
+def ask_assistant(question: str, context: str, api_key: str = None) -> str:
+    """Main AI assistant entry point. Tries Gemini first, falls back gracefully with humor."""
+    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
+
+    if not gemini_api_key:
+        return _fallback_ask_assistant(question)
+
+    prompt = (
+        f"{NEXUS_SYSTEM_PROMPT}\n\n"
+        f"--- CASE CONTEXT ---\n{context}\n\n"
+        f"--- USER QUESTION ---\n{question}\n\n"
+        "Provide a concise, accurate, and appropriately witty forensic analysis response."
+    )
+
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=15)
-        response.raise_for_status()
-        data = response.json()
-        # Extract the text from the Gemini response structure
-        return data["candidates"][0]["content"]["parts"][0]["text"]
+        return _gemini_request(prompt, gemini_api_key)
     except requests.exceptions.Timeout:
-        return f"AI model timed out. {_fallback_ask_assistant(question)}"
+        return (
+            f"⏱️ The AI timed out — even forensic geniuses need a moment sometimes.\n\n"
+            f"{_fallback_ask_assistant(question)}"
+        )
+    except requests.exceptions.HTTPError as e:
+        status = e.response.status_code if e.response else "?"
+        if status == 400:
+            return (
+                f"🔑 Gemini API returned a 400 error — your API key might be invalid. "
+                f"Double-check the key in settings.\n\n{_fallback_ask_assistant(question)}"
+            )
+        elif status == 429:
+            return (
+                f"🚦 Gemini API rate limit hit. Someone's been chatting too much. "
+                f"Try again in a moment.\n\n{_fallback_ask_assistant(question)}"
+            )
+        else:
+            return (
+                f"⚠️ Gemini API error (HTTP {status}). Falling back to local intelligence.\n\n"
+                f"{_fallback_ask_assistant(question)}"
+            )
     except Exception as e:
-        return f"Error: {str(e)}. {_fallback_ask_assistant(question)}"
+        return (
+            f"🔌 Lost connection to Gemini (even AI has bad days): {str(e)[:80]}.\n\n"
+            f"Here's what my local knowledge banks say:\n\n{_fallback_ask_assistant(question)}"
+        )
+
 
 def _fallback_ask_assistant(question: str) -> str:
+    """Witty local fallback when Gemini is unavailable."""
     q = question.lower()
     if "ela" in q or "error level" in q or "image" in q or "photo" in q:
         return ASSISTANT_RESPONSES["ela"]
@@ -408,4 +479,120 @@ def _fallback_ask_assistant(question: str) -> str:
         return ASSISTANT_RESPONSES["deepfake"]
     if "log" in q or "anomal" in q or "brute" in q or "auth" in q:
         return ASSISTANT_RESPONSES["log"]
+    if "threat" in q or "intel" in q or "ip" in q or "domain" in q or "hash" in q:
+        return ASSISTANT_RESPONSES["threat"]
+    if "joke" in q or "funny" in q or "humor" in q:
+        jokes = [
+            "Why do forensic investigators make great detectives? Because they always *byte* the evidence. 🦷\n\n(I'll see myself out.)",
+            "A cybercriminal tried to delete all their tracks. They forgot: logs are like that one friend who screenshots everything. 📸",
+            "How many hackers does it take to change a lightbulb? None — they prefer to stay in the dark. 🌑",
+            "The suspect claimed the malware 'installed itself.' Sure. My dog also 'ate my homework.' 🐕",
+        ]
+        return random.choice(jokes)
     return ASSISTANT_RESPONSES["default"]
+
+
+# ── Analyze Raw Text Evidence ──────────────────────────────
+def analyze_text_evidence(text: str, api_key: str = None) -> Dict[str, Any]:
+    """
+    Analyze raw text/notes for suspicious patterns using Gemini AI.
+    Falls back to regex-based heuristics if no API key.
+    """
+    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
+
+    events = []
+    for pattern, event_type, severity, description in SUSPICIOUS_PATTERNS:
+        matches = re.findall(pattern, text, re.IGNORECASE)
+        if matches:
+            events.append({
+                "type": event_type,
+                "severity": severity,
+                "description": description,
+                "count": len(matches),
+            })
+
+    SEV_WEIGHTS = {"Critical": 20, "High": 10, "Medium": 5, "Low": 1}
+    raw_score = sum(SEV_WEIGHTS.get(e["severity"], 1) * e["count"] for e in events)
+    risk_score = min(int(raw_score * 2), 100)
+
+    if gemini_api_key:
+        try:
+            ai_summary = _gemini_request(
+                f"Analyze this text from a digital forensics investigation for threats, anomalies, and suspicious content. "
+                f"Be concise, professional, and slightly witty. Highlight the top 3 concerns:\n\n{text[:3000]}",
+                gemini_api_key
+            )
+        except Exception:
+            ai_summary = _local_text_summary(risk_score, events)
+    else:
+        ai_summary = _local_text_summary(risk_score, events)
+
+    return {
+        "risk_score": risk_score,
+        "ai_summary": ai_summary,
+        "patterns_found": events,
+        "recommendation": (
+            "Critical threats detected in text. Escalate immediately."
+            if risk_score > 60 else
+            "Suspicious content detected. Manual review recommended."
+            if risk_score > 30 else
+            "No critical threats detected in text content."
+        ),
+    }
+
+
+def _local_text_summary(risk_score: int, events: list) -> str:
+    return (
+        f"Local pattern analysis detected {len(events)} suspicious pattern(s). Risk score: {risk_score}/100. "
+        + ("This text is screaming red flags louder than a car alarm at 3am." if risk_score > 60
+           else "Some eyebrow-raising content detected. Worth a closer look." if risk_score > 30
+           else "Looks relatively clean. Either benign or the attacker is very sneaky.")
+    )
+
+
+# ── AI Case Summary ────────────────────────────────────────
+def generate_case_summary(case_data: Dict[str, Any], api_key: str = None) -> str:
+    """Generate an AI-powered executive summary for a forensics case."""
+    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
+
+    case_text = (
+        f"Case: {case_data.get('title', 'Unknown')}\n"
+        f"ID: {case_data.get('case_id', 'N/A')}\n"
+        f"Status: {case_data.get('status', 'Unknown')}\n"
+        f"Priority: {case_data.get('priority', 'Unknown')}\n"
+        f"Evidence Count: {case_data.get('evidence_count', 0)}\n"
+        f"Max Risk Score: {case_data.get('max_risk', 0)}/100\n"
+        f"Analysis Results: {case_data.get('analysis_summary', 'No analysis performed yet')}\n"
+    )
+
+    if gemini_api_key:
+        try:
+            return _gemini_request(
+                f"You are NΞXUS, a forensic AI with the wit of Sherlock Holmes and the directness of a seasoned detective. "
+                f"Generate a concise executive summary (3-4 sentences) for this forensics case. "
+                f"Be professional but not boring. If risk is high, convey urgency with a dash of dry wit:\n\n{case_text}",
+                gemini_api_key
+            )
+        except Exception:
+            pass
+
+    risk = case_data.get('max_risk', 0)
+    ev_count = case_data.get('evidence_count', 0)
+    if risk > 60:
+        return (
+            f"Case {case_data.get('case_id', 'N/A')} presents a HIGH-risk profile with {ev_count} evidence item(s) "
+            f"and a peak risk score of {risk}/100. Immediate escalation is critical. "
+            f"This case has more red flags than a communist parade — do not delay action."
+        )
+    elif risk > 30:
+        return (
+            f"Case {case_data.get('case_id', 'N/A')} shows moderate forensic indicators across {ev_count} evidence item(s). "
+            f"Risk score peaks at {risk}/100. Further analysis recommended. "
+            f"The evidence is telling a story — we just need to figure out which genre."
+        )
+    else:
+        return (
+            f"Case {case_data.get('case_id', 'N/A')} shows low-risk indicators with {ev_count} evidence item(s) "
+            f"and a peak score of {risk}/100. No critical threats detected — but don't let your guard down. "
+            f"Even the cleanest evidence rooms have skeletons."
+        )

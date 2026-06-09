@@ -12,6 +12,7 @@ const EvidencePage = lazy(() => import('./pages/EvidencePage'));
 const TimelinePage = lazy(() => import('./pages/TimelinePage'));
 const ReportsPage  = lazy(() => import('./pages/ReportsPage'));
 const AssistantPage = lazy(() => import('./pages/AssistantPage'));
+const ThreatIntelPage = lazy(() => import('./pages/ThreatIntelPage'));
 
 // ── Error Boundary ────────────────────────────────────────
 interface ErrorBoundaryState { hasError: boolean; error?: Error; }
@@ -80,6 +81,7 @@ export default function App() {
               <Route path="timeline"  element={<Suspense fallback={<PageLoader />}><TimelinePage /></Suspense>} />
               <Route path="reports"   element={<Suspense fallback={<PageLoader />}><ReportsPage /></Suspense>} />
               <Route path="assistant" element={<Suspense fallback={<PageLoader />}><AssistantPage /></Suspense>} />
+              <Route path="threat-intel" element={<Suspense fallback={<PageLoader />}><ThreatIntelPage /></Suspense>} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

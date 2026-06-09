@@ -4,21 +4,23 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/dashboard', icon: '⬡',  label: 'Dashboard',    color: '#F05A28' },
-  { to: '/cases',     icon: '📂', label: 'Cases',         color: '#00D4AA' },
-  { to: '/evidence',  icon: '🔍', label: 'Evidence',      color: '#F05A28' },
-  { to: '/timeline',  icon: '⏱',  label: 'Timeline',      color: '#00D4AA' },
-  { to: '/reports',   icon: '📑', label: 'Reports',       color: '#F05A28' },
-  { to: '/assistant', icon: '🤖', label: 'AI Assistant',  color: '#00D4AA' },
+  { to: '/dashboard',   icon: '⬡',  label: 'Dashboard',       color: '#F05A28' },
+  { to: '/cases',       icon: '📂', label: 'Cases',            color: '#00D4AA' },
+  { to: '/evidence',   icon: '🔍', label: 'Evidence',         color: '#F05A28' },
+  { to: '/timeline',   icon: '⏱',  label: 'Timeline',         color: '#00D4AA' },
+  { to: '/reports',    icon: '📑', label: 'Reports',          color: '#F05A28' },
+  { to: '/assistant',  icon: '🤖', label: 'AI Assistant',     color: '#00D4AA' },
+  { to: '/threat-intel', icon: '🕵️', label: 'Threat Intel', color: '#7b2fff' },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
-  '/dashboard': 'Intelligence Dashboard',
-  '/cases':     'Case Management',
-  '/evidence':  'Evidence Analysis',
-  '/timeline':  'Event Timeline',
-  '/reports':   'Report Generator',
-  '/assistant': 'AI Investigation Assistant',
+  '/dashboard':   'Intelligence Dashboard',
+  '/cases':       'Case Management',
+  '/evidence':    'Evidence Analysis',
+  '/timeline':    'Event Timeline',
+  '/reports':     'Report Generator',
+  '/assistant':   'AI Investigation Assistant',
+  '/threat-intel':'Threat Intelligence',
 };
 
 export default function Layout() {

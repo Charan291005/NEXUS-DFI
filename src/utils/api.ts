@@ -85,7 +85,19 @@ export const analysisApi = {
     api.get(`/analysis/report/${caseId}`, { responseType: 'blob', timeout: 60000 }),
   askAssistant:      (question: string, context: string, apiKey?: string) =>
     api.post('/analysis/assistant', { question, context }, {
-      timeout: 30000, // 30s for AI responses
+      timeout: 30000,
       ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
     }),
+  analyzeText:       (text: string, apiKey?: string) =>
+    api.post('/analysis/text-analyze', { text }, {
+      timeout: 30000,
+      ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
+    }),
+  caseSummary:       (caseId: number, apiKey?: string) =>
+    api.get(`/analysis/case-summary/${caseId}`, {
+      timeout: 30000,
+      ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
+    }),
+  getStats:          () =>
+    api.get('/analysis/stats'),
 };

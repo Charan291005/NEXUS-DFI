@@ -13,7 +13,8 @@ from backend.schemas import AnalysisResultOut, AssistantQuery, AssistantResponse
 from backend.routers.auth import get_current_user
 from backend.models import User
 from backend.ai_engine import (
-    run_image_forensics, run_deepfake_detection, run_log_analysis, ask_assistant
+    run_image_forensics, run_deepfake_detection, run_log_analysis,
+    ask_assistant, analyze_text_evidence, generate_case_summary
 )
 
 router = APIRouter()
@@ -100,6 +101,78 @@ def ai_assistant(
 ):
     response = ask_assistant(query.question, query.context or "", api_key=x_api_key)
     return AssistantResponse(response=response)
+
+
+@router.post("/text-analyze")
+def text_analyze(
+    payload: dict,
+    x_api_key: str = Header(None),
+    current: User = Depends(get_current_user),
+):
+    """Analyze raw text/notes for forensic threats using Gemini AI."""
+    text = payload.get("text", "")
+    if not text:
+        raise HTTPException(400, "No text provided")
+    result = analyze_text_evidence(text, api_key=x_api_key)
+    return result
+
+
+@router.get("/case-summary/{case_id}")
+def case_ai_summary(
+    case_id: int,
+    x_api_key: str = Header(None),
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    """Generate an AI-powered executive summary for a case."""
+    case = db.query(Case).filter(Case.id == case_id, Case.owner_id == current.id).first()
+    if not case:
+        raise HTTPException(404, "Case not found")
+
+    ev_list = db.query(Evidence).filter(Evidence.case_id == case_id).all()
+    results = db.query(AnalysisResult).join(Evidence).filter(Evidence.case_id == case_id).all()
+    max_risk = max((r.risk_score for r in results), default=0)
+
+    case_data = {
+        "title": case.title,
+        "case_id": case.case_id,
+        "status": case.status,
+        "priority": case.priority,
+        "evidence_count": len(ev_list),
+        "max_risk": max_risk,
+        "analysis_summary": f"{len(results)} analysis module(s) run" if results else "No analysis yet",
+    }
+    summary = generate_case_summary(case_data, api_key=x_api_key)
+    return {"case_id": case_id, "summary": summary, "max_risk": max_risk}
+
+
+@router.get("/stats")
+def global_stats(
+    db: Session = Depends(get_db),
+    current: User = Depends(get_current_user),
+):
+    """Return global analysis statistics for the dashboard."""
+    total_results = db.query(AnalysisResult).join(Evidence).join(Case).filter(
+        Case.owner_id == current.id
+    ).all()
+
+    high_risk = sum(1 for r in total_results if r.risk_score >= 70)
+    medium_risk = sum(1 for r in total_results if 40 <= r.risk_score < 70)
+    low_risk = sum(1 for r in total_results if r.risk_score < 40)
+    avg_risk = round(sum(r.risk_score for r in total_results) / len(total_results), 1) if total_results else 0
+
+    modules: dict = {}
+    for r in total_results:
+        modules[r.module] = modules.get(r.module, 0) + 1
+
+    return {
+        "total_analyses": len(total_results),
+        "high_risk_count": high_risk,
+        "medium_risk_count": medium_risk,
+        "low_risk_count": low_risk,
+        "average_risk_score": avg_risk,
+        "modules_breakdown": modules,
+    }
 
 
 @router.get("/report/{case_id}")

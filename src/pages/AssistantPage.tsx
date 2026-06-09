@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { analysisApi } from '../utils/api';
 import { PageHeader, Card, Spinner } from '../components/ui';
 
@@ -8,7 +8,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
-  typing?: boolean; // true while typing animation is running
+  typing?: boolean;
 }
 
 const QUICK_PROMPTS = [
@@ -17,7 +17,7 @@ const QUICK_PROMPTS = [
   { icon: '📋', label: 'Summarize log analysis results' },
   { icon: '🧭', label: 'What are the next investigation steps?' },
   { icon: '🔬', label: 'What is Error Level Analysis (ELA)?' },
-  { icon: '📊', label: 'How reliable is the confidence score?' },
+  { icon: '😏', label: 'Tell me a forensics joke' },
 ];
 
 const MOCK_RESPONSES: Record<string, string> = {
@@ -40,7 +40,7 @@ Is there a specific module or finding you'd like me to elaborate on?`,
 function getAIResponse(question: string): string {
   const q = question.toLowerCase();
   if (q.includes('ela') || q.includes('error level')) {
-    return `**Error Level Analysis (ELA)** is a forensic technique that identifies areas of different compression levels in a JPEG image.
+    return `**Error Level Analysis (ELA)** is a forensic technique that identifies areas of different compression levels in a JPEG image. Think of it as asking the image, *"Did someone touch you there?"* — and the pixels genuinely can't lie.
 
 **How it works:**
 When a JPEG image is saved, the compression algorithm applies similar compression across the entire image. If any region has been edited (copy-pasted, cloned, or composited), that region will have a *different compression history* than the rest of the image. ELA re-compresses the image at a known quality level and measures the error — regions with higher error (brighter in ELA visualization) are likely original, while unexpectedly low-error regions suggest tampering.
@@ -48,41 +48,41 @@ When a JPEG image is saved, the compression algorithm applies similar compressio
 **In this case:**
 The ELA scan of suspect_image_001.jpg shows a risk score of 78/100. The lower-right quadrant displays significantly lower ELA error than surrounding regions, strongly suggesting that portion was inserted from a different source image.
 
-This is a widely accepted technique in digital forensics and courts recognize ELA as admissible supporting evidence.`;
+This is widely accepted in digital forensics and courts recognize ELA as admissible supporting evidence. The pixels have spoken. 📸`;
   }
   if (q.includes('deepfake') || q.includes('confidence')) {
     return `**Deepfake Detection Analysis — 91% Confidence**
 
-Our AI model uses a multi-stage detection pipeline:
+Our AI model uses a multi-stage detection pipeline (three stages, because one just wasn't paranoid enough):
 
 **Stage 1 — Facial Landmark Analysis:**
 Tracks 68 facial landmarks across video frames. Deepfakes often show micro-inconsistencies in landmark positioning between consecutive frames that are imperceptible to humans but detectable by AI.
 
 **Stage 2 — GAN Fingerprint Detection:**
-Every AI image generator (GAN) leaves a unique statistical fingerprint in the frequency domain of generated images. In this case, we identified a **StyleGAN2 fingerprint** — a state-of-the-art GAN used for photorealistic face synthesis.
+Every AI image generator (GAN) leaves a unique statistical fingerprint in the frequency domain. We identified a **StyleGAN2 fingerprint** — a state-of-the-art GAN used for photorealistic face synthesis. It's basically digital DNA. Incriminating digital DNA.
 
 **Stage 3 — Temporal Coherence:**
-Real videos maintain consistent skin texture, lighting response, and eye movement patterns over time. The analyzed video shows unnatural blink patterns (0.4x normal rate) and inconsistent skin tone responses to lighting changes.
+Real videos maintain consistent skin texture, lighting response, and eye movement patterns over time. The analyzed video shows unnatural blink patterns (0.4x normal rate) and inconsistent skin tone responses to lighting changes. Basically, the AI forgot to blink like a human — rookie mistake.
 
 **Confidence Score Reliability:**
-At 91%, the model has very high confidence this is a deepfake. Industry standard threshold for "confirmed deepfake" is typically 85%+. However, for legal proceedings, a second opinion from a certified forensics lab is always recommended.`;
+At 91%, the model is very confident this is a deepfake. Industry standard for "confirmed deepfake" is typically 85%+. However, for legal proceedings, a second opinion from a certified forensics lab is always recommended — even I have off days.`;
   }
   if (q.includes('log') || q.includes('analysis')) {
     return `**Server Access Log — Forensic Summary**
 
-The log file analysis identified **14 suspicious events** across 4 categories:
+The log file analysis identified **14 suspicious events** across 4 categories. Someone had a very busy Tuesday morning:
 
 **1. Brute Force Attack (High)**
-IP 192.168.1.45 attempted 247 failed logins against the admin account in a 3-minute window. This is consistent with automated credential-stuffing tools like Hydra or Medusa.
+IP 192.168.1.45 attempted 247 failed logins against the admin account in a 3-minute window. This is consistent with automated credential-stuffing tools like Hydra or Medusa. Subtlety: zero out of ten.
 
 **2. Successful Compromise (Critical)**
-Following the brute-force, a successful authentication occurred — likely using a valid credential obtained from a prior data breach or phishing campaign.
+Following the brute-force, a successful authentication occurred — likely using a valid credential obtained from a prior data breach or phishing campaign. After 247 failures, they finally guessed right. Persistence pays off, unfortunately.
 
 **3. Data Exfiltration (High)**
-2.3GB transferred to external IP 185.234.x.x (geolocated: Eastern Europe). Transfer timing (03:46 UTC) aligns with the attacker's active session.
+2.3GB transferred to external IP 185.234.x.x (geolocated: Eastern Europe). Transfer timing (03:46 UTC) aligns with the attacker's active session. Nothing suspicious about a 2.3GB upload at 3am, right?
 
 **4. Privilege Escalation (Critical)**
-The attacker executed \`sudo -i\` gaining root access — enabling them to access all system files, install rootkits, or modify audit logs.
+The attacker executed \`sudo -i\` gaining root access — enabling them to access all system files, install rootkits, or modify audit logs. Classic.
 
 **Recommended Next Steps:**
 - Immediately isolate the affected system
@@ -111,14 +111,22 @@ The attacker executed \`sudo -i\` gaining root access — enabling them to acces
 11. Prepare legal evidence package for potential prosecution
 12. Draft executive summary report for board briefing
 
-Would you like me to elaborate on any specific step?`;
+Would you like me to elaborate on any specific step? I have thoughts. Many, many thoughts.`;
+  }
+  if (q.includes('joke') || q.includes('funny') || q.includes('humor')) {
+    const jokes = [
+      `Why do forensic investigators make great detectives?\n\nBecause they always ***byte*** the evidence. 🦷\n\n*(I'll see myself out. Actually no, I live here.)*`,
+      `A cybercriminal tried to delete all their tracks.\n\nThey forgot: **logs are like that one friend who screenshots everything**. 📸\n\n*Deleting logs just adds "DELETED LOGS" to the logs. Beautiful, isn't it?*`,
+      `How many hackers does it take to change a lightbulb?\n\n**None — they prefer to stay in the dark.** 🌑\n\n*And they'll blame it on the admin.*`,
+      `The suspect claimed the malware "installed itself."\n\n**Sure, buddy.** My dog also "ate my homework." 🐕\n\n*In both cases, the evidence doesn't quite support the narrative.*`,
+    ];
+    return jokes[Math.floor(Math.random() * jokes.length)];
   }
   return MOCK_RESPONSES.default;
 }
 
 // ── Improved markdown renderer ────────────────────────────
 function renderMarkdown(text: string): string {
-  // Process line by line for list handling
   const lines = text.split('\n');
   let html = '';
   let inUL = false;
@@ -127,7 +135,6 @@ function renderMarkdown(text: string): string {
   for (let i = 0; i < lines.length; i++) {
     let line = lines[i];
 
-    // Unordered list item
     const ulMatch = line.match(/^(\s*)[-•]\s+(.+)$/);
     if (ulMatch) {
       if (!inUL) { html += '<ul class="list-disc list-inside space-y-0.5 my-1">'; inUL = true; }
@@ -137,7 +144,6 @@ function renderMarkdown(text: string): string {
       html += '</ul>'; inUL = false;
     }
 
-    // Ordered list item
     const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
     if (olMatch) {
       if (!inOL) { html += '<ol class="list-decimal list-inside space-y-0.5 my-1">'; inOL = true; }
@@ -147,23 +153,19 @@ function renderMarkdown(text: string): string {
       html += '</ol>'; inOL = false;
     }
 
-    // Horizontal rule
     if (/^---+$/.test(line.trim())) {
       html += '<hr class="border-navy-700 my-2" />';
       continue;
     }
 
-    // Empty line = paragraph break
     if (line.trim() === '') {
       html += '<br/>';
       continue;
     }
 
-    // Normal line
     html += inlineFormat(line) + '<br/>';
   }
 
-  // Close any open lists
   if (inUL) html += '</ul>';
   if (inOL) html += '</ol>';
 
@@ -177,20 +179,26 @@ function inlineFormat(text: string): string {
     .replace(/`(.*?)`/g, '<code class="mono text-blue-400 bg-blue-400/8 px-1.5 py-0.5 rounded text-xs">$1</code>');
 }
 
-// ── Format timestamp for hover display ────────────────────
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
 
-const WELCOME_MESSAGE = `**NexusDFI AI Assistant** — Ready to assist.
+const WELCOME_MESSAGE = `**NΞXUS AI Assistant** — Forensic Intelligence Engine v2.6 — Online and slightly caffeinated.
 
 I can help you:
 - **Explain forensic findings** from image, deepfake, and log analysis
 - **Summarize evidence** across your active cases
-- **Answer investigation questions** and provide expert recommendations
+- **Answer investigation questions** and provide expert (occasionally witty) recommendations
 - **Guide report writing** with technical terminology
 
-Currently analyzing case **NXDFI-2605-4821**. Select a prompt below or ask anything.`;
+Currently analyzing case **NXDFI-2605-4821**. Select a prompt below or ask anything — I promise not to judge. Much.`;
+
+const AI_MOODS = [
+  { label: 'Analytical', icon: '🧠', color: '#4f6ef7' },
+  { label: 'Suspicious', icon: '🔍', color: '#f59e0b' },
+  { label: 'Alarmed', icon: '🚨', color: '#ef4444' },
+  { label: 'Humorous', icon: '😏', color: '#10b981' },
+];
 
 export default function AssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
@@ -205,6 +213,9 @@ export default function AssistantPage() {
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_gemini_key') || '');
+  const [geminiLive, setGeminiLive] = useState<boolean | null>(null); // null=unknown, true=live, false=fallback
+  const [mood, setMood] = useState(0);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingIntervalRef = useRef<number | null>(null);
 
@@ -212,13 +223,16 @@ export default function AssistantPage() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Cleanup typing interval on unmount
   useEffect(() => {
     return () => {
-      if (typingIntervalRef.current) {
-        clearInterval(typingIntervalRef.current);
-      }
+      if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
     };
+  }, []);
+
+  // Rotate AI mood every 15s for fun
+  useEffect(() => {
+    const t = setInterval(() => setMood(m => (m + 1) % AI_MOODS.length), 15000);
+    return () => clearInterval(t);
   }, []);
 
   const saveApiKey = (key: string) => {
@@ -226,12 +240,31 @@ export default function AssistantPage() {
     localStorage.setItem('nexus_gemini_key', key);
   };
 
-  // ── Typing animation ──────────────────────────────────
+  const copyMessage = async (msg: Message) => {
+    try {
+      await navigator.clipboard.writeText(msg.content);
+      setCopiedId(msg.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch { /* ignore */ }
+  };
+
+  const exportChat = () => {
+    const text = messages
+      .map(m => `[${formatTime(m.timestamp)}] ${m.role === 'assistant' ? 'NΞXUS' : 'You'}: ${m.content}`)
+      .join('\n\n');
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `nexusdfi-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const typeResponse = useCallback((fullText: string, msgId: number) => {
     let charIndex = 0;
-    const speed = 12; // ms per character
+    const speed = 12;
 
-    // Add placeholder message
     setMessages(prev => [...prev, {
       id: msgId,
       role: 'assistant',
@@ -241,7 +274,7 @@ export default function AssistantPage() {
     }]);
 
     typingIntervalRef.current = window.setInterval(() => {
-      charIndex += 3; // type 3 chars at a time for speed
+      charIndex += 3;
       const current = fullText.substring(0, charIndex);
 
       setMessages(prev => prev.map(m =>
@@ -252,6 +285,8 @@ export default function AssistantPage() {
         if (typingIntervalRef.current) clearInterval(typingIntervalRef.current);
         typingIntervalRef.current = null;
         setLoading(false);
+        // Randomize mood after response
+        setMood(Math.floor(Math.random() * AI_MOODS.length));
       }
     }, speed);
   }, []);
@@ -267,8 +302,13 @@ export default function AssistantPage() {
     try {
       const res = await analysisApi.askAssistant(question, 'Case NXDFI-2605-4821', apiKey);
       response = res.data.response;
+      // Check if response has a Gemini error prefix
+      const isLive = !response.startsWith('⏱️') && !response.startsWith('🔑') &&
+                     !response.startsWith('🚦') && !response.startsWith('🔌') && !response.startsWith('⚠️');
+      setGeminiLive(isLive);
     } catch {
       response = getAIResponse(question);
+      setGeminiLive(false);
     }
 
     const aiMsgId = Date.now() + 1;
@@ -281,6 +321,7 @@ export default function AssistantPage() {
       typingIntervalRef.current = null;
     }
     setLoading(false);
+    setGeminiLive(null);
     setMessages([{
       id: Date.now(),
       role: 'assistant',
@@ -290,6 +331,7 @@ export default function AssistantPage() {
   };
 
   const messageCount = messages.filter(m => m.role === 'user').length;
+  const currentMood = AI_MOODS[mood];
 
   const promptStagger = {
     hidden: {},
@@ -302,13 +344,54 @@ export default function AssistantPage() {
 
   return (
     <div className="space-y-4 h-[calc(100vh-10rem)] flex flex-col">
-      <div className="flex justify-between items-start">
-        <PageHeader title="AI Assistant" subtitle="Forensics Intelligence Engine" icon="🤖" />
-        <div className="flex items-center gap-2">
+      <div className="flex justify-between items-start flex-wrap gap-2">
+        <PageHeader title="AI Assistant" subtitle="NΞXUS — Forensic Intelligence Engine" icon="🤖" />
+        <div className="flex items-center gap-2 flex-wrap">
+
+          {/* Gemini status badge */}
+          {geminiLive !== null && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold font-mono tracking-wider border"
+              style={geminiLive
+                ? { background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.3)', color: '#10b981' }
+                : { background: 'rgba(245,158,11,0.08)', borderColor: 'rgba(245,158,11,0.3)', color: '#f59e0b' }
+              }
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: geminiLive ? '#10b981' : '#f59e0b' }} />
+              {geminiLive ? 'GEMINI LIVE' : 'LOCAL MODE'}
+            </motion.div>
+          )}
+
+          {/* AI Mood indicator */}
+          <motion.div
+            key={mood}
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-semibold font-mono tracking-wider"
+            style={{
+              background: `${currentMood.color}10`,
+              borderColor: `${currentMood.color}30`,
+              color: currentMood.color
+            }}
+          >
+            <span>{currentMood.icon}</span>
+            {currentMood.label.toUpperCase()}
+          </motion.div>
+
+          {messageCount > 1 && (
+            <motion.button
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+              onClick={exportChat}
+              className="btn-cyber btn-ghost text-xs py-1.5"
+            >
+              💾 Export
+            </motion.button>
+          )}
           {messageCount > 0 && (
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               id="btn-clear-chat"
               onClick={clearConversation}
               className="btn-cyber btn-ghost text-xs py-1.5"
@@ -317,8 +400,7 @@ export default function AssistantPage() {
             </motion.button>
           )}
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
             onClick={() => setShowSettings(!showSettings)}
             className="btn-cyber btn-ghost text-xs py-1.5"
           >
@@ -327,23 +409,39 @@ export default function AssistantPage() {
         </div>
       </div>
 
-      {showSettings && (
-        <Card className="p-4 bg-navy-800/40 border border-accent-500/15">
-          <h3 className="text-sm font-semibold text-white mb-2 font-display">Configure Gemini AI</h3>
-          <p className="text-xs text-navy-300 mb-3">
-            Enter your Google Gemini API key for advanced AI analysis. Without it, the assistant uses built-in forensic heuristics.
-          </p>
-          <input
-            type="password"
-            value={apiKey}
-            onChange={(e) => saveApiKey(e.target.value)}
-            placeholder="AIzaSy..."
-            className="input-cyber w-full max-w-md"
-          />
-        </Card>
-      )}
+      <AnimatePresence>
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+          >
+            <Card className="p-4 bg-navy-800/40 border border-accent-500/15">
+              <h3 className="text-sm font-semibold text-white mb-1 font-display">Configure Gemini AI</h3>
+              <p className="text-xs text-navy-300 mb-3">
+                Enter your Google Gemini API key for live AI analysis. Without it, NΞXUS operates in local mode — still smart, just not <em>cloud</em> smart.
+              </p>
+              <div className="flex gap-2 items-center max-w-md">
+                <input
+                  type="password"
+                  value={apiKey}
+                  onChange={(e) => saveApiKey(e.target.value)}
+                  placeholder="AIzaSy..."
+                  className="input-cyber flex-1"
+                />
+                {apiKey && (
+                  <span className="text-xs text-emerald-400 whitespace-nowrap">✓ Key saved</span>
+                )}
+              </div>
+              <p className="text-[10px] text-navy-500 mt-2">
+                Get a free key at <span className="text-accent-400">aistudio.google.com</span> — gemini-1.5-flash is free tier friendly.
+              </p>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Quick prompts — grid of cards */}
+      {/* Quick prompts */}
       {messages.length <= 1 && (
         <motion.div variants={promptStagger} initial="hidden" animate="show" className="grid grid-cols-2 lg:grid-cols-3 gap-2">
           {QUICK_PROMPTS.map((p, i) => (
@@ -368,15 +466,13 @@ export default function AssistantPage() {
         {messages.map(msg => (
           <div
             key={msg.id}
-            className={`chat-msg chat-bubble flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+            className={`chat-msg chat-bubble flex gap-3 group ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
           >
             {/* Avatar */}
             <motion.div
               whileHover={{ scale: 1.1 }}
               className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 font-bold ${
-                msg.role === 'assistant'
-                  ? ''
-                  : 'bg-navy-700'
+                msg.role === 'assistant' ? '' : 'bg-navy-700'
               }`}
               style={msg.role === 'assistant' ? {
                 background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)',
@@ -389,7 +485,7 @@ export default function AssistantPage() {
             {/* Bubble */}
             <div className={`max-w-[80%] ${msg.role === 'user' ? 'text-right' : ''}`}>
               <div
-                className={`p-4 rounded-2xl text-sm leading-relaxed inline-block text-left ${
+                className={`p-4 rounded-2xl text-sm leading-relaxed inline-block text-left relative ${
                   msg.role === 'assistant'
                     ? 'bg-navy-800/60 text-navy-200 border border-navy-700/60'
                     : 'text-white border border-accent-400/40'
@@ -400,10 +496,24 @@ export default function AssistantPage() {
                 } : undefined}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) + (msg.typing ? '<span class="typing-cursor"></span>' : '') }}
               />
-              {/* Timestamp — visible on hover */}
-              <p className={`chat-timestamp text-[10px] text-navy-500 mono mt-1 ${msg.role === 'user' ? 'text-right' : ''}`}>
-                {formatTime(msg.timestamp)}
-              </p>
+
+              {/* Controls row: timestamp + copy */}
+              <div className={`flex items-center gap-2 mt-1 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <p className="chat-timestamp text-[10px] text-navy-500 mono">
+                  {formatTime(msg.timestamp)}
+                </p>
+                {!msg.typing && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => copyMessage(msg)}
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] text-navy-500 hover:text-navy-300 px-1.5 py-0.5 rounded"
+                    title="Copy message"
+                  >
+                    {copiedId === msg.id ? '✓ Copied' : '📋'}
+                  </motion.button>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -412,10 +522,11 @@ export default function AssistantPage() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)' }}>🤖</div>
             <div className="p-4 rounded-2xl bg-navy-800/60 border border-navy-700/60">
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5 items-center">
                 <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} className="w-2 h-2 rounded-full bg-accent-400" />
                 <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.15 }} className="w-2 h-2 rounded-full bg-accent-400" />
                 <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.3 }} className="w-2 h-2 rounded-full bg-accent-400" />
+                <span className="text-[10px] text-navy-500 ml-1 mono">NΞXUS is thinking...</span>
               </div>
             </div>
           </motion.div>
@@ -431,7 +542,7 @@ export default function AssistantPage() {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage(input)}
-          placeholder="Ask about your forensic evidence..."
+          placeholder="Ask NΞXUS about your forensic evidence..."
           className="input-cyber flex-1"
           disabled={loading}
         />
