@@ -83,8 +83,8 @@ export const analysisApi = {
     api.get(`/analysis/result/${evidenceId}`),
   generateReport:    (caseId: number) =>
     api.get(`/analysis/report/${caseId}`, { responseType: 'blob', timeout: 60000 }),
-  askAssistant:      (question: string, context: string, apiKey?: string) =>
-    api.post('/analysis/assistant', { question, context }, {
+  askAssistant:      (question: string, context: string, apiKey?: string, persona?: string) =>
+    api.post('/analysis/assistant', { question, context, persona }, {
       timeout: 30000,
       ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
     }),
