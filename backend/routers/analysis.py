@@ -99,7 +99,7 @@ def ai_assistant(
     x_api_key: str = Header(None),
     current: User = Depends(get_current_user)
 ):
-    response = ask_assistant(query.question, query.context or "", api_key=x_api_key)
+    response = ask_assistant(query.question, query.context or "", api_key=x_api_key, persona=query.persona)
     return AssistantResponse(response=response)
 
 
