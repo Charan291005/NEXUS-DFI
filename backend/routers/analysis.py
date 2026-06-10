@@ -97,9 +97,10 @@ from fastapi import Header
 def ai_assistant(
     query: AssistantQuery, 
     x_api_key: str = Header(None),
+    x_ai_provider: str = Header(None),
     current: User = Depends(get_current_user)
 ):
-    response = ask_assistant(query.question, query.context or "", api_key=x_api_key, persona=query.persona)
+    response = ask_assistant(query.question, query.context or "", api_key=x_api_key, persona=query.persona, provider=x_ai_provider)
     return AssistantResponse(response=response)
 
 
@@ -107,13 +108,14 @@ def ai_assistant(
 def text_analyze(
     payload: dict,
     x_api_key: str = Header(None),
+    x_ai_provider: str = Header(None),
     current: User = Depends(get_current_user),
 ):
     """Analyze raw text/notes for forensic threats using Gemini AI."""
     text = payload.get("text", "")
     if not text:
         raise HTTPException(400, "No text provided")
-    result = analyze_text_evidence(text, api_key=x_api_key)
+    result = analyze_text_evidence(text, api_key=x_api_key, provider=x_ai_provider)
     return result
 
 
@@ -121,6 +123,7 @@ def text_analyze(
 def case_ai_summary(
     case_id: int,
     x_api_key: str = Header(None),
+    x_ai_provider: str = Header(None),
     db: Session = Depends(get_db),
     current: User = Depends(get_current_user),
 ):
@@ -142,7 +145,7 @@ def case_ai_summary(
         "max_risk": max_risk,
         "analysis_summary": f"{len(results)} analysis module(s) run" if results else "No analysis yet",
     }
-    summary = generate_case_summary(case_data, api_key=x_api_key)
+    summary = generate_case_summary(case_data, api_key=x_api_key, provider=x_ai_provider)
     return {"case_id": case_id, "summary": summary, "max_risk": max_risk}
 
 
