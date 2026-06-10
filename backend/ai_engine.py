@@ -356,10 +356,10 @@ def _mock_log_analysis(filepath: str) -> Dict[str, Any]:
 
 
 # ── Shared Gemini API Helper ───────────────────────────────
-def _gemini_request(prompt: str, api_key: str, model: str = "gemini-1.5-flash") -> str:
+def _gemini_request(prompt: str, api_key: str, model: str = "gemini-flash-latest") -> str:
     """
     Make a request to the Gemini API.
-    Uses gemini-1.5-flash — fast, accurate, and won't bankrupt you.
+    Uses gemini-flash-latest — fast, accurate, and won't bankrupt you.
     """
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     headers = {
