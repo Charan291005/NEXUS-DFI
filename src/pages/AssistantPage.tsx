@@ -377,15 +377,24 @@ export default function AssistantPage() {
     const prov = currentProvider.toLowerCase();
     
     if (prov === 'pollinations') {
-      const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
-      const fullPrompt = `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.\n\nUser question: ${question}\n\nRespond in character with forensic expertise.`;
-      
-      const res = await fetch(
-        `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`,
-        { method: 'GET' }
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.text();
+      try {
+        const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
+        const fullPrompt = `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.\n\nUser question: ${question}\n\nRespond in character with forensic expertise.`;
+        
+        const res = await fetch(
+          `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`,
+          { method: 'GET' }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.text();
+      } catch (err) {
+        const backupKey = currentApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+        if (backupKey) {
+          console.warn('Direct Pollinations call failed, falling back to Gemini:', err);
+          return await callAiDirect(question, currentPersona, 'gemini', backupKey);
+        }
+        throw err;
+      }
     }
 
     if (!currentApiKey) throw new Error('No API key entered');
