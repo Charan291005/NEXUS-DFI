@@ -263,7 +263,12 @@ export default function AssistantPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [provider, setProvider] = useState<string>(() => localStorage.getItem('nexus_ai_provider') || 'pollinations');
+  const [provider, setProvider] = useState<string>(() => {
+    const saved = localStorage.getItem('nexus_ai_provider');
+    if (saved) return saved;
+    const key = localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY;
+    return key ? 'gemini' : 'pollinations';
+  });
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [geminiLive, setGeminiLive] = useState<boolean | null>(null); // null=unknown, true=live, false=fallback
 
@@ -442,7 +447,7 @@ export default function AssistantPage() {
     const NEXUS_PROMPT = `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.\n\nUser question: ${question}\n\nRespond in character with forensic expertise.`;
 
     const res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent',
       {
         method: 'POST',
         headers: {
