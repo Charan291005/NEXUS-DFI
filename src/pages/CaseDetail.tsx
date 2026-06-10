@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, memo } from 'react';
 import { useParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { casesApi, evidenceApi, analysisApi } from '../utils/api';
-import type { NexusEvidence, NexusCase } from '../types';
+import type { NexusEvidence, NexusCase, NexusAnalysisResult } from '../types';
 import { PageHeader, SectionHeader, RiskMeter, RiskBadge, Badge, Spinner } from '../components/ui';
 import { fileIcon, fmtDateTime, riskColor, riskLabel, STATUS_COLORS, PRIORITY_COLORS } from '../utils/helpers';
 
@@ -211,7 +211,7 @@ export default function CaseDetail() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
+    Promise.resolve().then(() => setLoading(true));
     casesApi.get(Number(id) || 1)
       .then(res => {
         setCurrentCase(res.data);
@@ -251,7 +251,7 @@ export default function CaseDetail() {
 
   const handleAnalyze = async (evidenceId: number, module: string) => {
     try {
-      let res: any;
+      let res: { data: NexusAnalysisResult };
       if (module === 'image_forensics')   res = await analysisApi.runImageForensics(evidenceId);
       else if (module === 'deepfake_detection') res = await analysisApi.runDeepfake(evidenceId);
       else res = await analysisApi.runLogAnalysis(evidenceId);
