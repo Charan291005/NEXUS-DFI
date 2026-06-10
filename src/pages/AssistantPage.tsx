@@ -263,8 +263,14 @@ export default function AssistantPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [provider, setProvider] = useState<string>(() => localStorage.getItem('nexus_ai_provider') || 'pollinations');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
   const [geminiLive, setGeminiLive] = useState<boolean | null>(null); // null=unknown, true=live, false=fallback
+
+  const saveProvider = (newProv: string) => {
+    setProvider(newProv);
+    localStorage.setItem('nexus_ai_provider', newProv);
+  };
   const [mood, setMood] = useState(0);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -361,17 +367,79 @@ export default function AssistantPage() {
 
 
 
-  // ── Direct Gemini call from browser (bypasses backend) ──
-  const callGeminiDirect = useCallback(async (question: string, currentPersona: string): Promise<string> => {
-    if (!apiKey) throw new Error('No API key');
+  // ── Direct AI call from browser (bypasses backend) ──
+  const callAiDirect = useCallback(async (question: string, currentPersona: string, currentProvider: string, currentApiKey: string): Promise<string> => {
+    const prov = currentProvider.toLowerCase();
+    
+    if (prov === 'pollinations') {
+      const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
+      const fullPrompt = `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.\n\nUser question: ${question}\n\nRespond in character with forensic expertise.`;
+      
+      const res = await fetch(
+        `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`,
+        { method: 'GET' }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.text();
+    }
+
+    if (!currentApiKey) throw new Error('No API key entered');
+
+    if (prov === 'openai') {
+      const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
+      const res = await fetch(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence.` },
+              { role: 'user', content: question }
+            ],
+            temperature: 0.75,
+            max_tokens: 1024
+          })
+        }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.choices[0].message.content;
+    }
+
+    if (prov === 'groq') {
+      const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
+      const res = await fetch(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'system', content: `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence.` },
+              { role: 'user', content: question }
+            ],
+            temperature: 0.75,
+            max_tokens: 1024
+          })
+        }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.choices[0].message.content;
+    }
+
+    // Default: Gemini
     const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
-    const NEXUS_PROMPT = `${systemPrompt}
-
-Case context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.
-
-User question: ${question}
-
-Respond in character with forensic expertise.`;
+    const NEXUS_PROMPT = `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.\n\nUser question: ${question}\n\nRespond in character with forensic expertise.`;
 
     const res = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
@@ -379,7 +447,7 @@ Respond in character with forensic expertise.`;
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-goog-api-key': apiKey,
+          'X-goog-api-key': currentApiKey,
         },
         body: JSON.stringify({
           contents: [{ parts: [{ text: NEXUS_PROMPT }] }],
@@ -393,7 +461,7 @@ Respond in character with forensic expertise.`;
     }
     const data = await res.json();
     return data.candidates[0].content.parts[0].text;
-  }, [apiKey]);
+  }, []);
 
   const sendMessage = useCallback(async (question: string) => {
     if (!question.trim() || loading) return;
@@ -404,23 +472,23 @@ Respond in character with forensic expertise.`;
 
     let response: string;
 
-    // Tier 1: Call Gemini directly from the browser (fastest, most reliable)
-    if (apiKey) {
+    // Tier 1: Call API directly from the browser (fastest, most reliable)
+    if (provider === 'pollinations' || apiKey) {
       try {
-        response = await callGeminiDirect(question, persona);
+        response = await callAiDirect(question, persona, provider, apiKey);
         setGeminiLive(true);
         const aiMsgId = Date.now() + 1;
         typeResponse(response, aiMsgId);
         return;
       } catch (directErr) {
-        console.warn('Direct Gemini call failed:', directErr);
+        console.warn('Direct AI call failed:', directErr);
         // Fall through to backend
       }
     }
 
     // Tier 2: Try backend API
     try {
-      const res = await analysisApi.askAssistant(question, 'Case NXDFI-2605-4821', apiKey, persona);
+      const res = await analysisApi.askAssistant(question, 'Case NXDFI-2605-4821', apiKey, persona, provider);
       response = res.data.response;
       const isLive = !response.startsWith('⏱️') && !response.startsWith('🔑') &&
                      !response.startsWith('🚦') && !response.startsWith('🔌') && !response.startsWith('⚠️');
@@ -433,7 +501,7 @@ Respond in character with forensic expertise.`;
 
     const aiMsgId = Date.now() + 1;
     typeResponse(response, aiMsgId);
-  }, [loading, apiKey, persona, callGeminiDirect, typeResponse]);
+  }, [loading, apiKey, persona, provider, callAiDirect, typeResponse]);
 
   const clearConversation = () => {
     if (typingIntervalRef.current) {
@@ -508,7 +576,7 @@ Respond in character with forensic expertise.`;
               }
             >
               <span className="w-1.5 h-1.5 rounded-full" style={{ background: geminiLive ? '#10b981' : '#f59e0b' }} />
-              {geminiLive ? 'GEMINI LIVE' : 'LOCAL MODE'}
+              {geminiLive ? `${provider.toUpperCase()} LIVE` : 'LOCAL MODE'}
             </motion.div>
           )}
 
@@ -552,7 +620,7 @@ Respond in character with forensic expertise.`;
             onClick={() => setShowSettings(!showSettings)}
             className="btn-cyber btn-ghost text-xs py-1.5"
           >
-            ⚙️ API Key
+            ⚙️ AI Settings
           </motion.button>
         </div>
       </div>
@@ -564,37 +632,60 @@ Respond in character with forensic expertise.`;
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
           >
-            <Card className="p-4 bg-navy-800/40 border border-accent-500/15">
-              <h3 className="text-sm font-semibold text-white mb-1 font-display">Configure Gemini AI</h3>
-              <p className="text-xs text-navy-300 mb-3">
-                Enter your Google Gemini API key for live AI analysis. Without it, NΞXUS operates in local mode — still smart, just not <em>cloud</em> smart.
-              </p>
-              <div className="flex gap-2 items-center max-w-md">
-                <input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => saveApiKey(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="input-cyber flex-1"
-                />
-                {apiKey && (
-                  <span className="text-xs text-emerald-400 whitespace-nowrap">✓ Key saved</span>
-                )}
-                {localStorage.getItem('nexus_gemini_key') && (
-                  <button
-                    onClick={() => {
-                      localStorage.removeItem('nexus_gemini_key');
-                      setApiKey(import.meta.env.VITE_GEMINI_API_KEY || '');
-                    }}
-                    className="btn-cyber btn-ghost text-xs px-2.5 py-1.5 hover:text-white"
-                  >
-                    Reset
-                  </button>
-                )}
+            <Card className="p-4 bg-navy-800/40 border border-accent-500/15 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-semibold text-white font-display">AI Assistant Configuration</h3>
+                  <p className="text-xs text-navy-300">
+                    Select your preferred AI LLM Provider.
+                  </p>
+                </div>
+                <select
+                  value={provider}
+                  onChange={(e) => saveProvider(e.target.value)}
+                  className="input-cyber max-w-xs text-xs font-semibold"
+                >
+                  <option value="pollinations">Pollinations AI (100% Free & Keyless)</option>
+                  <option value="gemini">Google Gemini (Requires Key)</option>
+                  <option value="groq">Groq (Requires Key)</option>
+                  <option value="openai">OpenAI (Requires Key)</option>
+                </select>
               </div>
-              <p className="text-[10px] text-navy-500 mt-2">
-                Get a free key at <span className="text-accent-400">aistudio.google.com</span> — gemini-3.5-flash is free tier friendly.
-              </p>
+
+              {provider !== 'pollinations' ? (
+                <div className="space-y-2 pt-2 border-t border-navy-700/60">
+                  <p className="text-xs text-navy-300">
+                    Enter the API key for <strong>{provider.toUpperCase()}</strong>:
+                  </p>
+                  <div className="flex gap-2 items-center max-w-md">
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => saveApiKey(e.target.value)}
+                      placeholder={`${provider === 'gemini' ? 'AIzaSy...' : provider === 'groq' ? 'gsk_...' : 'sk-proj-...'}`}
+                      className="input-cyber flex-1"
+                    />
+                    {apiKey && (
+                      <span className="text-xs text-emerald-400 whitespace-nowrap">✓ Key saved</span>
+                    )}
+                    {localStorage.getItem('nexus_gemini_key') && (
+                      <button
+                        onClick={() => {
+                          localStorage.removeItem('nexus_gemini_key');
+                          setApiKey(import.meta.env.VITE_GEMINI_API_KEY || '');
+                        }}
+                        className="btn-cyber btn-ghost text-xs px-2.5 py-1.5 hover:text-white"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 bg-emerald-500/5 border border-emerald-500/15 rounded-xl text-xs text-emerald-400">
+                  ⚡ <strong>Pollinations AI is active:</strong> Direct browser queries run key-free via Llama/GPT models. No API keys or configurations required!
+                </div>
+              )}
             </Card>
           </motion.div>
         )}
