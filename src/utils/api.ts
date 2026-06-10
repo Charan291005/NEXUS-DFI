@@ -83,20 +83,29 @@ export const analysisApi = {
     api.get(`/analysis/result/${evidenceId}`),
   generateReport:    (caseId: number) =>
     api.get(`/analysis/report/${caseId}`, { responseType: 'blob', timeout: 60000 }),
-  askAssistant:      (question: string, context: string, apiKey?: string, persona?: string) =>
+  askAssistant:      (question: string, context: string, apiKey?: string, persona?: string, provider?: string) =>
     api.post('/analysis/assistant', { question, context, persona }, {
       timeout: 30000,
-      ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
+      headers: {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+        ...(provider ? { 'x-ai-provider': provider } : {}),
+      },
     }),
-  analyzeText:       (text: string, apiKey?: string) =>
+  analyzeText:       (text: string, apiKey?: string, provider?: string) =>
     api.post('/analysis/text-analyze', { text }, {
       timeout: 30000,
-      ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
+      headers: {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+        ...(provider ? { 'x-ai-provider': provider } : {}),
+      },
     }),
-  caseSummary:       (caseId: number, apiKey?: string) =>
+  caseSummary:       (caseId: number, apiKey?: string, provider?: string) =>
     api.get(`/analysis/case-summary/${caseId}`, {
       timeout: 30000,
-      ...(apiKey ? { headers: { 'x-api-key': apiKey } } : {}),
+      headers: {
+        ...(apiKey ? { 'x-api-key': apiKey } : {}),
+        ...(provider ? { 'x-ai-provider': provider } : {}),
+      },
     }),
   getStats:          () =>
     api.get('/analysis/stats'),
