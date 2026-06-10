@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader, Card, SectionHeader, RiskMeter, RiskBadge, Spinner } from '../components/ui';
 import { evidenceApi, analysisApi } from '../utils/api';
-import type { NexusEvidence } from '../types';
+import type { NexusEvidence, Finding } from '../types';
 
 export default function EvidencePage() {
   const [evidence, setEvidence]   = useState<NexusEvidence[]>([]);
@@ -168,7 +168,7 @@ export default function EvidencePage() {
                     <p className="text-sm text-navy-200 leading-relaxed">{selected.analysis.result.summary}</p>
                   </div>
                   <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-2">
-                    {selected.analysis.result.findings?.map((f: any, i: number) => (
+                    {selected.analysis.result.findings?.map((f: Finding, i: number) => (
                       <motion.div
                         key={i}
                         variants={itemVariants}
