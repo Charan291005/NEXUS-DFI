@@ -15,7 +15,7 @@ import { useForm } from 'react-hook-form';
 const STATUS_OPTIONS: CaseStatus[]   = ['Open','Active','Closed','Archived'];
 const PRIORITY_OPTIONS: CasePriority[] = ['Low','Medium','High','Critical'];
 
-interface CaseFormData extends CreateCaseDto {}
+type CaseFormData = CreateCaseDto;
 
 // ── Memoized table row ────────────────────────────────────
 const CaseRow = memo(function CaseRow({ c, onView, onDelete, index }: {
@@ -99,7 +99,7 @@ export default function CaseList() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    try { await casesApi.delete(deleteId); } catch {}
+    try { await casesApi.delete(deleteId); } catch (e) { console.error('Delete case failed', e); }
     setCases(prev => prev.filter(c => c.id !== deleteId));
     setDeleteId(null);
   };
@@ -155,7 +155,7 @@ export default function CaseList() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 id={`filter-status-${s.toLowerCase()}`}
-                onClick={() => setFilterStatus(s as any)}
+                onClick={() => setFilterStatus(s as CaseStatus | 'All')}
                 className={`btn-cyber text-xs py-1.5 ${filterStatus === s ? 'btn-cyan' : 'btn-ghost'}`}
               >
                 {s}
