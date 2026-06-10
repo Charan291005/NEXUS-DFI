@@ -64,12 +64,21 @@ export default function ThreatIntelPage() {
     const prov = currentProvider.toLowerCase();
     
     if (prov === 'pollinations') {
-      const res = await fetch(
-        `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`,
-        { method: 'GET' }
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.text();
+      try {
+        const res = await fetch(
+          `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`,
+          { method: 'GET' }
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return await res.text();
+      } catch (err) {
+        const backupKey = currentApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
+        if (backupKey) {
+          console.warn('Direct Pollinations call failed for threat intel, falling back to Gemini:', err);
+          return await callAiDirect(prompt, 'gemini', backupKey);
+        }
+        throw err;
+      }
     }
 
     if (!currentApiKey) throw new Error('No API key entered');
