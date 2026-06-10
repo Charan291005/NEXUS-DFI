@@ -46,7 +46,7 @@ export function StatCard({ label, value, icon, color, delta, subtitle }: StatCar
 }
 
 // ─── Glass Card ───────────────────────────────────────────
-interface CardProps extends HTMLMotionProps<'div'> {}
+type CardProps = HTMLMotionProps<'div'>;
 export function Card({ children, className = '', id, ...props }: CardProps) {
   return (
     <motion.div
