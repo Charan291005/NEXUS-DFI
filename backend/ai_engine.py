@@ -384,61 +384,74 @@ def _make_ai_request(prompt: str, system_prompt: str, provider: str, api_key: st
     prov = (provider or "pollinations").lower()
     key = api_key or os.environ.get(f"{prov.upper()}_API_KEY")
 
-    if prov == "pollinations" or (prov != "pollinations" and not key):
-        import urllib.parse
-        encoded_prompt = urllib.parse.quote(prompt)
-        url = f"https://text.pollinations.ai/{encoded_prompt}"
-        params = {}
-        if system_prompt:
-            params["system"] = system_prompt
-        params["model"] = "openai"
-        response = requests.get(url, params=params, timeout=20)
-        response.raise_for_status()
-        return response.text
+    try:
+        if prov == "pollinations" or (prov != "pollinations" and not key):
+            import urllib.parse
+            encoded_prompt = urllib.parse.quote(prompt)
+            url = f"https://text.pollinations.ai/{encoded_prompt}"
+            params = {}
+            if system_prompt:
+                params["system"] = system_prompt
+            params["model"] = "openai"
+            response = requests.get(url, params=params, timeout=20)
+            response.raise_for_status()
+            return response.text
 
-    elif prov == "openai":
-        url = "https://api.openai.com/v1/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {key}"
-        }
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-        payload = {
-            "model": "gpt-4o-mini",
-            "messages": messages,
-            "temperature": 0.7,
-            "max_tokens": 1024
-        }
-        response = requests.post(url, headers=headers, json=payload, timeout=20)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        elif prov == "openai":
+            url = "https://api.openai.com/v1/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {key}"
+            }
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            payload = {
+                "model": "gpt-4o-mini",
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 1024
+            }
+            response = requests.post(url, headers=headers, json=payload, timeout=20)
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
 
-    elif prov == "groq":
-        url = "https://api.groq.com/openai/v1/chat/completions"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {key}"
-        }
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-        payload = {
-            "model": "llama-3.3-70b-versatile",
-            "messages": messages,
-            "temperature": 0.7,
-            "max_tokens": 1024
-        }
-        response = requests.post(url, headers=headers, json=payload, timeout=20)
-        response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        elif prov == "groq":
+            url = "https://api.groq.com/openai/v1/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {key}"
+            }
+            messages = []
+            if system_prompt:
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            payload = {
+                "model": "llama-3.3-70b-versatile",
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 1024
+            }
+            response = requests.post(url, headers=headers, json=payload, timeout=20)
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
 
-    else:
-        full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
-        return _gemini_request(full_prompt, key)
+        else:
+            full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+            return _gemini_request(full_prompt, key)
+            
+    except Exception as e:
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if prov != "gemini" and gemini_key:
+            try:
+                print(f"Provider {prov} failed, falling back to Gemini due to: {e}")
+                full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                return _gemini_request(full_prompt, gemini_key)
+            except Exception as fallback_err:
+                print(f"Fallback to Gemini failed: {fallback_err}")
+                pass
+        raise e
 
 
 # ── AI Assistant ──────────────────────────────────────────
