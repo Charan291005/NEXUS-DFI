@@ -379,6 +379,68 @@ def _gemini_request(prompt: str, api_key: str, model: str = "gemini-1.5-flash") 
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
+def _make_ai_request(prompt: str, system_prompt: str, provider: str, api_key: str) -> str:
+    """Helper to dispatch the prompt to Gemini, OpenAI, Groq, or Pollinations AI."""
+    prov = (provider or "pollinations").lower()
+    key = api_key or os.environ.get(f"{prov.upper()}_API_KEY")
+
+    if prov == "pollinations" or (prov != "pollinations" and not key):
+        import urllib.parse
+        encoded_prompt = urllib.parse.quote(prompt)
+        url = f"https://text.pollinations.ai/{encoded_prompt}"
+        params = {}
+        if system_prompt:
+            params["system"] = system_prompt
+        params["model"] = "openai"
+        response = requests.get(url, params=params, timeout=20)
+        response.raise_for_status()
+        return response.text
+
+    elif prov == "openai":
+        url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key}"
+        }
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        payload = {
+            "model": "gpt-4o-mini",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 1024
+        }
+        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+
+    elif prov == "groq":
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {key}"
+        }
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        payload = {
+            "model": "llama-3.3-70b-versatile",
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 1024
+        }
+        response = requests.post(url, headers=headers, json=payload, timeout=20)
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"]
+
+    else:
+        full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+        return _gemini_request(full_prompt, key)
+
+
 # ── AI Assistant ──────────────────────────────────────────
 # ── AI Assistant Personas ──────────────────────────────────
 NEXUS_SYSTEM_PROMPT = (
@@ -505,53 +567,25 @@ ASSISTANT_RESPONSES = {
 }
 
 
-def ask_assistant(question: str, context: str, api_key: str = None, persona: str = "nexus") -> str:
-    """Main AI assistant entry point. Tries Gemini first, falls back gracefully with humor."""
-    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
-
+def ask_assistant(question: str, context: str, api_key: str = None, persona: str = "nexus", provider: str = None) -> str:
+    """Main AI assistant entry point. Tries configured provider first, falls back gracefully."""
     system_prompt = NEXUS_SYSTEM_PROMPT
     if persona == "geek":
         system_prompt = GEEK_SYSTEM_PROMPT
     elif persona == "noir":
         system_prompt = NOIR_SYSTEM_PROMPT
 
-    if not gemini_api_key:
-        return _fallback_ask_assistant(question, persona)
-
     prompt = (
-        f"{system_prompt}\n\n"
         f"--- CASE CONTEXT ---\n{context}\n\n"
         f"--- USER QUESTION ---\n{question}\n\n"
         "Provide a concise, accurate, and appropriately styled forensic response."
     )
 
     try:
-        return _gemini_request(prompt, gemini_api_key)
-    except requests.exceptions.Timeout:
-        return (
-            f"⏱️ The AI timed out — even forensic geniuses need a moment sometimes.\n\n"
-            f"{_fallback_ask_assistant(question, persona)}"
-        )
-    except requests.exceptions.HTTPError as e:
-        status = e.response.status_code if e.response else "?"
-        if status == 400:
-            return (
-                f"🔑 Gemini API returned a 400 error — your API key might be invalid. "
-                f"Double-check the key in settings.\n\n{_fallback_ask_assistant(question, persona)}"
-            )
-        elif status == 429:
-            return (
-                f"🚦 Gemini API rate limit hit. Someone's been chatting too much. "
-                f"Try again in a moment.\n\n{_fallback_ask_assistant(question, persona)}"
-            )
-        else:
-            return (
-                f"⚠️ Gemini API error (HTTP {status}). Falling back to local intelligence.\n\n"
-                f"{_fallback_ask_assistant(question, persona)}"
-            )
+        return _make_ai_request(prompt, system_prompt, provider, api_key)
     except Exception as e:
         return (
-            f"🔌 Lost connection to Gemini (even AI has bad days): {str(e)[:80]}.\n\n"
+            f"🔌 Connection failed: {str(e)[:80]}.\n\n"
             f"Here's what my local knowledge banks say:\n\n{_fallback_ask_assistant(question, persona)}"
         )
 
@@ -595,13 +629,11 @@ def _fallback_ask_assistant(question: str, persona: str = "nexus") -> str:
 
 
 # ── Analyze Raw Text Evidence ──────────────────────────────
-def analyze_text_evidence(text: str, api_key: str = None) -> Dict[str, Any]:
+def analyze_text_evidence(text: str, api_key: str = None, provider: str = None) -> Dict[str, Any]:
     """
-    Analyze raw text/notes for suspicious patterns using Gemini AI.
-    Falls back to regex-based heuristics if no API key.
+    Analyze raw text/notes for suspicious patterns using AI.
+    Falls back to regex-based heuristics if no API key/provider error.
     """
-    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
-
     events = []
     for pattern, event_type, severity, description in SUSPICIOUS_PATTERNS:
         matches = re.findall(pattern, text, re.IGNORECASE)
@@ -617,12 +649,16 @@ def analyze_text_evidence(text: str, api_key: str = None) -> Dict[str, Any]:
     raw_score = sum(SEV_WEIGHTS.get(e["severity"], 1) * e["count"] for e in events)
     risk_score = min(int(raw_score * 2), 100)
 
-    if gemini_api_key:
+    prov = (provider or "pollinations").lower()
+    key = api_key or os.environ.get(f"{prov.upper()}_API_KEY")
+
+    if prov == "pollinations" or key:
         try:
-            ai_summary = _gemini_request(
-                f"Analyze this text from a digital forensics investigation for threats, anomalies, and suspicious content. "
-                f"Be concise, professional, and slightly witty. Highlight the top 3 concerns:\n\n{text[:3000]}",
-                gemini_api_key
+            ai_summary = _make_ai_request(
+                prompt=f"Analyze this text from a digital forensics investigation for threats, anomalies, and suspicious content. Highlight the top 3 concerns:\n\n{text[:3000]}",
+                system_prompt="You are NΞXUS, a forensic AI. Be concise, professional, and slightly witty.",
+                provider=prov,
+                api_key=key
             )
         except Exception:
             ai_summary = _local_text_summary(risk_score, events)
@@ -653,10 +689,8 @@ def _local_text_summary(risk_score: int, events: list) -> str:
 
 
 # ── AI Case Summary ────────────────────────────────────────
-def generate_case_summary(case_data: Dict[str, Any], api_key: str = None) -> str:
+def generate_case_summary(case_data: Dict[str, Any], api_key: str = None, provider: str = None) -> str:
     """Generate an AI-powered executive summary for a forensics case."""
-    gemini_api_key = api_key or os.environ.get("GEMINI_API_KEY")
-
     case_text = (
         f"Case: {case_data.get('title', 'Unknown')}\n"
         f"ID: {case_data.get('case_id', 'N/A')}\n"
@@ -667,13 +701,16 @@ def generate_case_summary(case_data: Dict[str, Any], api_key: str = None) -> str
         f"Analysis Results: {case_data.get('analysis_summary', 'No analysis performed yet')}\n"
     )
 
-    if gemini_api_key:
+    prov = (provider or "pollinations").lower()
+    key = api_key or os.environ.get(f"{prov.upper()}_API_KEY")
+
+    if prov == "pollinations" or key:
         try:
-            return _gemini_request(
-                f"You are NΞXUS, a forensic AI with the wit of Sherlock Holmes and the directness of a seasoned detective. "
-                f"Generate a concise executive summary (3-4 sentences) for this forensics case. "
-                f"Be professional but not boring. If risk is high, convey urgency with a dash of dry wit:\n\n{case_text}",
-                gemini_api_key
+            return _make_ai_request(
+                prompt=f"Generate a concise executive summary (3-4 sentences) for this forensics case. Be professional but not boring. If risk is high, convey urgency with a dash of dry wit:\n\n{case_text}",
+                system_prompt="You are NΞXUS, a forensic AI with the wit of Sherlock Holmes.",
+                provider=prov,
+                api_key=key
             )
         except Exception:
             pass
