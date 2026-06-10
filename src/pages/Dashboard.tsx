@@ -5,7 +5,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { casesApi } from '../utils/api';
-import type { DashboardStats, ActivityItem } from '../types';
+import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
 import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
@@ -60,7 +60,13 @@ const AnimatedCounter = memo(function AnimatedCounter({ target, duration = 1.5 }
   return <>{count}</>;
 });
 
-const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: any) {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: string;
+}
+
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div
@@ -164,7 +170,6 @@ export default function Dashboard() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(v: any, n: any) => [v, n]}
                   contentStyle={{
                     background: 'rgba(12,19,34,0.95)',
                     border: '1px solid rgba(79,110,247,0.15)',
@@ -212,7 +217,7 @@ export default function Dashboard() {
                   <p className="text-sm text-navy-200 group-hover:text-white transition-colors leading-snug">{item.message}</p>
                   <p className="text-[11px] text-navy-500 mt-0.5 mono">{timeAgo(item.timestamp)}</p>
                 </div>
-                {item.severity && <RiskBadge level={item.severity as any} />}
+                {item.severity && <RiskBadge level={item.severity as RiskLevel} />}
               </motion.div>
             ))}
           </div>
