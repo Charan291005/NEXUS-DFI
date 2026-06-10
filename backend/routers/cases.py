@@ -98,7 +98,7 @@ def dashboard_stats(db: Session = Depends(get_db), current: User = Depends(get_c
         activity.append({
             "id": f"ev-{e.id}",
             "type": "evidence_uploaded",
-            "message": f"Evidence '{e.filename}' uploaded to case {e.case_id}",
+            "message": f"Evidence '{e.filename}' uploaded to case {e.case.case_id}",
             "timestamp": e.uploaded_at.isoformat() if e.uploaded_at else datetime.utcnow().isoformat(),
             "severity": None,
         })
