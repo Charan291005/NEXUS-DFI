@@ -59,9 +59,70 @@ export default function ThreatIntelPage() {
   const [result, setResult] = useState<ThreatResult | null>(null);
   const [history, setHistory] = useState<ThreatResult[]>([]);
 
-  // ── Direct Gemini call for threat intel ──
-  const callGeminiDirect = async (prompt: string, currentApiKey: string): Promise<string> => {
-    if (!currentApiKey) throw new Error('No API key');
+  // ── Direct AI call for threat intel ──
+  const callAiDirect = async (prompt: string, currentProvider: string, currentApiKey: string): Promise<string> => {
+    const prov = currentProvider.toLowerCase();
+    
+    if (prov === 'pollinations') {
+      const res = await fetch(
+        `https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=openai`,
+        { method: 'GET' }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.text();
+    }
+
+    if (!currentApiKey) throw new Error('No API key entered');
+
+    if (prov === 'openai') {
+      const res = await fetch(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.6,
+            max_tokens: 512
+          })
+        }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.choices[0].message.content;
+    }
+
+    if (prov === 'groq') {
+      const res = await fetch(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentApiKey}`
+          },
+          body: JSON.stringify({
+            model: 'llama-3.3-70b-versatile',
+            messages: [
+              { role: 'user', content: prompt }
+            ],
+            temperature: 0.6,
+            max_tokens: 512
+          })
+        }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      return data.choices[0].message.content;
+    }
+
+    // Default: Gemini
     const res = await fetch(
       'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
       {
@@ -85,6 +146,7 @@ export default function ThreatIntelPage() {
     setResult(null);
 
     const type = detectType(target);
+    const currentProvider = localStorage.getItem('nexus_ai_provider') || 'pollinations';
     const currentApiKey = localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '';
 
     const geminiPrompt = `You are NΞXUS, a forensic AI threat intelligence analyst with dry wit.
@@ -97,10 +159,10 @@ Provide a concise 3-4 sentence analysis covering:
 
 Be direct and slightly witty. Use **bold** for key findings.`;
 
-    // Tier 1: Try direct Gemini API call from browser
-    if (currentApiKey) {
+    // Tier 1: Try direct API call from browser
+    if (currentProvider === 'pollinations' || currentApiKey) {
       try {
-        const aiSummary = await callGeminiDirect(geminiPrompt, currentApiKey);
+        const aiSummary = await callAiDirect(geminiPrompt, currentProvider, currentApiKey);
         const mockRisk = type === 'ip' ? 72 : type === 'domain' ? 85 : type === 'hash' ? 61 : 35;
         const newResult: ThreatResult = {
           indicator: target,
@@ -120,7 +182,7 @@ Be direct and slightly witty. Use **bold** for key findings.`;
         setLoading(false);
         return;
       } catch (e) {
-        console.warn('Direct Gemini failed for threat intel:', e);
+        console.warn('Direct AI failed for threat intel:', e);
         // Fall through to backend
       }
     }
@@ -135,7 +197,7 @@ Be direct and slightly witty. Use **bold** for key findings.`;
       : target;
 
     try {
-      const res = await analysisApi.analyzeText(contextText, currentApiKey);
+      const res = await analysisApi.analyzeText(contextText, currentApiKey, currentProvider);
       const data = res.data;
       const newResult: ThreatResult = {
         indicator: target,
