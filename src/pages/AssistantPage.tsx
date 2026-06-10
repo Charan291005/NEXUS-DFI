@@ -172,7 +172,7 @@ function renderMarkdown(text: string): string {
   let inOL = false;
 
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
+    const line = lines[i];
 
     const ulMatch = line.match(/^(\s*)[-•]\s+(.+)$/);
     if (ulMatch) {
@@ -360,7 +360,7 @@ Rules: Use **bold** for key terms. Frame your forensic analysis in dramatic, gri
   };
 
   // ── Direct Gemini call from browser (bypasses backend) ──
-  const callGeminiDirect = async (question: string, currentPersona: string): Promise<string> => {
+  const callGeminiDirect = useCallback(async (question: string, currentPersona: string): Promise<string> => {
     if (!apiKey) throw new Error('No API key');
     const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
     const NEXUS_PROMPT = `${systemPrompt}
@@ -372,7 +372,7 @@ User question: ${question}
 Respond in character with forensic expertise.`;
 
     const res = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
       {
         method: 'POST',
         headers: {
@@ -391,9 +391,9 @@ Respond in character with forensic expertise.`;
     }
     const data = await res.json();
     return data.candidates[0].content.parts[0].text;
-  };
+  }, [apiKey]);
 
-  const sendMessage = async (question: string) => {
+  const sendMessage = useCallback(async (question: string) => {
     if (!question.trim() || loading) return;
     const userMsg: Message = { id: Date.now(), role: 'user', content: question, timestamp: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
@@ -431,7 +431,7 @@ Respond in character with forensic expertise.`;
 
     const aiMsgId = Date.now() + 1;
     typeResponse(response, aiMsgId);
-  };
+  }, [loading, apiKey, persona, callGeminiDirect, typeResponse]);
 
   const clearConversation = () => {
     if (typingIntervalRef.current) {
