@@ -62,3 +62,12 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 @router.get("/me", response_model=UserOut)
 def me(current: User = Depends(get_current_user)):
     return current
+
+@router.post("/request-admin")
+def request_admin(current: User = Depends(get_current_user)):
+    # Mocking the request process for now.
+    # In a real app, this would write to an AccessRequest table.
+    if current.role == "Admin":
+        return {"status": "already_admin", "message": "You are already an Admin."}
+    
+    return {"status": "pending", "message": "Your request for Admin access has been submitted and is pending review."}
