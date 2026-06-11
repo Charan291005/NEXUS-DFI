@@ -51,7 +51,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(User).filter(User.username == email).first()
     if not user:
         # Auto-create user on first Google Sign-In
-        user = User(username=email, hashed_password="firebase_user")
+        role = "Admin" if email == "shreecharan5277443@gmail.com" else "Investigator"
+        user = User(username=email, hashed_password="firebase_user", role=role)
         db.add(user)
         db.commit()
         db.refresh(user)
