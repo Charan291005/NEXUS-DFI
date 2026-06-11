@@ -9,9 +9,19 @@ export default function EvidencePage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'loading' | 'match' | 'mismatch' | 'missing'>('idle');
+
+  // Refresh evidence list
+  const fetchEvidence = () => {
+    setLoading(true);
+    evidenceApi.listAll()
+      .then(res => setEvidence(res.data))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    evidenceApi.listAll().then(res => setEvidence(res.data)).catch(console.error).finally(() => setLoading(false));
+    fetchEvidence();
   }, []);
 
   const selected = evidence.find(e => e.id === selectedId);
@@ -31,6 +41,38 @@ export default function EvidencePage() {
     }
     setAnalyzing(false);
   };
+
+  const handleVerify = async () => {
+    if (!selected) return;
+    setVerificationStatus('loading');
+    try {
+      const res = await evidenceApi.verify(selected.id);
+      setVerificationStatus(res.data.status);
+    } catch (e) {
+      console.error("Verification failed", e);
+      setVerificationStatus('idle');
+      alert("Failed to verify integrity. Check server logs.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!selected) return;
+    if (window.confirm("Are you sure you want to delete this evidence? This action cannot be undone and breaks the chain of custody.")) {
+      try {
+        await evidenceApi.delete(selected.id);
+        setSelectedId(null);
+        fetchEvidence();
+      } catch (e) {
+        console.error("Deletion failed", e);
+        alert("Failed to delete evidence.");
+      }
+    }
+  };
+
+  // Reset verification status when selecting new evidence
+  useEffect(() => {
+    setVerificationStatus('idle');
+  }, [selectedId]);
 
   const containerVariants = {
     hidden: {},
@@ -94,7 +136,71 @@ export default function EvidencePage() {
               </motion.div>
             </Card>
           ) : (
-            <Card>
+            <div className="space-y-6">
+              {/* Evidence Metadata & Chain of Custody Card */}
+              <Card>
+                <SectionHeader 
+                  title="Chain of Custody" 
+                  subtitle="Cryptographic integrity & metadata" 
+                  icon="🛡️" 
+                  action={
+                    <button 
+                      onClick={handleDelete}
+                      className="text-xs px-3 py-1.5 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 border border-red-500/20 transition-colors"
+                    >
+                      Delete Evidence
+                    </button>
+                  }
+                />
+                
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div className="p-3 rounded-xl bg-navy-900/50 border border-navy-800">
+                    <p className="text-xs text-navy-400 mb-1">Filename</p>
+                    <p className="text-white font-medium truncate">{selected.filename}</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-navy-900/50 border border-navy-800">
+                    <p className="text-xs text-navy-400 mb-1">Uploaded At</p>
+                    <p className="text-white font-medium">{new Date(selected.uploaded_at).toLocaleString()}</p>
+                  </div>
+                  <div className="md:col-span-2 p-3 rounded-xl bg-navy-900/50 border border-navy-800 flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-xs text-navy-400 mb-1">SHA-256 Hash</p>
+                      <p className="text-teal-400 font-medium mono text-xs truncate select-all pr-4">{selected.sha256_hash}</p>
+                    </div>
+                    <button 
+                      onClick={() => navigator.clipboard.writeText(selected.sha256_hash)}
+                      className="p-1.5 rounded hover:bg-navy-700 text-navy-300 transition-colors"
+                      title="Copy Hash"
+                    >
+                      📋
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-navy-800 flex items-center justify-between">
+                  <p className="text-xs text-navy-300">
+                    {verificationStatus === 'idle' && 'Verify cryptographic hash against stored database record.'}
+                    {verificationStatus === 'loading' && 'Recalculating hash on disk...'}
+                    {verificationStatus === 'match' && <span className="text-teal-400 flex items-center gap-1">✅ Integrity Verified: Hash matches exact record</span>}
+                    {verificationStatus === 'mismatch' && <span className="text-red-400 font-bold flex items-center gap-1">❌ Integrity Failed: File modified after upload</span>}
+                    {verificationStatus === 'missing' && <span className="text-orange-400 flex items-center gap-1">⚠️ Error: File missing from storage</span>}
+                  </p>
+                  <button
+                    onClick={handleVerify}
+                    disabled={verificationStatus === 'loading'}
+                    className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                      verificationStatus === 'match' ? 'bg-teal-500/10 text-teal-400 border border-teal-500/20' :
+                      verificationStatus === 'mismatch' ? 'bg-red-500/10 text-red-400 border border-red-500/20' :
+                      'bg-navy-700 hover:bg-navy-600 text-white'
+                    }`}
+                  >
+                    {verificationStatus === 'loading' ? <Spinner size="sm" /> : 'Verify Integrity'}
+                  </button>
+                </div>
+              </Card>
+
+              {/* Analysis Modules Card */}
+              <Card>
               <SectionHeader title="Analysis Modules" subtitle="Run AI-powered forensic analysis" icon="⚡" action={
                 <motion.button
                   whileHover={{ scale: 1.03 }}
@@ -189,6 +295,7 @@ export default function EvidencePage() {
                 </motion.div>
               )}
             </Card>
+            </div>
           )}
         </div>
       </div>

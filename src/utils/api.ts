@@ -69,6 +69,7 @@ export const evidenceApi = {
     });
   },
   delete: (id: number) => api.delete(`/evidence/${id}`),
+  verify: (id: number) => api.get(`/evidence/${id}/verify`),
 };
 
 // ── Analysis ────────────────────────────────────────────
