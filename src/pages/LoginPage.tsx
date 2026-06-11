@@ -45,10 +45,22 @@ export default function LoginPage() {
 
   const handleEmailAuth = async (e: any) => {
     e.preventDefault();
+    
+    // Client-side validation
     if (!email || !password) {
       setError('Please enter both email and password.');
       return;
     }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long.');
+      return;
+    }
+
     setError('');
     setLoading(true);
     try {
@@ -59,7 +71,22 @@ export default function LoginPage() {
       }
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please try again.');
+      // Firebase error mapping
+      const code = err.code || '';
+      if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') {
+        setError('Incorrect email or password.');
+      } else if (code === 'auth/wrong-password') {
+        setError('Incorrect password.');
+      } else if (code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists.');
+      } else if (code === 'auth/too-many-requests') {
+        setError('Too many failed attempts. Try again later.');
+      } else if (code === 'auth/weak-password') {
+        setError('Password is too weak. Please choose a stronger password.');
+      } else {
+        setError(err.message || 'Authentication failed. Please try again.');
+        console.error("Auth Error:", err);
+      }
     } finally {
       setLoading(false);
     }
