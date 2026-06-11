@@ -126,7 +126,7 @@ export default function Dashboard() {
       </motion.div>
 
       {/* ── Stat Cards ───────────────────────────────────── */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Cases" value={<AnimatedCounter target={stats.total_cases} />}       icon="📂" color="#F05A28"  delta={`+${stats.cases_this_week}`} />
         <StatCard label="Active Investigations" value={<AnimatedCounter target={stats.active_investigations} />} icon="🔍" color="#00D4AA" />
         <StatCard label="Evidence Files" value={<AnimatedCounter target={stats.evidence_files} />} icon="💾" color="#FF7A3D"  />
@@ -226,7 +226,7 @@ export default function Dashboard() {
 
       {/* ── Threat Intelligence Banner ─────────────────── */}
       <motion.div variants={itemVariants}>
-        <div className="glass p-5 border border-red-500/15 bg-red-500/[0.02] rounded-2xl flex items-center gap-4 threat-banner">
+        <div className="glass p-5 border border-red-500/15 bg-red-500/[0.02] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4 threat-banner">
           <motion.div
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -243,7 +243,7 @@ export default function Dashboard() {
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             id="btn-view-threats"
-            className="btn-cyber btn-danger flex-shrink-0"
+            className="btn-cyber btn-danger flex-shrink-0 w-full sm:w-auto"
           >
             Review Threats
           </motion.button>

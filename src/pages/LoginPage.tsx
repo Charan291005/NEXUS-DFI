@@ -81,7 +81,7 @@ export default function LoginPage() {
           scale: [1, 1.15, 0.9, 1],
         }}
         transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full"
+        className="hidden sm:block absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(240,90,40,0.08), transparent 60%)', filter: 'blur(70px)' }}
       />
       <motion.div
@@ -91,7 +91,7 @@ export default function LoginPage() {
           scale: [1, 0.9, 1.1, 1],
         }}
         transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full"
+        className="hidden sm:block absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(0,212,170,0.06), transparent 60%)', filter: 'blur(70px)' }}
       />
       <motion.div
@@ -100,7 +100,7 @@ export default function LoginPage() {
           y: [0, -25, 20, 0],
         }}
         transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute top-3/4 left-1/5 w-[350px] h-[350px] rounded-full"
+        className="hidden sm:block absolute top-3/4 left-1/5 w-[350px] h-[350px] rounded-full"
         style={{ background: 'radial-gradient(circle, rgba(240,90,40,0.04), transparent 60%)', filter: 'blur(60px)' }}
       />
 
