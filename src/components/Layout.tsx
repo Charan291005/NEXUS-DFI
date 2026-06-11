@@ -25,7 +25,7 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, logout, showTimeoutWarning } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -239,6 +239,36 @@ export default function Layout() {
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Session Timeout Warning Modal */}
+      <AnimatePresence>
+        {showTimeoutWarning && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9 }}
+            className="fixed bottom-6 right-6 z-50 glass p-5 max-w-sm rounded-2xl shadow-[0_10px_40px_rgba(240,90,40,0.2)] border border-orange-500/30"
+            style={{ background: 'rgba(20, 10, 5, 0.95)' }}
+          >
+            <div className="flex items-start gap-3">
+              <div className="text-2xl mt-0.5">⚠️</div>
+              <div>
+                <h3 className="text-sm font-bold text-white mb-1 font-display">Session Timeout Warning</h3>
+                <p className="text-xs text-navy-300 leading-relaxed mb-3">
+                  You have been inactive for 14 minutes. For your security, you will be automatically logged out in 1 minute.
+                </p>
+                <div className="flex gap-2">
+                  <button 
+                    className="flex-1 py-1.5 px-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-lg hover:brightness-110 transition-all cursor-pointer"
+                  >
+                    Stay Logged In
+                  </button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

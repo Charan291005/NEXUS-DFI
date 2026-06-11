@@ -13,6 +13,7 @@ interface AuthCtx {
   resetPassword: (e: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
+  showTimeoutWarning: boolean;
 }
 
 const AuthContext = createContext<AuthCtx>({} as AuthCtx);
@@ -21,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<NexusUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -111,10 +113,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     await auth.signOut();
+    setShowTimeoutWarning(false);
   };
 
+  useEffect(() => {
+    if (!user) return;
+
+    // Token Auto-Refresh (every 10 mins)
+    const refreshInterval = setInterval(async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        try {
+          const idToken = await currentUser.getIdToken(true); // force refresh
+          setToken(idToken);
+          localStorage.setItem('nexus_token', idToken);
+          console.log("Token auto-refreshed");
+        } catch (err) {
+          console.error("Token auto-refresh failed", err);
+        }
+      }
+    }, 10 * 60 * 1000);
+
+    // Session Timeout (15 mins)
+    let lastActivityTime = Date.now();
+    const updateActivity = () => { 
+      lastActivityTime = Date.now(); 
+      if (showTimeoutWarning) setShowTimeoutWarning(false); 
+    };
+
+    const activityEvents = ['mousemove', 'keydown', 'click', 'scroll'];
+    activityEvents.forEach(e => window.addEventListener(e, updateActivity, { passive: true }));
+
+    const timeoutInterval = setInterval(() => {
+      const inactiveDuration = Date.now() - lastActivityTime;
+      const warningTime = 14 * 60 * 1000; // 14 mins
+      const logoutTime = 15 * 60 * 1000;  // 15 mins
+
+      if (inactiveDuration >= logoutTime) {
+        logout();
+      } else if (inactiveDuration >= warningTime) {
+        setShowTimeoutWarning(true);
+      } else {
+        setShowTimeoutWarning(false);
+      }
+    }, 30000); // Check every 30s
+
+    return () => {
+      clearInterval(refreshInterval);
+      clearInterval(timeoutInterval);
+      activityEvents.forEach(e => window.removeEventListener(e, updateActivity));
+    };
+  }, [user, showTimeoutWarning]);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, loginWithEmail, signupWithEmail, resetPassword, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, loginWithEmail, signupWithEmail, resetPassword, logout, loading, showTimeoutWarning }}>
       {children}
     </AuthContext.Provider>
   );
