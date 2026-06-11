@@ -109,3 +109,25 @@ def delete_evidence(evidence_id: int, db: Session = Depends(get_db), current: Us
     db.delete(ev)
     db.commit()
     return {"message": "Evidence deleted"}
+
+@router.get("/{evidence_id}/verify")
+def verify_evidence(evidence_id: int, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    ev = db.query(Evidence).filter(Evidence.id == evidence_id).first()
+    if not ev:
+        raise HTTPException(404, "Evidence not found")
+    
+    # Verify case ownership
+    case = db.query(Case).filter(Case.id == ev.case_id, Case.owner_id == current.id).first()
+    if not case:
+        raise HTTPException(403, "Not authorized")
+        
+    if not os.path.exists(ev.file_path):
+        return {"status": "missing", "message": "File not found on disk"}
+        
+    with open(ev.file_path, "rb") as f:
+        current_hash = sha256_bytes(f.read())
+        
+    if current_hash == ev.sha256_hash:
+        return {"status": "match", "hash": current_hash, "message": "Integrity verified. Hash matches."}
+    else:
+        return {"status": "mismatch", "hash": current_hash, "message": "Integrity failed. File has been modified."}
