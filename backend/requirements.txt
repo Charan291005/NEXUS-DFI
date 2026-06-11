@@ -11,3 +11,4 @@ aiofiles
 firebase-admin
 Pillow
 numpy
+opencv-python-headless
