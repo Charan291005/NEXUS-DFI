@@ -18,7 +18,7 @@ db = SessionLocal()
 # ── Admin user ────────────────────────────────────────────
 existing = db.query(User).filter(User.username == "admin").first()
 if not existing:
-    admin = User(username="admin", hashed_password=hash_password("admin123"), is_admin=True)
+    admin = User(username="admin", hashed_password=hash_password("admin123"), role="Admin")
     db.add(admin)
     db.commit()
     db.refresh(admin)
