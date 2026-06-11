@@ -22,10 +22,13 @@ const FEATURE_PILLS = [
 ];
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, loginWithEmail, signupWithEmail } = useAuth();
   const navigate  = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
 
   const handleGoogleLogin = async () => {
     setError('');
@@ -35,6 +38,28 @@ export default function LoginPage() {
       navigate('/dashboard');
     } catch {
       setError('Google Sign-In failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEmailAuth = async (e: any) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError('Please enter both email and password.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      if (isSignUp) {
+        await signupWithEmail(email, password);
+      } else {
+        await loginWithEmail(email, password);
+      }
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Authentication failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -161,14 +186,14 @@ export default function LoginPage() {
       </div>
 
       {/* Right panel — login card */}
-      <div className="flex-1 flex items-center justify-center p-6 relative z-10">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 relative z-10">
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="show"
           className="glass w-full max-w-md"
           style={{
-            padding: '2.5rem',
+            padding: '2rem',
             boxShadow: '0 30px 90px rgba(0,0,0,0.6), 0 0 50px rgba(240,90,40,0.06)',
             border: '1px solid rgba(240,90,40,0.12)',
           }}
@@ -209,12 +234,57 @@ export default function LoginPage() {
 
           {/* Sign In form */}
           <div className="space-y-4">
+            <form onSubmit={handleEmailAuth} className="space-y-4 mb-4">
+              <motion.div variants={fadeUp}>
+                <input
+                  type="email"
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-navy-900/50 border border-navy-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500 transition-colors placeholder:text-navy-500 text-sm"
+                  required
+                />
+              </motion.div>
+              <motion.div variants={fadeUp}>
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-navy-900/50 border border-navy-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500 transition-colors placeholder:text-navy-500 text-sm"
+                  required
+                />
+              </motion.div>
+              
+              <motion.button
+                variants={fadeUp}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                disabled={loading}
+                className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl transition-all relative overflow-hidden group"
+                style={{
+                  background: 'linear-gradient(135deg, #F05A28, #C84820)',
+                  boxShadow: '0 8px 32px rgba(240,90,40,0.25)',
+                }}
+              >
+                {loading ? <Spinner size="sm" /> : <span className="text-white font-medium">{isSignUp ? 'Sign Up' : 'Sign In'}</span>}
+              </motion.button>
+            </form>
+
+            <div className="flex items-center gap-3 my-4">
+              <div className="h-px flex-1 bg-navy-800"></div>
+              <span className="text-xs text-navy-500 font-medium">OR</span>
+              <div className="h-px flex-1 bg-navy-800"></div>
+            </div>
+
             <motion.button
               variants={fadeUp}
               whileHover={{ scale: 1.02, boxShadow: '0 8px 30px rgba(0,0,0,0.4)' }}
               whileTap={{ scale: 0.98 }}
               onClick={handleGoogleLogin}
               disabled={loading}
+              type="button"
               id="btn-google-signin"
               className="w-full flex items-center justify-center gap-3 py-3.5 px-4 rounded-xl transition-all relative overflow-hidden group"
               style={{
@@ -238,6 +308,16 @@ export default function LoginPage() {
                 </>
               )}
             </motion.button>
+            
+            <motion.div variants={fadeUp} className="text-center mt-4">
+              <button 
+                type="button" 
+                onClick={() => setIsSignUp(!isSignUp)} 
+                className="text-xs text-navy-400 hover:text-white transition-colors"
+              >
+                {isSignUp ? 'Already have an account? Sign In' : 'Need an account? Sign Up'}
+              </button>
+            </motion.div>
 
             {error && (
               <motion.div

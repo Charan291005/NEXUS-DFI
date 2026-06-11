@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { signInWithPopup } from 'firebase/auth';
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import type { NexusUser } from '../types';
 
@@ -8,6 +8,9 @@ interface AuthCtx {
   user: NexusUser | null;
   token: string | null;
   login: () => Promise<void>;
+  loginWithEmail: (e: string, p: string) => Promise<void>;
+  signupWithEmail: (e: string, p: string) => Promise<void>;
+  resetPassword: (e: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -64,12 +67,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const loginWithEmail = async (email: string, pass: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (err) {
+      console.error("Email login failed", err);
+      throw err;
+    }
+  };
+
+  const signupWithEmail = async (email: string, pass: string) => {
+    try {
+      await createUserWithEmailAndPassword(auth, email, pass);
+    } catch (err) {
+      console.error("Signup failed", err);
+      throw err;
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (err) {
+      console.error("Password reset failed", err);
+      throw err;
+    }
+  };
+
   const logout = async () => {
     await auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, token, login, loginWithEmail, signupWithEmail, resetPassword, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
