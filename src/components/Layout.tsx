@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/dashboard',   icon: '⬡',  label: 'Dashboard',       color: '#F05A28' },
-  { to: '/cases',       icon: '📂', label: 'Cases',            color: '#00D4AA' },
-  { to: '/evidence',   icon: '🔍', label: 'Evidence',         color: '#F05A28' },
-  { to: '/timeline',   icon: '⏱',  label: 'Timeline',         color: '#00D4AA' },
-  { to: '/reports',    icon: '📑', label: 'Reports',          color: '#F05A28' },
-  { to: '/assistant',  icon: '🤖', label: 'AI Assistant',     color: '#00D4AA' },
-  { to: '/threat-intel', icon: '🕵️', label: 'Threat Intel', color: '#7b2fff' },
+  { to: '/dashboard',   icon: '⬡',  label: 'Dashboard',       color: '#F05A28', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/cases',       icon: '📂', label: 'Cases',            color: '#00D4AA', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/evidence',   icon: '🔍', label: 'Evidence',         color: '#F05A28', allowedRoles: ['Admin', 'Investigator'] },
+  { to: '/timeline',   icon: '⏱',  label: 'Timeline',         color: '#00D4AA', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/reports',    icon: '📑', label: 'Reports',          color: '#F05A28', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/assistant',  icon: '🤖', label: 'AI Assistant',     color: '#00D4AA', allowedRoles: ['Admin', 'Investigator'] },
+  { to: '/threat-intel', icon: '🕵️', label: 'Threat Intel', color: '#7b2fff', allowedRoles: ['Admin'] },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -100,7 +100,7 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto relative z-10">
-          {NAV_ITEMS.map((item, index) => (
+          {NAV_ITEMS.filter(item => !user || item.allowedRoles.includes(user.role)).map((item, index) => (
             <motion.div
               key={item.to}
               initial={{ opacity: 0, x: -12 }}
@@ -152,7 +152,7 @@ export default function Layout() {
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-navy-100 font-semibold truncate">{user?.username}</p>
-                <p className="text-[10px] text-navy-400">{user?.is_admin ? 'Admin' : 'Analyst'}</p>
+                <p className="text-[10px] text-navy-400">{user?.role}</p>
               </div>
             )}
           </motion.div>

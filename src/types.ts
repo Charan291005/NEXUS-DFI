@@ -6,10 +6,12 @@ export type EvidenceType = 'image' | 'video' | 'pdf' | 'zip' | 'log' | 'document
 export type RiskLevel    = 'Safe' | 'Low' | 'Medium' | 'High' | 'Critical';
 export type AnalysisModule = 'image_forensics' | 'deepfake_detection' | 'log_analysis' | 'metadata' | 'risk_assessment';
 
+export type UserRole = 'Admin' | 'Investigator' | 'Viewer';
+
 export interface NexusUser {
   id: number;
   username: string;
-  is_admin: boolean;
+  role: UserRole;
   created_at: string;
 }
 

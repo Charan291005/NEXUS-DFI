@@ -29,16 +29,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const idToken = await firebaseUser.getIdToken();
           setToken(idToken);
           localStorage.setItem('nexus_token', idToken);
-          // In a real app, you might sync the user profile with the backend
-          // using the idToken here, but for now we construct the NexusUser
-          const u = {
-            id: 1,
-            username: firebaseUser.email || 'user',
-            is_admin: true,
-            created_at: new Date().toISOString()
-          };
-          setUser(u);
-          localStorage.setItem('nexus_user', JSON.stringify(u));
+          // Fetch the user profile from the backend using the token
+          try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/me`, {
+              headers: { Authorization: `Bearer ${idToken}` }
+            });
+            if (response.ok) {
+              const u = await response.json();
+              setUser(u);
+              localStorage.setItem('nexus_user', JSON.stringify(u));
+            } else {
+              throw new Error('Failed to fetch user from backend');
+            }
+          } catch (err) {
+            console.error("Backend auth sync failed:", err);
+            // Fallback (for testing if backend is down)
+            const fallbackRole = firebaseUser.email === 'shreecharan5277443@gmail.com' ? 'Admin' : 'Investigator';
+            const u = {
+              id: 1,
+              username: firebaseUser.email || 'user',
+              role: fallbackRole,
+              created_at: new Date().toISOString()
+            };
+            setUser(u as any);
+            localStorage.setItem('nexus_user', JSON.stringify(u));
+          }
         } catch (err) {
           console.error("Failed to get ID token", err);
           setUser(null);

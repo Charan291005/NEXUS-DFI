@@ -61,6 +61,14 @@ function PrivateRoute({ children }: { children: ReactNode }) {
   return user ? children : <Navigate to="/login" replace />;
 }
 
+function RoleRoute({ children, allowedRoles }: { children: ReactNode, allowedRoles: string[] }) {
+  const { user } = useAuth();
+  if (!user || !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -74,14 +82,14 @@ export default function App() {
               </PrivateRoute>
             }>
               <Route index         element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<Suspense fallback={<PageLoader />}><Dashboard /></Suspense>} />
-              <Route path="cases"     element={<Suspense fallback={<PageLoader />}><CaseList /></Suspense>} />
-              <Route path="cases/:id" element={<Suspense fallback={<PageLoader />}><CaseDetail /></Suspense>} />
-              <Route path="evidence"  element={<Suspense fallback={<PageLoader />}><EvidencePage /></Suspense>} />
-              <Route path="timeline"  element={<Suspense fallback={<PageLoader />}><TimelinePage /></Suspense>} />
-              <Route path="reports"   element={<Suspense fallback={<PageLoader />}><ReportsPage /></Suspense>} />
-              <Route path="assistant" element={<Suspense fallback={<PageLoader />}><AssistantPage /></Suspense>} />
-              <Route path="threat-intel" element={<Suspense fallback={<PageLoader />}><ThreatIntelPage /></Suspense>} />
+              <Route path="dashboard" element={<RoleRoute allowedRoles={['Admin', 'Investigator', 'Viewer']}><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></RoleRoute>} />
+              <Route path="cases"     element={<RoleRoute allowedRoles={['Admin', 'Investigator', 'Viewer']}><Suspense fallback={<PageLoader />}><CaseList /></Suspense></RoleRoute>} />
+              <Route path="cases/:id" element={<RoleRoute allowedRoles={['Admin', 'Investigator', 'Viewer']}><Suspense fallback={<PageLoader />}><CaseDetail /></Suspense></RoleRoute>} />
+              <Route path="evidence"  element={<RoleRoute allowedRoles={['Admin', 'Investigator']}><Suspense fallback={<PageLoader />}><EvidencePage /></Suspense></RoleRoute>} />
+              <Route path="timeline"  element={<RoleRoute allowedRoles={['Admin', 'Investigator', 'Viewer']}><Suspense fallback={<PageLoader />}><TimelinePage /></Suspense></RoleRoute>} />
+              <Route path="reports"   element={<RoleRoute allowedRoles={['Admin', 'Investigator', 'Viewer']}><Suspense fallback={<PageLoader />}><ReportsPage /></Suspense></RoleRoute>} />
+              <Route path="assistant" element={<RoleRoute allowedRoles={['Admin', 'Investigator']}><Suspense fallback={<PageLoader />}><AssistantPage /></Suspense></RoleRoute>} />
+              <Route path="threat-intel" element={<RoleRoute allowedRoles={['Admin']}><Suspense fallback={<PageLoader />}><ThreatIntelPage /></Suspense></RoleRoute>} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
