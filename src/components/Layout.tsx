@@ -21,6 +21,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/reports':     'Report Generator',
   '/assistant':   'AI Investigation Assistant',
   '/threat-intel':'Threat Intelligence',
+  '/profile':     'User Profile',
 };
 
 export default function Layout() {
@@ -136,26 +137,28 @@ export default function Layout() {
         {/* Footer */}
         <div className="px-2 py-3 border-t border-navy-700/40 relative z-10">
           {/* User */}
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className={`flex items-center gap-2 px-2.5 py-2.5 rounded-xl bg-navy-800/60 backdrop-blur-sm ${collapsed ? 'justify-center' : ''}`}
-          >
-            <div
-              className="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-bold text-white"
-              style={{
-                background: 'linear-gradient(135deg, #F05A28, #C84820)',
-                boxShadow: '0 2px 8px rgba(240,90,40,0.25)',
-              }}
+          <NavLink to="/profile" className="block w-full">
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              className={`flex items-center gap-2 px-2.5 py-2.5 rounded-xl bg-navy-800/60 backdrop-blur-sm hover:bg-navy-700/80 transition-colors ${collapsed ? 'justify-center' : ''}`}
             >
-              {user?.username?.[0]?.toUpperCase() ?? 'U'}
-            </div>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="text-xs text-navy-100 font-semibold truncate">{user?.username}</p>
-                <p className="text-[10px] text-navy-400">{user?.role}</p>
+              <div
+                className="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-bold text-white"
+                style={{
+                  background: 'linear-gradient(135deg, #F05A28, #C84820)',
+                  boxShadow: '0 2px 8px rgba(240,90,40,0.25)',
+                }}
+              >
+                {user?.username?.[0]?.toUpperCase() ?? 'U'}
               </div>
-            )}
-          </motion.div>
+              {!collapsed && (
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-navy-100 font-semibold truncate">{user?.username}</p>
+                  <p className="text-[10px] text-navy-400">{user?.role}</p>
+                </div>
+              )}
+            </motion.div>
+          </NavLink>
 
           {/* Logout */}
           <motion.button
