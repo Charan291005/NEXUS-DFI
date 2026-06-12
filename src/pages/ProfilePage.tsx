@@ -42,7 +42,7 @@ export default function ProfilePage() {
         {/* Left Column - User Details */}
         <div className="lg:col-span-1 space-y-6">
           <div className="glass p-6 text-center">
-            <div className="w-24 h-24 mx-auto rounded-2xl flex items-center justify-center text-4xl font-bold text-white mb-4 shadow-[0_0_20px_rgba(240,90,40,0.3)]" style={{ background: 'linear-gradient(135deg, #F05A28, #C84820)' }}>
+            <div className="w-24 h-24 mx-auto rounded-2xl flex items-center justify-center text-4xl font-bold text-white mb-4 shadow-[0_0_20px_rgba(220,38,38,0.3)]" style={{ background: 'linear-gradient(135deg, #DC2626, #991B1B)' }}>
               {user?.username?.[0]?.toUpperCase() ?? 'U'}
             </div>
             <h2 className="text-xl font-bold text-white truncate">{user?.username}</h2>
@@ -131,9 +131,9 @@ export default function ProfilePage() {
                   className="relative pl-6"
                 >
                   <div className={`absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-navy-900 ${
-                    log.type === 'auth' ? 'bg-teal-500' :
-                    log.type === 'case' ? 'bg-accent-400' :
-                    log.type === 'analysis' ? 'bg-purple-500' : 'bg-blue-500'
+                    log.type === 'auth' ? 'bg-blue-500' :
+                    log.type === 'case' ? 'bg-red-500' :
+                    log.type === 'analysis' ? 'bg-amber-500' : 'bg-blue-400'
                   }`}></div>
                   <p className="text-sm text-white">{log.action}</p>
                   <p className="text-xs text-navy-400 mt-0.5">{log.time}</p>
