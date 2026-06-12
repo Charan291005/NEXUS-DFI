@@ -4,13 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/dashboard',   icon: '⬡',  label: 'Dashboard',       color: '#F05A28', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/cases',       icon: '📂', label: 'Cases',            color: '#00D4AA', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/evidence',   icon: '🔍', label: 'Evidence',         color: '#F05A28', allowedRoles: ['Admin', 'Investigator'] },
-  { to: '/timeline',   icon: '⏱',  label: 'Timeline',         color: '#00D4AA', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/reports',    icon: '📑', label: 'Reports',          color: '#F05A28', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/assistant',  icon: '🤖', label: 'AI Assistant',     color: '#00D4AA', allowedRoles: ['Admin', 'Investigator'] },
-  { to: '/threat-intel', icon: '🕵️', label: 'Threat Intel', color: '#7b2fff', allowedRoles: ['Admin'] },
+  { to: '/dashboard',   icon: '⬡',  label: 'Dashboard',       color: '#DC2626', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/cases',       icon: '📂', label: 'Cases',            color: '#3B82F6', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/evidence',   icon: '🔍', label: 'Evidence',         color: '#DC2626', allowedRoles: ['Admin', 'Investigator'] },
+  { to: '/timeline',   icon: '⏱',  label: 'Timeline',         color: '#3B82F6', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/reports',    icon: '📑', label: 'Reports',          color: '#DC2626', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/assistant',  icon: '🤖', label: 'AI Assistant',     color: '#3B82F6', allowedRoles: ['Admin', 'Investigator'] },
+  { to: '/threat-intel', icon: '🕵️', label: 'Threat Intel', color: '#EF4444', allowedRoles: ['Admin'] },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -65,10 +65,10 @@ export default function Layout() {
 
         {/* Ambient glow inside sidebar */}
         <div className="absolute top-0 left-0 w-40 h-40 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(240,90,40,0.07), transparent 70%)', filter: 'blur(40px)' }}
+          style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.06), transparent 70%)', filter: 'blur(40px)' }}
         />
         <div className="absolute bottom-20 right-0 w-32 h-32 rounded-full pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(0,212,170,0.05), transparent 70%)', filter: 'blur(30px)' }}
+          style={{ background: 'radial-gradient(circle, rgba(0,31,63,0.08), transparent 70%)', filter: 'blur(30px)' }}
         />
 
         {/* Logo */}
@@ -76,13 +76,14 @@ export default function Layout() {
           <motion.div
             whileHover={{ scale: 1.05, rotate: 2 }}
             whileTap={{ scale: 0.95 }}
-            className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center logo-pulse"
+            className="w-10 h-10 flex-shrink-0 rounded-xl flex items-center justify-center overflow-hidden"
             style={{
-              background: 'linear-gradient(135deg, #F05A28, #C84820)',
-              boxShadow: '0 4px 16px rgba(240,90,40,0.35)',
+              background: '#F8FAFC',
+              boxShadow: '0 4px 16px rgba(220,38,38,0.2)',
+              border: '1px solid rgba(220,38,38,0.2)',
             }}
           >
-            <span className="text-white font-bold text-sm font-display">NX</span>
+            <img src="/nexusdfi-logo.png" alt="NexusDFI" className="w-7 h-7 object-contain" />
           </motion.div>
           <AnimatePresence>
             {!collapsed && (
@@ -93,7 +94,7 @@ export default function Layout() {
                 transition={{ duration: 0.2 }}
               >
                 <p className="text-white font-bold text-sm leading-tight font-display tracking-wide">NexusDFI</p>
-                <p className="text-[10px] tracking-[0.2em] mono" style={{ color: '#F05A28' }}>FORENSICS INTEL</p>
+                <p className="text-[10px] tracking-[0.2em] mono" style={{ color: '#DC2626' }}>FORENSICS INTEL</p>
               </motion.div>
             )}
           </AnimatePresence>
@@ -145,8 +146,8 @@ export default function Layout() {
               <div
                 className="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center text-xs font-bold text-white"
                 style={{
-                  background: 'linear-gradient(135deg, #F05A28, #C84820)',
-                  boxShadow: '0 2px 8px rgba(240,90,40,0.25)',
+                  background: 'linear-gradient(135deg, #DC2626, #991B1B)',
+                  boxShadow: '0 2px 8px rgba(220,38,38,0.25)',
                 }}
               >
                 {user?.username?.[0]?.toUpperCase() ?? 'U'}
@@ -199,26 +200,26 @@ export default function Layout() {
           className="sticky top-0 z-10 px-6 py-3 flex items-center justify-between border-b border-navy-700/40"
           style={{
             borderRadius: 0,
-            background: 'rgba(7,11,20,0.88)',
+            background: 'rgba(17,24,39,0.88)',
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
           }}
         >
           <div className="flex items-center gap-3">
-            <div className="w-1.5 h-1.5 rounded-full bg-accent-400 pulse-dot" style={{ background: '#F05A28' }} />
+            <div className="w-1.5 h-1.5 rounded-full bg-accent-400 pulse-dot" style={{ background: '#DC2626' }} />
             <h2 className="text-sm font-semibold text-navy-100 font-display tracking-wide">{currentPage}</h2>
           </div>
           <div className="flex items-center gap-4">
             {/* System status pill */}
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-teal-500/20 bg-teal-500/5">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-blue-500/20 bg-blue-500/5">
               <span className="status-dot" />
-              <span className="text-[10px] font-mono font-semibold tracking-widest" style={{ color: '#00D4AA' }}>SYS ONLINE</span>
+              <span className="text-[10px] font-mono font-semibold tracking-widest" style={{ color: '#3B82F6' }}>SYS ONLINE</span>
             </div>
             <span className="text-[11px] text-navy-400 mono">
               {time.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
             </span>
             <div className="h-4 w-px bg-navy-700/60" />
-            <span className="text-[11px] mono tabular-nums font-semibold" style={{ color: '#F05A28' }}>
+            <span className="text-[11px] mono tabular-nums font-semibold" style={{ color: '#DC2626' }}>
               {time.toLocaleTimeString('en-IN', { hour12: false })}
             </span>
           </div>
@@ -247,8 +248,8 @@ export default function Layout() {
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 50, scale: 0.9 }}
-            className="fixed bottom-6 right-6 z-50 glass p-5 max-w-sm rounded-2xl shadow-[0_10px_40px_rgba(240,90,40,0.2)] border border-orange-500/30"
-            style={{ background: 'rgba(20, 10, 5, 0.95)' }}
+            className="fixed bottom-6 right-6 z-50 glass p-5 max-w-sm rounded-2xl shadow-[0_10px_40px_rgba(220,38,38,0.2)] border border-red-500/30"
+            style={{ background: 'rgba(17, 24, 39, 0.95)' }}
           >
             <div className="flex items-start gap-3">
               <div className="text-2xl mt-0.5">⚠️</div>
@@ -259,7 +260,7 @@ export default function Layout() {
                 </p>
                 <div className="flex gap-2">
                   <button 
-                    className="flex-1 py-1.5 px-3 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-lg hover:brightness-110 transition-all cursor-pointer"
+                    className="flex-1 py-1.5 px-3 bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-bold rounded-lg hover:brightness-110 transition-all cursor-pointer"
                   >
                     Stay Logged In
                   </button>

@@ -93,7 +93,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex relative overflow-hidden" style={{ background: '#070B14' }}>
+    <div className="min-h-screen flex relative overflow-hidden" style={{ background: '#111827' }}>
       {/* Hex grid overlay */}
       <div className="absolute inset-0 hex-grid opacity-70" />
 
@@ -109,7 +109,7 @@ export default function LoginPage() {
         }}
         transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
         className="hidden sm:block absolute top-1/4 left-1/4 w-[600px] h-[600px] rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(240,90,40,0.08), transparent 60%)', filter: 'blur(70px)' }}
+        style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.06), transparent 60%)', filter: 'blur(70px)' }}
       />
       <motion.div
         animate={{
@@ -119,7 +119,7 @@ export default function LoginPage() {
         }}
         transition={{ duration: 28, repeat: Infinity, ease: 'easeInOut' }}
         className="hidden sm:block absolute bottom-1/4 right-1/4 w-[500px] h-[500px] rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(0,212,170,0.06), transparent 60%)', filter: 'blur(70px)' }}
+        style={{ background: 'radial-gradient(circle, rgba(0,31,63,0.1), transparent 60%)', filter: 'blur(70px)' }}
       />
       <motion.div
         animate={{
@@ -128,7 +128,7 @@ export default function LoginPage() {
         }}
         transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
         className="hidden sm:block absolute top-3/4 left-1/5 w-[350px] h-[350px] rounded-full"
-        style={{ background: 'radial-gradient(circle, rgba(240,90,40,0.04), transparent 60%)', filter: 'blur(60px)' }}
+        style={{ background: 'radial-gradient(circle, rgba(220,38,38,0.03), transparent 60%)', filter: 'blur(60px)' }}
       />
 
       {/* Left panel — branding (hidden on small screens) */}
@@ -137,17 +137,18 @@ export default function LoginPage() {
           {/* Logo */}
           <div className="flex items-center gap-3 mb-16">
             <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center logo-pulse"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, #F05A28, #C84820)',
-                boxShadow: '0 8px 32px rgba(240,90,40,0.35)',
+                background: '#F8FAFC',
+                boxShadow: '0 8px 32px rgba(220,38,38,0.2)',
+                border: '1px solid rgba(220,38,38,0.2)',
               }}
             >
-              <span className="text-white font-bold text-xl font-display">NX</span>
+              <img src="/nexusdfi-logo.png" alt="NexusDFI" className="w-10 h-10 object-contain" />
             </div>
             <div>
               <p className="text-white font-bold text-lg font-display">NexusDFI</p>
-              <p className="text-[10px] tracking-[0.22em] mono font-medium" style={{ color: '#F05A28' }}>FORENSICS INTELLIGENCE</p>
+              <p className="text-[10px] tracking-[0.22em] mono font-medium" style={{ color: '#DC2626' }}>FORENSICS INTELLIGENCE</p>
             </div>
           </div>
 
@@ -182,8 +183,8 @@ export default function LoginPage() {
                 transition={{ delay: 0.6 + i * 0.08 }}
                 className="px-3 py-1.5 rounded-full text-xs font-medium text-navy-200"
                 style={{
-                  background: 'rgba(14,22,40,0.85)',
-                  border: '1px solid rgba(240,90,40,0.18)',
+                  background: 'rgba(22,32,54,0.85)',
+                  border: '1px solid rgba(220,38,38,0.18)',
                 }}
               >
                 {pill}
@@ -221,8 +222,8 @@ export default function LoginPage() {
           className="glass w-full max-w-md"
           style={{
             padding: '2rem',
-            boxShadow: '0 30px 90px rgba(0,0,0,0.6), 0 0 50px rgba(240,90,40,0.06)',
-            border: '1px solid rgba(240,90,40,0.12)',
+            boxShadow: '0 30px 90px rgba(0,0,0,0.6), 0 0 50px rgba(220,38,38,0.06)',
+            border: '1px solid rgba(220,38,38,0.12)',
           }}
         >
           {/* Header */}
@@ -230,16 +231,17 @@ export default function LoginPage() {
             <motion.div
               whileHover={{ scale: 1.06, rotate: 3 }}
               whileTap={{ scale: 0.95 }}
-              className="w-18 h-18 w-[72px] h-[72px] mx-auto mb-5 rounded-2xl flex items-center justify-center logo-pulse"
+              className="w-[80px] h-[80px] mx-auto mb-5 rounded-2xl flex items-center justify-center overflow-hidden"
               style={{
-                background: 'linear-gradient(135deg, #F05A28, #C84820)',
-                boxShadow: '0 10px 36px rgba(240,90,40,0.35)',
+                background: '#F8FAFC',
+                boxShadow: '0 10px 36px rgba(220,38,38,0.2)',
+                border: '1px solid rgba(220,38,38,0.2)',
               }}
             >
-              <span className="text-white font-bold text-2xl font-display">NX</span>
+              <img src="/nexusdfi-logo.png" alt="NexusDFI" className="w-14 h-14 object-contain" />
             </motion.div>
             <h1 className="text-2xl font-bold text-white mb-1 font-display tracking-wide">NexusDFI</h1>
-            <p className="text-xs tracking-[0.22em] font-semibold uppercase mono" style={{ color: '#F05A28' }}>
+            <p className="text-xs tracking-[0.22em] font-semibold uppercase mono" style={{ color: '#DC2626' }}>
               Digital Forensics Intelligence
             </p>
             <p className="text-sm text-navy-400 mt-2.5">Enterprise Digital Evidence Management</p>
@@ -250,13 +252,13 @@ export default function LoginPage() {
             variants={fadeUp}
             className="flex items-center gap-2 mb-6 px-3 py-2.5 rounded-lg"
             style={{
-              background: 'rgba(0,212,170,0.06)',
-              border: '1px solid rgba(0,212,170,0.14)',
+              background: 'rgba(59,130,246,0.06)',
+              border: '1px solid rgba(59,130,246,0.14)',
             }}
           >
             <div className="status-dot" />
-            <span className="text-xs font-medium" style={{ color: '#00D4AA' }}>Secure Connection Established</span>
-            <span className="ml-auto text-[10px] mono" style={{ color: '#4A6080' }}>TLS 1.3</span>
+            <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>Secure Connection Established</span>
+            <span className="ml-auto text-[10px] mono" style={{ color: '#4A5568' }}>TLS 1.3</span>
           </motion.div>
 
           {/* Sign In form */}
@@ -268,7 +270,7 @@ export default function LoginPage() {
                   placeholder="Email Address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-navy-900/50 border border-navy-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500 transition-colors placeholder:text-navy-500 text-sm"
+                  className="w-full bg-navy-900/50 border border-navy-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 transition-colors placeholder:text-navy-500 text-sm"
                   required
                 />
               </motion.div>
@@ -278,7 +280,7 @@ export default function LoginPage() {
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-navy-900/50 border border-navy-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-orange-500 transition-colors placeholder:text-navy-500 text-sm"
+                  className="w-full bg-navy-900/50 border border-navy-700 text-white px-4 py-3 rounded-xl focus:outline-none focus:border-red-500 transition-colors placeholder:text-navy-500 text-sm"
                   required
                 />
               </motion.div>
@@ -291,8 +293,8 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full flex items-center justify-center py-3.5 px-4 rounded-xl transition-all relative overflow-hidden group"
                 style={{
-                  background: 'linear-gradient(135deg, #F05A28, #C84820)',
-                  boxShadow: '0 8px 32px rgba(240,90,40,0.25)',
+                  background: 'linear-gradient(135deg, #DC2626, #991B1B)',
+                  boxShadow: '0 8px 32px rgba(220,38,38,0.25)',
                 }}
               >
                 {loading ? <Spinner size="sm" /> : <span className="text-white font-medium">{isSignUp ? 'Sign Up' : 'Sign In'}</span>}
