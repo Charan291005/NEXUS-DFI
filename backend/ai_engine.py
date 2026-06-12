@@ -12,12 +12,13 @@ import random
 import hashlib
 import json
 import time
+import math
 from pathlib import Path
 from typing import Dict, Any, List
 
 # Optional heavy deps — graceful fallback if not installed
 try:
-    from PIL import Image, ImageChops, ImageEnhance
+    from PIL import Image, ImageChops, ImageEnhance, ExifTags
     import numpy as np
     PIL_AVAILABLE = True
 except ImportError:
@@ -32,219 +33,178 @@ except ImportError:
 
 # ── Image Forensics (ELA) ─────────────────────────────────
 def run_image_forensics(filepath: str) -> Dict[str, Any]:
-    """
-    Run Error Level Analysis (ELA) and metadata extraction.
-    Returns findings dict with risk_score and structured findings.
-    """
+    """Authentic Image Forensics using Hashing, EXIF, ELA MSE, and Sensor Noise Variance."""
     if not PIL_AVAILABLE:
-        return _mock_image_forensics(filepath)
+        raise RuntimeError("Image analysis requires PIL and numpy to be installed.")
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"File not found: {filepath}")
 
     try:
+        # 1. Cryptographic Fingerprinting
+        with open(filepath, "rb") as f:
+            file_bytes = f.read()
+        sha256 = hashlib.sha256(file_bytes).hexdigest()
+        md5 = hashlib.md5(file_bytes).hexdigest()
+
         img = Image.open(filepath).convert("RGB")
         width, height = img.size
 
-        # ELA: re-save at quality 90, compute difference
+        findings = []
+        risk_score = 0
+
+        # 2. Comprehensive Metadata Extraction
+        meta: Dict[str, str] = {}
+        missing_capture_date = True
+        try:
+            exif = img.getexif()
+            if exif:
+                for tag_id, value in exif.items():
+                    tag_name = ExifTags.TAGS.get(tag_id, tag_id)
+                    meta[str(tag_name)] = str(value)
+                    if tag_name in ("DateTimeOriginal", "DateTimeDigitized"):
+                        missing_capture_date = False
+
+                if "Software" in meta and any(s in meta["Software"] for s in ["Photoshop", "GIMP", "Lightroom"]):
+                    findings.append({"category": "Metadata Analysis", "severity": "Medium", "description": f"Editing software artifact detected: {meta['Software']}", "value": "Found"})
+                    risk_score += 25
+        except Exception:
+            pass
+
+        if missing_capture_date:
+            findings.append({"category": "Metadata Analysis", "severity": "Low", "description": "Missing original capture timestamp (DateTimeOriginal). Common in scrubbed or web-downloaded files.", "value": "Missing"})
+            risk_score += 10
+
+        # 3. Error Level Analysis (ELA) with MSE
         buf = io.BytesIO()
         img.save(buf, "JPEG", quality=90)
         buf.seek(0)
         ela_img = Image.open(buf).convert("RGB")
         diff = ImageChops.difference(img, ela_img)
-
+        
         arr = np.array(diff, dtype=np.float32)
-        ela_score = int(min(arr.mean() * 20, 100))
+        mse = np.mean((arr) ** 2)
+        ela_severity = "High" if mse > 100 else "Medium" if mse > 30 else "Safe"
+        if mse > 100: risk_score += 40
+        elif mse > 30: risk_score += 20
+        findings.append({"category": "Error Level Analysis (ELA)", "severity": ela_severity, "description": f"Compression anomaly analysis using Mean Squared Error (MSE={mse:.2f})", "value": f"MSE: {mse:.2f}"})
 
-        # EXIF metadata
-        meta: Dict[str, str] = {}
-        try:
-            exif = img._getexif() or {}
-            TAG_MAP = {
-                271: "Camera Make", 272: "Camera Model",
-                305: "Software",    306: "Date Modified",
-                36867: "Date Taken", 37377: "Shutter Speed",
-                37378: "Aperture",   37386: "Focal Length",
-            }
-            for tag, name in TAG_MAP.items():
-                val = exif.get(tag)
-                if val:
-                    meta[name] = str(val)
-        except Exception:
-            pass
-
-        # Risk heuristics
-        risk_score = ela_score
-        findings = []
-
-        if ela_score > 60:
-            findings.append({"category": "ELA Analysis", "severity": "High",
-                             "description": f"Inconsistent compression artifacts detected (ELA={ela_score}%)",
-                             "value": f"{ela_score}%"})
-        elif ela_score > 30:
-            findings.append({"category": "ELA Analysis", "severity": "Medium",
-                             "description": "Moderate compression irregularities found",
-                             "value": f"{ela_score}%"})
-        else:
-            findings.append({"category": "ELA Analysis", "severity": "Safe",
-                             "description": "Compression levels appear consistent",
-                             "value": f"{ela_score}%"})
-
-        if "Software" in meta and any(s in meta["Software"] for s in ["Photoshop", "GIMP", "Lightroom"]):
-            findings.append({"category": "Metadata — Software",  "severity": "Medium",
-                             "description": f"Editing software detected: {meta['Software']}",
-                             "value": meta["Software"]})
-            risk_score = min(risk_score + 20, 100)
-
-        if "Date Taken" not in meta:
-            findings.append({"category": "Metadata — Timestamp", "severity": "Low",
-                             "description": "Capture timestamp missing from EXIF",
-                             "value": "Missing"})
-
-        findings.append({"category": "Image Dimensions", "severity": "Safe",
-                         "description": f"Image resolution: {width}×{height} px",
-                         "value": f"{width}×{height}"})
-
+        # 4. Sensor Noise Analysis (Laplacian Variance)
+        if CV2_AVAILABLE:
+            cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2GRAY)
+            variance = cv2.Laplacian(cv_img, cv2.CV_64F).var()
+            blur_severity = "Medium" if variance < 50 else "Safe"
+            if variance < 50: risk_score += 15
+            findings.append({"category": "Sensor Noise Variance", "severity": blur_severity, "description": f"Focus/blur measure (Variance={variance:.1f}). Low variance indicates smoothing/tampering.", "value": f"Var: {variance:.1f}"})
+        
+        # Assemble results
+        risk_score = min(risk_score, 100)
         summary = (
-            f"ELA scan complete. Risk score {risk_score}/100. "
-            + ("High probability of tampering detected." if risk_score > 60
-               else "Minor anomalies detected." if risk_score > 30
-               else "No significant tampering indicators found.")
+            f"Forensic pipeline executed successfully. Peak risk score: {risk_score}/100. " + 
+            ("Significant tampering artifacts found." if risk_score >= 60 else "Minor inconsistencies detected." if risk_score >= 30 else "Image structure appears authentic.")
         )
-
+        
         return {
             "risk_score": risk_score,
             "result": {
                 "summary": summary,
                 "findings": findings,
                 "metadata": meta if meta else {"Note": "No EXIF metadata found"},
-                "ela_risk": ela_score,
-                "recommendation": (
-                    "Immediate manual review recommended. Submit to certified forensics lab."
-                    if risk_score > 60 else
-                    "Moderate risk. Monitor and cross-reference with other evidence."
-                    if risk_score > 30 else
-                    "Image appears authentic. Document as supporting evidence."
-                ),
-            },
+                "hashes": {"SHA-256": sha256, "MD5": md5},
+                "recommendation": "Submit for lab verification." if risk_score >= 60 else "Monitor.",
+            }
         }
     except Exception as e:
-        return _mock_image_forensics(filepath)
-
-
-def _mock_image_forensics(filepath: str) -> Dict[str, Any]:
-    """Deterministic mock for when PIL/OpenCV are unavailable."""
-    seed = int(hashlib.md5(filepath.encode()).hexdigest()[:8], 16) % 100
-    score = 40 + (seed % 55)
-    sev = "High" if score > 60 else "Medium" if score > 30 else "Low"
-    return {
-        "risk_score": score,
-        "result": {
-            "summary": f"ELA analysis complete. Risk score {score}/100. Tampering indicators {'detected' if score > 60 else 'possible'}.",
-            "findings": [
-                {"category": "ELA Analysis",    "severity": sev,      "description": f"Compression artifact analysis score: {score}%", "value": f"{score}%"},
-                {"category": "Metadata",        "severity": "Medium", "description": "GPS coordinates stripped — possible editing",     "value": "Missing"},
-                {"category": "Clone Detection", "severity": sev,      "description": "Pixel duplication analysis complete",              "value": "2 regions"},
-            ],
-            "metadata": {"Camera Model": "Canon EOS 5D Mark IV", "Software": "Adobe Photoshop 2024", "Resolution": "4800×3200"},
-            "ela_risk": score,
-            "recommendation": "Submit to certified forensics lab for secondary verification." if score > 60 else "Monitor and cross-reference.",
-        },
-    }
+        raise RuntimeError(f"Authentic image forensics failed: {e}")
 
 
 # ── Deepfake Detection ────────────────────────────────────
 def run_deepfake_detection(filepath: str) -> Dict[str, Any]:
-    """
-    Multi-stage deepfake detection pipeline.
-    Uses frequency domain analysis + heuristics.
-    In production, replace with DeepFaceLab / FaceForensics++ model.
-    """
-    if not PIL_AVAILABLE:
-        return _mock_deepfake(filepath)
+    """Authentic Deepfake Detection using Haar Cascades, FFT, and Laplacian Variance."""
+    if not CV2_AVAILABLE or not PIL_AVAILABLE:
+        raise RuntimeError("Deepfake analysis requires OpenCV and numpy.")
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"File not found: {filepath}")
 
     try:
-        img = Image.open(filepath).convert("RGB") if filepath.lower().endswith(
-            ('.jpg', '.jpeg', '.png', '.bmp', '.webp')) else None
-
+        img = cv2.imread(filepath)
         if img is None:
-            return _mock_deepfake(filepath)
-
-        arr = np.array(img, dtype=np.float32)
-
-        # Frequency domain analysis (simplified GAN fingerprint detection)
-        gray = np.mean(arr, axis=2)
-        fft  = np.fft.fft2(gray)
+            raise ValueError("Unable to read image for deepfake analysis.")
+        
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        
+        # 1. Face Detection
+        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+        face_cascade = cv2.CascadeClassifier(cascade_path)
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(60, 60))
+        
+        findings = []
+        risk_score = 0
+        
+        if len(faces) == 0:
+            return {
+                "risk_score": 10,
+                "result": {
+                    "summary": "No faces detected in the image/video frame. Deepfake analysis is not applicable.",
+                    "findings": [{"category": "Face Detection", "severity": "Safe", "description": "Haar Cascade failed to identify any frontal faces.", "value": "0 Faces"}],
+                    "recommendation": "Manual review if faces are known to be present."
+                }
+            }
+        
+        findings.append({"category": "Face Detection", "severity": "Safe", "description": f"Identified {len(faces)} face(s) for targeted region analysis.", "value": f"{len(faces)} Faces"})
+        
+        # Focus on the largest face for FFT and Blending analysis
+        faces = sorted(faces, key=lambda x: x[2] * x[3], reverse=True)
+        x, y, w, h = faces[0]
+        face_roi_gray = gray[y:y+h, x:x+w]
+        
+        # 2. Frequency Domain Analysis (FFT on Face ROI)
+        fft = np.fft.fft2(face_roi_gray)
         fft_shift = np.fft.fftshift(fft)
         magnitude = np.log(np.abs(fft_shift) + 1)
-
-        # GAN-generated images show periodic patterns in frequency domain
-        h, w = magnitude.shape
-        center_region = magnitude[h//4:3*h//4, w//4:3*w//4]
-        edge_region   = np.concatenate([magnitude[:h//4].ravel(), magnitude[3*h//4:].ravel()])
+        
+        r_h, r_w = magnitude.shape
+        center_region = magnitude[r_h//4:3*r_h//4, r_w//4:3*r_w//4]
+        edge_region = np.concatenate([magnitude[:r_h//4].ravel(), magnitude[3*r_h//4:].ravel()])
         ratio = float(center_region.mean() / (edge_region.mean() + 1e-6))
+        
+        # Authentic GAN models often lack high frequency details compared to real images
+        fft_severity = "High" if ratio > 2.0 else "Medium" if ratio > 1.5 else "Safe"
+        if ratio > 2.0: risk_score += 45
+        elif ratio > 1.5: risk_score += 25
+        findings.append({"category": "Facial Frequency Analysis (FFT)", "severity": fft_severity, "description": "GAN high-frequency artifact assessment on Region of Interest.", "value": f"Ratio: {ratio:.2f}"})
+        
+        # 3. Noise Variance / Blending Detection
+        laplacian_face = cv2.Laplacian(face_roi_gray, cv2.CV_64F).var()
+        bg_mask = np.ones(gray.shape, dtype=np.uint8)
+        bg_mask[y:y+h, x:x+w] = 0
+        bg_pixels = cv2.bitwise_and(gray, gray, mask=bg_mask)
+        laplacian_bg = cv2.Laplacian(bg_pixels, cv2.CV_64F).var()
+        
+        # A significant difference in variance between face and background implies splicing or GAN generation
+        var_diff = abs(laplacian_face - laplacian_bg)
+        blend_severity = "High" if var_diff > 1000 else "Medium" if var_diff > 500 else "Safe"
+        if var_diff > 1000: risk_score += 40
+        elif var_diff > 500: risk_score += 20
+        findings.append({"category": "Color & Blending Consistency", "severity": blend_severity, "description": f"Comparison of face noise variance ({laplacian_face:.1f}) vs background ({laplacian_bg:.1f}).", "value": f"ΔVar: {var_diff:.1f}"})
 
-        # Heuristic: GANs concentrate energy differently
-        confidence = int(min(max((ratio - 1.5) * 40, 10), 95))
-
-        # Color inconsistency analysis
-        r_ch, g_ch, b_ch = arr[:,:,0], arr[:,:,1], arr[:,:,2]
-        color_std = float(np.std([r_ch.std(), g_ch.std(), b_ch.std()]))
-        if color_std < 5:
-            confidence = min(confidence + 15, 95)
-
-        sev_map = [(75, "Critical"), (55, "High"), (35, "Medium"), (0, "Low")]
-        severity = next(s for threshold, s in sev_map if confidence >= threshold)
-
-        findings = [
-            {"category": "Frequency Domain Analysis", "severity": severity,
-             "description": "FFT-based GAN fingerprint analysis complete",
-             "value": f"{confidence}%"},
-            {"category": "Color Consistency",          "severity": "Medium" if color_std < 5 else "Safe",
-             "description": "Inter-channel color distribution analysis",
-             "value": f"σ={color_std:.2f}"},
-            {"category": "Facial Landmark Detection",  "severity": severity,
-             "description": "Facial geometry consistency check",
-             "value": "Analyzed"},
-            {"category": "GAN Fingerprint",            "severity": "Critical" if confidence > 70 else "Medium",
-             "description": "StyleGAN2/ProGAN signature search complete",
-             "value": "Detected" if confidence > 60 else "Not detected"},
-        ]
-
+        # Assemble results
+        risk_score = min(risk_score, 100)
+        summary = (
+            f"Authentic deepfake pipeline executed. Peak confidence: {risk_score}%. " +
+            ("High probability of synthetic face generation or splicing." if risk_score >= 65 else "Moderate anomalies detected in facial regions." if risk_score >= 35 else "Facial region appears natural.")
+        )
+        
         return {
-            "risk_score": confidence,
+            "risk_score": risk_score,
             "result": {
-                "summary": f"Deepfake analysis complete. Confidence: {confidence}%. {'AI-generated content strongly suspected.' if confidence > 75 else 'Moderate deepfake indicators.' if confidence > 50 else 'Low deepfake probability.'}",
+                "summary": summary,
                 "findings": findings,
-                "deepfake_confidence": confidence,
-                "recommendation": (
-                    "Content is very likely AI-generated. Do not use as authentic evidence without lab verification."
-                    if confidence > 75 else
-                    "Deepfake indicators present. Additional analysis recommended."
-                    if confidence > 50 else
-                    "Content appears authentic. Low deepfake probability."
-                ),
-            },
+                "deepfake_confidence": risk_score,
+                "recommendation": "Subject to verified lab screening immediately." if risk_score >= 65 else "Monitor and cross-reference with timeline."
+            }
         }
-    except Exception:
-        return _mock_deepfake(filepath)
-
-
-def _mock_deepfake(filepath: str) -> Dict[str, Any]:
-    seed = int(hashlib.md5(filepath.encode()).hexdigest()[:8], 16) % 100
-    conf = 45 + (seed % 50)
-    sev  = "Critical" if conf > 75 else "High" if conf > 55 else "Medium"
-    return {
-        "risk_score": conf,
-        "result": {
-            "summary": f"Deepfake analysis complete. Confidence: {conf}%. {'AI-generated content strongly suspected.' if conf > 75 else 'Moderate indicators present.'}",
-            "findings": [
-                {"category": "Facial Blending",       "severity": sev,      "description": "Skin tone inconsistency across facial regions",   "value": f"{conf}%"},
-                {"category": "Eye Blink Pattern",     "severity": "High",   "description": "Unnatural eye blink frequency (0.4x normal)",    "value": "Abnormal"},
-                {"category": "Temporal Coherence",    "severity": sev,      "description": "Frame-to-frame landmark inconsistency detected",  "value": f"{conf-5}%"},
-                {"category": "GAN Fingerprint",       "severity": "Critical","description": "StyleGAN2 generation signature identified",      "value": "Detected"},
-            ],
-            "deepfake_confidence": conf,
-            "recommendation": "Content is very likely AI-generated. Lab verification required before legal proceedings.",
-        },
-    }
+    except Exception as e:
+        raise RuntimeError(f"Authentic deepfake detection failed: {e}")
 
 
 # ── Log Analysis ─────────────────────────────────────────
@@ -261,97 +221,94 @@ SUSPICIOUS_PATTERNS = [
     (r'(root|admin|administrator)',                                   'ADMIN_ACTIVITY',         'Medium',   'Administrative account activity'),
 ]
 
+def _shannon_entropy(data: str) -> float:
+    """Calculates Shannon entropy of a string."""
+    if not data:
+        return 0.0
+    entropy = 0.0
+    for x in set(data):
+        p_x = float(data.count(x)) / len(data)
+        entropy -= p_x * math.log(p_x, 2)
+    return entropy
+
 def run_log_analysis(filepath: str) -> Dict[str, Any]:
-    """Analyze log files for suspicious events using regex pattern matching."""
+    """Authentic Log Analysis using IoC Extraction, Shannon Entropy, and Signature Matching."""
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"File not found: {filepath}")
+
     try:
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-            content = f.read()
-        lines = content.splitlines()
-    except Exception:
-        return _mock_log_analysis(filepath)
+            lines = f.readlines()
+        
+        findings = []
+        events = []
+        risk_score = 0
+        
+        # 1. IoC Extraction
+        content = "".join(lines)
+        ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
+        ips = list(set(re.findall(ip_pattern, content)))
+        email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+        emails = list(set(re.findall(email_pattern, content)))
+        
+        if ips or emails:
+            desc = f"Extracted {len(ips)} IPs and {len(emails)} emails for threat intelligence correlation."
+            findings.append({"category": "IoC Extraction", "severity": "Medium" if len(ips) > 5 else "Low", "description": desc, "value": f"{len(ips)} IPs"})
 
-    events = []
-    finding_counts: Dict[str, int] = {}
+        # 2. Shannon Entropy Profiling (Detecting Base64 / Encrypted payloads)
+        high_entropy_count = 0
+        for i, line in enumerate(lines[:10000]):
+            ent = _shannon_entropy(line.strip())
+            if ent > 5.8:  # Typical english text is ~3.5-4.5. Base64/Crypto is > 5.8
+                high_entropy_count += 1
+                if high_entropy_count <= 5:  # Log the first few
+                    events.append({"timestamp": f"Line {i+1}", "type": "OBFUSCATION", "message": line.strip()[:100] + "...", "severity": "High"})
+        
+        if high_entropy_count > 0:
+            risk_score += min(high_entropy_count * 5, 40)
+            findings.append({"category": "Shannon Entropy Profiling", "severity": "High", "description": f"{high_entropy_count} lines found with abnormally high entropy (potential base64 payload).", "value": f"{high_entropy_count} Lines"})
+        else:
+            findings.append({"category": "Shannon Entropy Profiling", "severity": "Safe", "description": "No obfuscated or encrypted payloads detected in logs.", "value": "Normal"})
 
-    for i, line in enumerate(lines[:5000]):  # limit to 5000 lines
-        for pattern, event_type, severity, description in SUSPICIOUS_PATTERNS:
-            if re.search(pattern, line, re.IGNORECASE):
-                events.append({
-                    "timestamp":  _extract_timestamp(line) or f"Line {i+1}",
-                    "type":       event_type,
-                    "message":    line.strip()[:200],
-                    "severity":   severity,
-                })
-                finding_counts[event_type] = finding_counts.get(event_type, 0) + 1
-                break  # one match per line
+        # 3. Signature & Pattern Matching
+        finding_counts = {}
+        for i, line in enumerate(lines[:10000]):
+            for pattern, event_type, severity, description in SUSPICIOUS_PATTERNS:
+                if re.search(pattern, line, re.IGNORECASE):
+                    finding_counts[event_type] = finding_counts.get(event_type, 0) + 1
+                    if finding_counts[event_type] <= 3:
+                        events.append({"timestamp": f"Line {i+1}", "type": event_type, "message": line.strip()[:100], "severity": severity})
 
-    # Risk score: weighted by severity
-    SEV_WEIGHTS = {"Critical": 20, "High": 10, "Medium": 5, "Low": 1}
-    raw_score = sum(SEV_WEIGHTS.get(e["severity"], 1) for e in events)
-    risk_score = min(int(raw_score * 2), 100)
+        sig_score = 0
+        SEV_WEIGHTS = {"Critical": 20, "High": 10, "Medium": 5, "Low": 1}
+        for event_type, count in finding_counts.items():
+            severity = next((sev for _, et, sev, _ in SUSPICIOUS_PATTERNS if et == event_type), "Low")
+            sig_score += SEV_WEIGHTS.get(severity, 1) * count
+            findings.append({"category": f"Signature: {event_type}", "severity": severity, "description": f"Matched threat signature {count} time(s).", "value": str(count)})
+        
+        risk_score += min(sig_score, 60)
+        risk_score = min(risk_score, 100)
 
-    # Summary findings
-    findings = []
-    for event_type, count in sorted(finding_counts.items(), key=lambda x: -x[1]):
-        severity = next((sev for _, et, sev, _ in SUSPICIOUS_PATTERNS if et == event_type), "Low")
-        findings.append({
-            "category":    event_type.replace("_", " ").title(),
-            "severity":    severity,
-            "description": f"{count} occurrence(s) detected in log file",
-            "value":       str(count),
-        })
+        summary = (
+            f"Authentic log analysis complete on {len(lines)} lines. Peak risk score: {risk_score}/100. " +
+            ("Critical threat signatures and anomalies identified." if risk_score >= 60 else "Suspicious anomalies flagged for review." if risk_score >= 30 else "Logs appear benign.")
+        )
+        
+        # Sort events by severity
+        sev_order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+        events.sort(key=lambda x: sev_order.get(x["severity"], 4))
 
-    if not findings:
-        findings.append({
-            "category":    "Log Scan",
-            "severity":    "Safe",
-            "description": "No suspicious patterns detected in log file",
-            "value":       "Clean",
-        })
-        risk_score = 5
-
-    return {
-        "risk_score": risk_score,
-        "result": {
-            "summary": f"Log analysis complete. {len(events)} suspicious events detected across {len(lines)} log entries.",
-            "findings": findings[:10],
-            "log_events": events[:20],
-            "recommendation": (
-                "Immediate incident escalation required. Isolate affected systems."
-                if risk_score > 60 else
-                "Suspicious activity detected. Review flagged events and monitor closely."
-                if risk_score > 30 else
-                "Log appears clean. No immediate action required."
-            ),
-        },
-    }
-
-
-def _extract_timestamp(line: str) -> str:
-    """Try to extract an ISO-like timestamp from a log line."""
-    m = re.search(r'\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}', line)
-    return m.group(0) if m else ""
-
-
-def _mock_log_analysis(filepath: str) -> Dict[str, Any]:
-    return {
-        "risk_score": 62,
-        "result": {
-            "summary": "Log analysis complete. 14 suspicious events detected.",
-            "findings": [
-                {"category": "Auth Failure",         "severity": "High",     "description": "247 failed login attempts in 3 minutes",   "value": "247"},
-                {"category": "Data Transfer",        "severity": "High",     "description": "2.3GB outbound to unknown external IP",     "value": "2.3 GB"},
-                {"category": "Privilege Escalation", "severity": "Critical", "description": "sudo privilege elevation without valid session", "value": "Detected"},
-            ],
-            "log_events": [
-                {"timestamp": "2026-05-28T03:42:17Z", "type": "AUTH_FAILURE",          "message": "Multiple authentication failures from 192.168.1.45", "severity": "High"},
-                {"timestamp": "2026-05-28T03:45:02Z", "type": "AUTH_SUCCESS",          "message": "Successful login after 247 failures",                  "severity": "Critical"},
-                {"timestamp": "2026-05-28T03:46:11Z", "type": "DATA_TRANSFER",         "message": "Large outbound transfer: 2.3GB to 185.234.xx.xx",      "severity": "High"},
-                {"timestamp": "2026-05-28T03:48:33Z", "type": "PRIVILEGE_ESCALATION", "message": "sudo -i executed, root shell obtained",                  "severity": "Critical"},
-            ],
-            "recommendation": "Incident escalation required. Isolate affected systems immediately.",
-        },
-    }
+        return {
+            "risk_score": risk_score,
+            "result": {
+                "summary": summary,
+                "findings": findings,
+                "log_events": events[:20],
+                "recommendation": "Isolate system and block identified IPs immediately." if risk_score >= 60 else "Monitor for further anomalous activity."
+            }
+        }
+    except Exception as e:
+        raise RuntimeError(f"Authentic log analysis failed: {e}")
 
 
 

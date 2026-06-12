@@ -8,6 +8,7 @@ export default function EvidencePage() {
   const [evidence, setEvidence]   = useState<NexusEvidence[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzingModule, setAnalyzingModule] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'loading' | 'match' | 'mismatch' | 'missing'>('idle');
 
@@ -29,6 +30,7 @@ export default function EvidencePage() {
   const runAnalysis = async (module: string) => {
     if (!selected) return;
     setAnalyzing(true);
+    setAnalyzingModule(module);
     try {
       let res;
       if (module === 'image_forensics') res = await analysisApi.runImageForensics(selected.id);
@@ -40,6 +42,14 @@ export default function EvidencePage() {
       alert('Analysis failed');
     }
     setAnalyzing(false);
+    setAnalyzingModule(null);
+  };
+
+  const getSequence = () => {
+    if (analyzingModule === 'image_forensics') return ['Hash Fingerprinting', 'EXIF Parsing', 'ELA MSE', 'Noise Mapping'];
+    if (analyzingModule === 'deepfake_detection') return ['Haar Face Detection', 'FFT Analysis', 'Blending Variance'];
+    if (analyzingModule === 'log_analysis') return ['IoC Extraction', 'Shannon Entropy', 'Signature Match'];
+    return ['Initializing', 'Analyzing', 'Aggregating'];
   };
 
   const handleVerify = async () => {
@@ -250,10 +260,10 @@ export default function EvidencePage() {
                     <div className="w-16 h-16 rounded-full border-2 border-accent-400/15 border-t-accent-400 animate-spin" />
                     <div className="absolute inset-2 rounded-full border-2 border-purple-400/15 border-b-purple-400 animate-spin" style={{ animationDirection:'reverse', animationDuration:'0.8s' }} />
                   </div>
-                  <p className="text-sm text-navy-300 font-display">Running forensic analysis pipeline...</p>
-                  <div className="flex gap-3 text-xs text-navy-500">
-                    {['ELA','Metadata','Deepfake','Integrity'].map((s,i) => (
-                      <motion.span key={s} animate={{ color: ['#4A5568','#DC2626','#4A5568'] }} transition={{ delay: i * 0.4, duration:1.2, repeat:Infinity }}>
+                  <p className="text-sm text-navy-300 font-display">Executing authentic sequence pipeline...</p>
+                  <div className="flex gap-4 text-xs text-navy-500 font-medium">
+                    {getSequence().map((s,i) => (
+                      <motion.span key={s} animate={{ color: ['#4A5568','#DC2626','#4A5568'] }} transition={{ delay: i * 0.4, duration:1.6, repeat:Infinity }}>
                         {s}
                       </motion.span>
                     ))}
