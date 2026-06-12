@@ -11,6 +11,7 @@ import requests
 import random
 import hashlib
 import json
+import time
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -393,9 +394,13 @@ def _make_ai_request(prompt: str, system_prompt: str, provider: str, api_key: st
             if system_prompt:
                 params["system"] = system_prompt
             params["model"] = "openai"
-            response = requests.get(url, params=params, timeout=20)
-            response.raise_for_status()
-            return response.text
+            for attempt in range(3):
+                response = requests.get(url, params=params, timeout=20)
+                if response.status_code == 429 and attempt < 2:
+                    time.sleep(1.5 ** attempt)
+                    continue
+                response.raise_for_status()
+                return response.text
 
         elif prov == "openai":
             url = "https://api.openai.com/v1/chat/completions"
@@ -597,8 +602,14 @@ def ask_assistant(question: str, context: str, api_key: str = None, persona: str
     try:
         return _make_ai_request(prompt, system_prompt, provider, api_key)
     except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg:
+            return (
+                "🔌 AI servers are currently experiencing high traffic.\n\n"
+                f"Here's what my local knowledge banks say:\n\n{_fallback_ask_assistant(question, persona)}"
+            )
         return (
-            f"🔌 Connection failed: {str(e)[:80]}.\n\n"
+            f"🔌 Connection failed: {error_msg[:80]}.\n\n"
             f"Here's what my local knowledge banks say:\n\n{_fallback_ask_assistant(question, persona)}"
         )
 
