@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" fill="none">
+  <!-- Stylized S Logo Mark -->
+  <g transform="translate(40, 10)">
+    <!-- Top curve of S -->
+    <path d="M100 8 C100 8, 108 0, 118 0 L118 0 C108 0, 60 0, 50 0 C30 0, 12 14, 12 34 C12 54, 28 68, 48 68 L72 68 C82 68, 90 60, 108 68" 
+          fill="#F8FAFC" stroke="none"/>
+    <!-- S shape main body -->
+    <path d="M10 35 C10 15, 28 0, 50 0 L72 0 C72 0, 108 0, 108 0 L108 20 L50 20 C40 20, 30 28, 30 38 C30 48, 38 56, 50 56 L72 56 C92 56, 110 70, 110 90 C110 110, 92 126, 72 126 L48 126 L12 126 L12 106 L70 106 C80 106, 90 98, 90 88 C90 78, 82 70, 72 70 L48 70 C28 70, 10 54, 10 35 Z" 
+          fill="#F8FAFC"/>
+  </g>
+  <!-- NEXUSDFI Text -->
+  <text x="100" y="195" text-anchor="middle" font-family="'Inter', 'Arial Black', sans-serif" font-weight="900" font-size="26" letter-spacing="3" fill="#F8FAFC">NEXUSDFI</text>
+</svg>
