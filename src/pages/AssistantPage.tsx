@@ -215,7 +215,7 @@ function inlineFormat(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-white">$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code class="mono text-blue-400 bg-blue-400/8 px-1.5 py-0.5 rounded text-xs">$1</code>');
+    .replace(/`(.*?)`/g, '<code class="mono text-red-400 bg-red-400/8 px-1.5 py-0.5 rounded text-xs">$1</code>');
 }
 
 function formatTime(iso: string): string {
@@ -233,9 +233,9 @@ I can help you:
 Currently analyzing case **NXDFI-2605-4821**. Select a prompt below or ask anything — I promise not to judge. Much.`;
 
 const AI_MOODS = [
-  { label: 'Analytical', icon: '🧠', color: '#4f6ef7' },
+  { label: 'Analytical', icon: '🧠', color: '#3B82F6' },
   { label: 'Suspicious', icon: '🔍', color: '#f59e0b' },
-  { label: 'Alarmed', icon: '🚨', color: '#ef4444' },
+  { label: 'Alarmed', icon: '🚨', color: '#DC2626' },
   { label: 'Humorous', icon: '😏', color: '#10b981' },
 ];
 
@@ -739,8 +739,8 @@ export default function AssistantPage() {
                 msg.role === 'assistant' ? '' : 'bg-navy-700'
               }`}
               style={msg.role === 'assistant' ? {
-                background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)',
-                boxShadow: '0 2px 8px rgba(79,110,247,0.2)',
+                background: 'linear-gradient(135deg, #DC2626, #991B1B)',
+                boxShadow: '0 2px 8px rgba(220,38,38,0.2)',
               } : undefined}
             >
               {msg.role === 'assistant' ? '🤖' : '👤'}
@@ -755,8 +755,8 @@ export default function AssistantPage() {
                     : 'text-white border border-accent-400/40'
                 }`}
                 style={msg.role === 'user' ? {
-                  background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)',
-                  boxShadow: '0 4px 16px rgba(79,110,247,0.2)',
+                  background: 'linear-gradient(135deg, #DC2626, #991B1B)',
+                  boxShadow: '0 4px 16px rgba(220,38,38,0.2)',
                 } : undefined}
                 dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) + (msg.typing ? '<span class="typing-cursor"></span>' : '') }}
               />
@@ -784,7 +784,7 @@ export default function AssistantPage() {
 
         {loading && !messages.some(m => m.typing) && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex gap-3">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #4f6ef7, #3b5ce4)' }}>🤖</div>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0" style={{ background: 'linear-gradient(135deg, #DC2626, #991B1B)' }}>🤖</div>
             <div className="p-4 rounded-2xl bg-navy-800/60 border border-navy-700/60">
               <div className="flex gap-1.5 items-center">
                 <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} className="w-2 h-2 rounded-full bg-accent-400" />

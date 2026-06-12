@@ -99,16 +99,16 @@ export default function ReportsPage() {
                     whileHover={{ scale: 1.05, rotate: 3 }}
                     className="w-12 h-14 rounded-lg flex flex-col items-center justify-center flex-shrink-0"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(240,90,40,0.12), rgba(240,90,40,0.04))',
-                      border: '1px solid rgba(240,90,40,0.18)',
+                      background: 'linear-gradient(135deg, rgba(220,38,38,0.12), rgba(220,38,38,0.04))',
+                      border: '1px solid rgba(220,38,38,0.18)',
                     }}
                   >
                     <span className="text-lg">📄</span>
-                    <span className="text-[9px] font-bold" style={{ color: '#F05A28' }}>PDF</span>
+                    <span className="text-[9px] font-bold" style={{ color: '#DC2626' }}>PDF</span>
                   </motion.div>
                   <div>
                     <p className="text-sm font-semibold text-navy-200 font-display">{c.title}</p>
-                    <p className="text-xs mono" style={{ color: '#00D4AA' }}>{c.case_id}</p>
+                    <p className="text-xs mono" style={{ color: '#3B82F6' }}>{c.case_id}</p>
                     <p className="text-xs text-navy-500 mt-1">{new Date(c.created_at).toLocaleDateString()} · {c.evidence_count} evidence files</p>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export default function ReportsPage() {
                 <label key={s} className="flex items-center gap-2 text-xs text-navy-300 cursor-pointer hover:text-navy-100 transition-colors">
                   <input type="checkbox" defaultChecked
                     className="rounded"
-                    style={{ accentColor: '#F05A28' }}
+                    style={{ accentColor: '#DC2626' }}
                   />
                   {s}
                 </label>
@@ -151,11 +151,11 @@ export default function ReportsPage() {
             <div
               className="mt-4 p-3 rounded-xl text-xs text-navy-400"
               style={{
-                background: 'rgba(0,212,170,0.05)',
-                border: '1px solid rgba(0,212,170,0.12)',
+                background: 'rgba(59,130,246,0.05)',
+                border: '1px solid rgba(59,130,246,0.12)',
               }}
             >
-              <span style={{ color: '#00D4AA' }}>ℹ</span> Reports require the FastAPI backend running on port 8000. PDF generation uses ReportLab.
+              <span style={{ color: '#3B82F6' }}>ℹ</span> Reports require the FastAPI backend running on port 8000. PDF generation uses ReportLab.
             </div>
           </Card>
         </div>

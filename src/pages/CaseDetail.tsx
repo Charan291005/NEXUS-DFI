@@ -296,10 +296,10 @@ export default function CaseDetail() {
         onDragLeave={() => setDragOver(false)}
         onDrop={e => { e.preventDefault(); setDragOver(false); handleUpload(e.dataTransfer.files); }}
         animate={{
-          borderColor: dragOver ? 'rgba(79,110,247,0.5)' : 'rgba(79,110,247,0.1)',
-          boxShadow: dragOver ? '0 0 30px rgba(79,110,247,0.1)' : '0 0 0 rgba(0,0,0,0)',
+          borderColor: dragOver ? 'rgba(220,38,38,0.5)' : 'rgba(220,38,38,0.1)',
+          boxShadow: dragOver ? '0 0 30px rgba(220,38,38,0.1)' : '0 0 0 rgba(0,0,0,0)',
         }}
-        whileHover={{ borderColor: 'rgba(79,110,247,0.25)' }}
+        whileHover={{ borderColor: 'rgba(220,38,38,0.25)' }}
         className="glass p-8 text-center cursor-pointer border-2 border-dashed border-accent-400/10 rounded-2xl transition-all"
         onClick={() => fileRef.current?.click()}
       >

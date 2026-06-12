@@ -19,7 +19,7 @@ const MOCK_TIMELINE: TimelineEvent[] = [
 ];
 
 const TYPE_ICON: Record<string, string>  = { case:'📂', evidence:'💾', analysis:'🔍', alert:'🚨' };
-const TYPE_COLOR: Record<string, string> = { case:'#8b5cf6', evidence:'#3b82f6', analysis:'#10b981', alert:'#ef4444' };
+const TYPE_COLOR: Record<string, string> = { case:'#3B82F6', evidence:'#60A5FA', analysis:'#10b981', alert:'#DC2626' };
 
 export default function TimelinePage() {
   const [filter, setFilter] = useState<'all'|'case'|'evidence'|'analysis'|'alert'>('all');
@@ -68,7 +68,7 @@ export default function TimelinePage() {
           animate={{ height: '100%' }}
           transition={{ duration: 1.2 }}
           className="absolute left-[2.75rem] top-6 bottom-6 w-px"
-          style={{ background: 'linear-gradient(180deg, #4f6ef7, rgba(79,110,247,0.1), transparent)' }}
+          style={{ background: 'linear-gradient(180deg, #DC2626, rgba(220,38,38,0.1), transparent)' }}
         />
 
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-1">

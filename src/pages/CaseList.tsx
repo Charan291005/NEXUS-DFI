@@ -30,7 +30,7 @@ const CaseRow = memo(function CaseRow({ c, onView, onDelete, index }: {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.04, duration: 0.35 }}
     >
-      <td className="mono text-blue-400 text-xs font-medium">{c.case_id}</td>
+      <td className="mono text-sky-400 text-xs font-medium">{c.case_id}</td>
       <td>
         <p className="text-navy-100 font-medium">{c.title}</p>
         <p className="text-xs text-navy-400 truncate max-w-xs">{c.description}</p>

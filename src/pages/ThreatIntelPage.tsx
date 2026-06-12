@@ -13,8 +13,8 @@ interface ThreatResult {
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
-  Critical: '#ef4444',
-  High:     '#f97316',
+  Critical: '#DC2626',
+  High:     '#EF4444',
   Medium:   '#f59e0b',
   Low:      '#22c55e',
   Safe:     '#10b981',
@@ -295,9 +295,9 @@ Be direct and slightly witty. Use **bold** for key findings.`;
                   <span
                     className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
                     style={{
-                      borderColor: 'rgba(79,110,247,0.3)',
-                      background: 'rgba(79,110,247,0.08)',
-                      color: '#4f6ef7'
+                      borderColor: 'rgba(220,38,38,0.3)',
+                      background: 'rgba(220,38,38,0.08)',
+                      color: '#DC2626'
                     }}
                   >
                     {TYPE_LABELS[detectType(indicator.trim())]}

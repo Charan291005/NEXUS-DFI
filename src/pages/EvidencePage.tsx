@@ -253,7 +253,7 @@ export default function EvidencePage() {
                   <p className="text-sm text-navy-300 font-display">Running forensic analysis pipeline...</p>
                   <div className="flex gap-3 text-xs text-navy-500">
                     {['ELA','Metadata','Deepfake','Integrity'].map((s,i) => (
-                      <motion.span key={s} animate={{ color: ['#384a6d','#4f6ef7','#384a6d'] }} transition={{ delay: i * 0.4, duration:1.2, repeat:Infinity }}>
+                      <motion.span key={s} animate={{ color: ['#4A5568','#DC2626','#4A5568'] }} transition={{ delay: i * 0.4, duration:1.2, repeat:Infinity }}>
                         {s}
                       </motion.span>
                     ))}
