@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { to: '/reports',    icon: '📑', label: 'Reports',          color: '#DC2626', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
   { to: '/assistant',  icon: '🤖', label: 'AI Assistant',     color: '#3B82F6', allowedRoles: ['Admin', 'Investigator'] },
   { to: '/threat-intel', icon: '🕵️', label: 'Threat Intel', color: '#EF4444', allowedRoles: ['Admin'] },
+  { to: '/guide',      icon: '📚', label: 'Guide',            color: '#10B981', allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -22,6 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/assistant':   'AI Investigation Assistant',
   '/threat-intel':'Threat Intelligence',
   '/profile':     'User Profile',
+  '/guide':       'Platform Guide',
 };
 
 export default function Layout() {

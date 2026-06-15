@@ -14,6 +14,7 @@ const ReportsPage  = lazy(() => import('./pages/ReportsPage'));
 const AssistantPage = lazy(() => import('./pages/AssistantPage'));
 const ThreatIntelPage = lazy(() => import('./pages/ThreatIntelPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
+const GuidePage = lazy(() => import('./pages/GuidePage'));
 
 // ── Error Boundary ────────────────────────────────────────
 interface ErrorBoundaryState { hasError: boolean; error?: Error; }
@@ -92,6 +93,7 @@ export default function App() {
               <Route path="assistant" element={<RoleRoute allowedRoles={['Admin', 'Investigator']}><Suspense fallback={<PageLoader />}><AssistantPage /></Suspense></RoleRoute>} />
               <Route path="threat-intel" element={<RoleRoute allowedRoles={['Admin']}><Suspense fallback={<PageLoader />}><ThreatIntelPage /></Suspense></RoleRoute>} />
               <Route path="profile"   element={<RoleRoute allowedRoles={['Admin', 'Investigator', 'Viewer']}><Suspense fallback={<PageLoader />}><ProfilePage /></Suspense></RoleRoute>} />
+              <Route path="guide"     element={<RoleRoute allowedRoles={['Admin', 'Investigator', 'Viewer']}><Suspense fallback={<PageLoader />}><GuidePage /></Suspense></RoleRoute>} />
             </Route>
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
