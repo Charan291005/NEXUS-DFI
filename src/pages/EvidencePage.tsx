@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PageHeader, SectionHeader, RiskMeter, RiskBadge, Spinner } from '../components/ui';
+import { PageHeader, RiskMeter, RiskBadge, Spinner } from '../components/ui';
 import { evidenceApi, analysisApi } from '../utils/api';
 import type { NexusEvidence, Finding } from '../types';
 
@@ -8,7 +8,6 @@ export default function EvidencePage() {
   const [evidence, setEvidence] = useState<NexusEvidence[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [analyzingModule, setAnalyzingModule] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [verificationStatus, setVerificationStatus] = useState<'idle' | 'loading' | 'match' | 'mismatch' | 'missing'>('idle');
 
@@ -32,7 +31,6 @@ export default function EvidencePage() {
   const runAnalysis = async (module: string) => {
     if (!selected) return;
     setAnalyzing(true);
-    setAnalyzingModule(module);
     try {
       let res;
       if (module === 'image_forensics') res = await analysisApi.runImageForensics(selected.id);
@@ -44,7 +42,6 @@ export default function EvidencePage() {
       alert('Analysis failed');
     }
     setAnalyzing(false);
-    setAnalyzingModule(null);
   };
 
   const handleVerify = async () => {
@@ -84,7 +81,7 @@ export default function EvidencePage() {
   };
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
-    show:   { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } },
+    show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
   };
 
   const getMediaUrl = (filePath: string) => {
