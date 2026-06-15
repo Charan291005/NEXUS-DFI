@@ -384,17 +384,33 @@ export default function EvidencePage() {
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: i * 0.1 }}
-                            className="flex flex-col sm:flex-row sm:items-center gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors group"
+                            className="flex flex-col sm:flex-row items-start gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/[0.05] hover:bg-white/[0.04] transition-colors group"
                           >
-                            <div className="shrink-0"><RiskBadge level={f.severity} /></div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-white mb-0.5">{f.category}</p>
-                              <p className="text-xs text-navy-300 leading-relaxed">{f.description}</p>
-                            </div>
-                            <div className="shrink-0 sm:text-right">
-                              <span className="inline-block px-3 py-1 rounded bg-navy-900 border border-navy-700 text-xs font-mono text-accent-400 group-hover:border-accent-500/30 transition-colors">
-                                {f.value}
-                              </span>
+                            <div className="shrink-0 pt-0.5"><RiskBadge level={f.severity} /></div>
+                            <div className="flex-1 min-w-0 space-y-2 w-full">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                <p className="text-sm font-bold text-white">{f.category}</p>
+                                <span className="inline-block px-2.5 py-1 rounded bg-navy-900 border border-navy-700 text-xs font-mono text-accent-400 group-hover:border-accent-500/30 transition-colors w-max">
+                                  {f.value}
+                                </span>
+                              </div>
+                              <p className="text-xs text-navy-200 leading-relaxed">{f.description}</p>
+                              
+                              {(f.location || f.analystNote) && (
+                                <div className="mt-3 p-3 rounded-lg bg-navy-900/50 border border-navy-800 border-l-2 border-l-blue-500/50">
+                                  {f.location && (
+                                    <p className="text-[11px] text-navy-400 font-mono mb-2 flex items-center gap-1.5">
+                                      <span className="text-blue-400">📍 Location:</span> {f.location}
+                                    </p>
+                                  )}
+                                  {f.analystNote && (
+                                    <p className="text-xs text-navy-300 leading-relaxed flex items-start gap-1.5">
+                                      <span className="text-blue-400 font-bold mt-0.5">💡 Note:</span> 
+                                      <span className="flex-1">{f.analystNote}</span>
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </motion.div>
                         ))}

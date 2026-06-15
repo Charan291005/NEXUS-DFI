@@ -65,13 +65,13 @@ def run_image_forensics(filepath: str) -> Dict[str, Any]:
                         missing_capture_date = False
 
                 if "Software" in meta and any(s in meta["Software"] for s in ["Photoshop", "GIMP", "Lightroom"]):
-                    findings.append({"category": "Metadata Analysis", "severity": "Medium", "description": f"Editing software artifact detected: {meta['Software']}", "value": "Found"})
+                    findings.append({"category": "Metadata Analysis", "severity": "Medium", "description": f"Editing software artifact detected: {meta['Software']}", "value": "Found", "location": "EXIF Tag: 0x0131 (Software)", "analystNote": "Presence of photo editing software in metadata suggests the image was altered after capture."})
                     risk_score += 25
         except Exception:
             pass
 
         if missing_capture_date:
-            findings.append({"category": "Metadata Analysis", "severity": "Low", "description": "Missing original capture timestamp (DateTimeOriginal). Common in scrubbed or web-downloaded files.", "value": "Missing"})
+            findings.append({"category": "Metadata Analysis", "severity": "Low", "description": "Missing original capture timestamp (DateTimeOriginal). Common in scrubbed or web-downloaded files.", "value": "Missing", "location": "EXIF Tags: 0x9003, 0x9004", "analystNote": "Attackers or social media platforms often strip origination dates, making timeline correlation difficult."})
             risk_score += 10
 
         # 3. Error Level Analysis (ELA) with MSE
@@ -86,7 +86,7 @@ def run_image_forensics(filepath: str) -> Dict[str, Any]:
         ela_severity = "High" if mse > 100 else "Medium" if mse > 30 else "Safe"
         if mse > 100: risk_score += 40
         elif mse > 30: risk_score += 20
-        findings.append({"category": "Error Level Analysis (ELA)", "severity": ela_severity, "description": f"Compression anomaly analysis using Mean Squared Error (MSE={mse:.2f})", "value": f"MSE: {mse:.2f}"})
+        findings.append({"category": "Error Level Analysis (ELA)", "severity": ela_severity, "description": f"Compression anomaly analysis using Mean Squared Error (MSE={mse:.2f})", "value": f"MSE: {mse:.2f}", "location": "Global Image Area (Pixel-wise differences)", "analystNote": "High ELA MSE indicates that parts of the image have been re-saved at different quality levels, a strong indicator of digital splicing or airbrushing."})
 
         # 4. Sensor Noise Analysis (Laplacian Variance)
         if CV2_AVAILABLE:
@@ -94,7 +94,7 @@ def run_image_forensics(filepath: str) -> Dict[str, Any]:
             variance = cv2.Laplacian(cv_img, cv2.CV_64F).var()
             blur_severity = "Medium" if variance < 50 else "Safe"
             if variance < 50: risk_score += 15
-            findings.append({"category": "Sensor Noise Variance", "severity": blur_severity, "description": f"Focus/blur measure (Variance={variance:.1f}). Low variance indicates smoothing/tampering.", "value": f"Var: {variance:.1f}"})
+            findings.append({"category": "Sensor Noise Variance", "severity": blur_severity, "description": f"Focus/blur measure (Variance={variance:.1f}). Low variance indicates smoothing/tampering.", "value": f"Var: {variance:.1f}", "location": "High-Frequency Edge Regions", "analystNote": "Low variance implies unnatural smoothing, commonly used to hide splicing boundaries or airbrushing."})
         
         # Assemble results
         risk_score = min(risk_score, 100)
@@ -145,12 +145,12 @@ def run_deepfake_detection(filepath: str) -> Dict[str, Any]:
                 "risk_score": 10,
                 "result": {
                     "summary": "No faces detected in the image/video frame. Deepfake analysis is not applicable.",
-                    "findings": [{"category": "Face Detection", "severity": "Safe", "description": "Haar Cascade failed to identify any frontal faces.", "value": "0 Faces"}],
+                    "findings": [{"category": "Face Detection", "severity": "Safe", "description": "Haar Cascade failed to identify any frontal faces.", "value": "0 Faces", "location": "Entire Frame", "analystNote": "No subjects found for analysis."}],
                     "recommendation": "Manual review if faces are known to be present."
                 }
             }
         
-        findings.append({"category": "Face Detection", "severity": "Safe", "description": f"Identified {len(faces)} face(s) for targeted region analysis.", "value": f"{len(faces)} Faces"})
+        findings.append({"category": "Face Detection", "severity": "Safe", "description": f"Identified {len(faces)} face(s) for targeted region analysis.", "value": f"{len(faces)} Faces", "location": f"Bounding Boxes: {', '.join([f'(X:{x}, Y:{y})' for x, y, w, h in faces[:3]])}", "analystNote": "Facial coordinates extracted for targeted synthetic artifact scanning."})
         
         # Focus on the largest face for FFT and Blending analysis
         faces = sorted(faces, key=lambda x: x[2] * x[3], reverse=True)
@@ -171,7 +171,7 @@ def run_deepfake_detection(filepath: str) -> Dict[str, Any]:
         fft_severity = "High" if ratio > 2.0 else "Medium" if ratio > 1.5 else "Safe"
         if ratio > 2.0: risk_score += 45
         elif ratio > 1.5: risk_score += 25
-        findings.append({"category": "Facial Frequency Analysis (FFT)", "severity": fft_severity, "description": "GAN high-frequency artifact assessment on Region of Interest.", "value": f"Ratio: {ratio:.2f}"})
+        findings.append({"category": "Facial Frequency Analysis (FFT)", "severity": fft_severity, "description": "GAN high-frequency artifact assessment on Region of Interest.", "value": f"Ratio: {ratio:.2f}", "location": f"Face ROI Center (X:{x}, Y:{y})", "analystNote": "GANs struggle to replicate natural high-frequency details (pores, fine hair), leading to an abnormal FFT ratio compared to real images."})
         
         # 3. Noise Variance / Blending Detection
         laplacian_face = cv2.Laplacian(face_roi_gray, cv2.CV_64F).var()
@@ -185,7 +185,7 @@ def run_deepfake_detection(filepath: str) -> Dict[str, Any]:
         blend_severity = "High" if var_diff > 1000 else "Medium" if var_diff > 500 else "Safe"
         if var_diff > 1000: risk_score += 40
         elif var_diff > 500: risk_score += 20
-        findings.append({"category": "Color & Blending Consistency", "severity": blend_severity, "description": f"Comparison of face noise variance ({laplacian_face:.1f}) vs background ({laplacian_bg:.1f}).", "value": f"ΔVar: {var_diff:.1f}"})
+        findings.append({"category": "Color & Blending Consistency", "severity": blend_severity, "description": f"Comparison of face noise variance ({laplacian_face:.1f}) vs background ({laplacian_bg:.1f}).", "value": f"ΔVar: {var_diff:.1f}", "location": f"Face Boundary Edge (X:{x}, Y:{y})", "analystNote": "A significant difference in noise variance between the face and background suggests the face was digitally spliced into the scene."})
 
         # Assemble results
         risk_score = min(risk_score, 100)
@@ -253,7 +253,7 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
         
         if ips or emails:
             desc = f"Extracted {len(ips)} IPs and {len(emails)} emails for threat intelligence correlation."
-            findings.append({"category": "IoC Extraction", "severity": "Medium" if len(ips) > 5 else "Low", "description": desc, "value": f"{len(ips)} IPs"})
+            findings.append({"category": "IoC Extraction", "severity": "Medium" if len(ips) > 5 else "Low", "description": desc, "value": f"{len(ips)} IPs", "location": "Throughout Log File", "analystNote": "IP addresses and emails extracted can be cross-referenced against global threat intelligence feeds to identify known malicious actors."})
 
         # 2. Shannon Entropy Profiling (Detecting Base64 / Encrypted payloads)
         high_entropy_count = 0
@@ -266,9 +266,9 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
         
         if high_entropy_count > 0:
             risk_score += min(high_entropy_count * 5, 40)
-            findings.append({"category": "Shannon Entropy Profiling", "severity": "High", "description": f"{high_entropy_count} lines found with abnormally high entropy (potential base64 payload).", "value": f"{high_entropy_count} Lines"})
+            findings.append({"category": "Shannon Entropy Profiling", "severity": "High", "description": f"{high_entropy_count} lines found with abnormally high entropy (potential base64 payload).", "value": f"{high_entropy_count} Lines", "location": f"E.g., Line {events[0]['timestamp'] if events else 'N/A'}", "analystNote": "High entropy (>5.8) indicates dense, randomized data, which is a strong signature for obfuscated code, encrypted payloads, or base64 reverse shells."})
         else:
-            findings.append({"category": "Shannon Entropy Profiling", "severity": "Safe", "description": "No obfuscated or encrypted payloads detected in logs.", "value": "Normal"})
+            findings.append({"category": "Shannon Entropy Profiling", "severity": "Safe", "description": "No obfuscated or encrypted payloads detected in logs.", "value": "Normal", "location": "All Lines Analyzed", "analystNote": "Entropy levels match normal human-readable text."})
 
         # 3. Signature & Pattern Matching
         finding_counts = {}
@@ -284,7 +284,7 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
         for event_type, count in finding_counts.items():
             severity = next((sev for _, et, sev, _ in SUSPICIOUS_PATTERNS if et == event_type), "Low")
             sig_score += SEV_WEIGHTS.get(severity, 1) * count
-            findings.append({"category": f"Signature: {event_type}", "severity": severity, "description": f"Matched threat signature {count} time(s).", "value": str(count)})
+            findings.append({"category": f"Signature: {event_type}", "severity": severity, "description": f"Matched threat signature {count} time(s).", "value": str(count), "location": "Various Lines", "analystNote": f"Log signatures matching {event_type} commonly indicate an attacker attempting this specific exploit or behavior."})
         
         risk_score += min(sig_score, 60)
         risk_score = min(risk_score, 100)

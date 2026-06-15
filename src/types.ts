@@ -64,6 +64,8 @@ export interface Finding {
   severity: RiskLevel;
   description: string;
   value?: string;
+  location?: string;
+  analystNote?: string;
 }
 
 export interface LogEvent {
