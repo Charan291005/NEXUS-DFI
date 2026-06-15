@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,7 @@ const FEATURE_PILLS = [
 ];
 
 export default function LoginPage() {
-  const { login, loginWithEmail, signupWithEmail } = useAuth();
+  const { login, loginWithEmail, signupWithEmail, user, loading: authLoading } = useAuth();
   const navigate  = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,12 +30,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
 
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
     try {
       await login();
-      navigate('/dashboard');
     } catch {
       setError('Google Sign-In failed. Please try again.');
     } finally {
@@ -69,7 +74,6 @@ export default function LoginPage() {
       } else {
         await loginWithEmail(email, password);
       }
-      navigate('/dashboard');
     } catch (err: any) {
       // Firebase error mapping
       const code = err.code || '';
