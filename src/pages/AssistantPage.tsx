@@ -370,8 +370,6 @@ export default function AssistantPage() {
     }, speed);
   }, []);
 
-
-
   // ── Direct AI call from browser (bypasses backend) ──
   const callAiDirect = useCallback(async (question: string, currentPersona: string, currentProvider: string, currentApiKey: string): Promise<string> => {
     const prov = currentProvider.toLowerCase();
@@ -379,11 +377,19 @@ export default function AssistantPage() {
     if (prov === 'pollinations') {
       try {
         const systemPrompt = PERSONA_PROMPTS[currentPersona] || PERSONA_PROMPTS.nexus;
-        const fullPrompt = `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.\n\nUser question: ${question}\n\nRespond in character with forensic expertise.`;
-        
         const res = await fetch(
-          `https://text.pollinations.ai/${encodeURIComponent(fullPrompt)}?model=openai`,
-          { method: 'GET' }
+          'https://text.pollinations.ai/',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: [
+                { role: 'system', content: `${systemPrompt}\n\nCase context: NexusDFI forensics platform — analyzing digital evidence including images (ELA), deepfakes, and server logs.` },
+                { role: 'user', content: question }
+              ],
+              model: 'openai'
+            })
+          }
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return await res.text();

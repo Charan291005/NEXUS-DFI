@@ -344,17 +344,16 @@ def _make_ai_request(prompt: str, system_prompt: str, provider: str, api_key: st
 
     try:
         if prov == "pollinations" or (prov != "pollinations" and not key):
-            import urllib.parse
-            encoded_prompt = urllib.parse.quote(prompt)
-            url = f"https://text.pollinations.ai/{encoded_prompt}"
-            params = {}
+            url = "https://text.pollinations.ai/"
+            messages = []
             if system_prompt:
-                params["system"] = system_prompt
-            params["model"] = "openai"
-            for attempt in range(3):
-                response = requests.get(url, params=params, timeout=20)
-                if response.status_code == 429 and attempt < 2:
-                    time.sleep(1.5 ** attempt)
+                messages.append({"role": "system", "content": system_prompt})
+            messages.append({"role": "user", "content": prompt})
+            payload = {"messages": messages, "model": "openai"}
+            
+            for attempt in range(2):
+                response = requests.post(url, json=payload, timeout=8)
+                if response.status_code == 429 and attempt < 1:
                     continue
                 response.raise_for_status()
                 return response.text
