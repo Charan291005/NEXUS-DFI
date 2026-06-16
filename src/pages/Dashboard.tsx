@@ -9,6 +9,7 @@ import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
 import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
+import { ExternalIntelligence } from '../components/ExternalIntelligence';
 
 const DEFAULT_STATS: DashboardStats = {
   total_cases: 0,
@@ -248,6 +249,11 @@ export default function Dashboard() {
             Review Threats
           </motion.button>
         </div>
+      </motion.div>
+
+      {/* ── External OSINT Intelligence ───────────────── */}
+      <motion.div variants={itemVariants}>
+        <ExternalIntelligence />
       </motion.div>
 
     </motion.div>
