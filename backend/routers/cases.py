@@ -176,8 +176,8 @@ def get_timeline(db: Session = Depends(get_db), current: User = Depends(get_curr
             "severity": sev
         })
         
-    # Sort chronologically (oldest first)
-    events.sort(key=lambda x: x["timestamp"])
+    # Sort chronologically (newest first)
+    events.sort(key=lambda x: x["timestamp"], reverse=True)
     return events
 
 
