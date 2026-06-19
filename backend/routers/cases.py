@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import Case, Evidence, AnalysisResult
-from backend.schemas import CaseCreate, CaseUpdate, CaseOut, DashboardStats
+from backend.schemas import CaseCreate, CaseUpdate, CaseOut, DashboardStats, TimelineEventOut
 from backend.routers.auth import get_current_user
 from backend.models import User
 
@@ -128,6 +128,57 @@ def dashboard_stats(db: Session = Depends(get_db), current: User = Depends(get_c
         risk_distribution=risk_dist, evidence_by_type=evidence_by_type,
         recent_activity=activity, weekly_cases=weekly_cases,
     )
+
+
+@router.get("/timeline", response_model=List[TimelineEventOut])
+def get_timeline(db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    events = []
+    
+    # Cases
+    cases = db.query(Case).filter(Case.owner_id == current.id).all()
+    for c in cases:
+        events.append({
+            "id": f"case_{c.id}",
+            "timestamp": c.created_at,
+            "title": "Case Initiated",
+            "description": f"Investigation case {c.case_id} opened.",
+            "type": "case",
+            "severity": "Safe"
+        })
+        
+    # Evidences
+    evidences = db.query(Evidence).join(Case).filter(Case.owner_id == current.id).all()
+    for e in evidences:
+        events.append({
+            "id": f"ev_{e.id}",
+            "timestamp": e.uploaded_at,
+            "title": "Evidence Uploaded",
+            "description": f"File '{e.filename}' uploaded to case {e.case.case_id}.",
+            "type": "evidence",
+            "severity": "Medium"
+        })
+        
+    # Analysis
+    analysis_results = db.query(AnalysisResult).join(Evidence).join(Case).filter(Case.owner_id == current.id).all()
+    for a in analysis_results:
+        sev = "Safe"
+        if a.risk_score >= 80: sev = "Critical"
+        elif a.risk_score >= 60: sev = "High"
+        elif a.risk_score >= 40: sev = "Medium"
+        elif a.risk_score >= 20: sev = "Low"
+        
+        events.append({
+            "id": f"analysis_{a.id}",
+            "timestamp": a.created_at,
+            "title": "Analysis Completed",
+            "description": f"{a.module.replace('_', ' ').title()} generated a risk score of {a.risk_score}/100.",
+            "type": "alert" if a.risk_score >= 80 else "analysis",
+            "severity": sev
+        })
+        
+    # Sort chronologically (oldest first)
+    events.sort(key=lambda x: x["timestamp"])
+    return events
 
 
 @router.get("", response_model=List[CaseOut])

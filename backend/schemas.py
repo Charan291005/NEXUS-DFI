@@ -108,3 +108,15 @@ class AssistantQuery(BaseModel):
 
 class AssistantResponse(BaseModel):
     response: str
+
+# ── Timeline ──────────────────────────────────────────────
+class TimelineEventOut(BaseModel):
+    id: str
+    timestamp: datetime
+    title: str
+    description: str
+    type: str
+    severity: Optional[str] = None
+
+    class Config:
+        from_attributes = True
