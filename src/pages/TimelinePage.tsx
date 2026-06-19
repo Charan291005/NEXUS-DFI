@@ -1,30 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader, Card, RiskBadge } from '../components/ui';
 import { fmtDateTime } from '../utils/helpers';
 import type { TimelineEvent } from '../types';
-
-const MOCK_TIMELINE: TimelineEvent[] = [
-  { id:'t1', timestamp:'2026-05-25T09:15:00Z', title:'Case Initiated',                   description:'Investigation case NXDFI-2605-4821 opened by admin.',                                                   type:'case',     severity:'Safe'     },
-  { id:'t2', timestamp:'2026-05-25T09:30:00Z', title:'Initial Evidence Uploaded',         description:'3 suspect images uploaded. SHA-256 hashes computed and logged.',                                        type:'evidence', severity:'Low'      },
-  { id:'t3', timestamp:'2026-05-25T10:00:00Z', title:'Image Forensics — ELA Run',         description:'Error Level Analysis detected tampering in suspect_image_001.jpg. Risk score: 78/100.',                type:'analysis', severity:'High'     },
-  { id:'t4', timestamp:'2026-05-25T11:45:00Z', title:'Server Logs Collected',             description:'2.4MB server access log collected from victim system. Chain-of-custody preserved.',                    type:'evidence', severity:'Low'      },
-  { id:'t5', timestamp:'2026-05-25T12:00:00Z', title:'Log Analysis — Anomalies Detected', description:'14 suspicious events detected: 247 brute-force attempts, privilege escalation, data exfiltration.',   type:'analysis', severity:'High'     },
-  { id:'t6', timestamp:'2026-05-25T14:30:00Z', title:'Deepfake Video Evidence Secured',   description:'Suspect MP4 video uploaded. SHA-256: b4e5f6a7… Metadata intact.',                                    type:'evidence', severity:'Medium'   },
-  { id:'t7', timestamp:'2026-05-25T15:00:00Z', title:'Deepfake Detection — CRITICAL',     description:'AI model identifies 91% deepfake confidence. GAN fingerprint detected: StyleGAN2.',                   type:'alert',    severity:'Critical' },
-  { id:'t8', timestamp:'2026-05-26T09:00:00Z', title:'Threat Escalation Issued',          description:'Case escalated to Tier-2 SOC. Incident response team notified.',                                       type:'alert',    severity:'Critical' },
-  { id:'t9', timestamp:'2026-05-26T11:00:00Z', title:'PDF Forensic Report Generated',     description:'Executive report exported with full evidence summary, risk assessment, and recommendations.',           type:'case',     severity:'Safe'     },
-  { id:'t10',timestamp:'2026-05-27T09:00:00Z', title:'Second Evidence Batch Added',       description:'4 additional screenshots and 1 network packet capture added to case.',                                  type:'evidence', severity:'Medium'   },
-  { id:'t11',timestamp:'2026-05-28T16:00:00Z', title:'Risk Assessment Updated',           description:'Overall case risk score updated to 91 (Critical) following deepfake confirmation.',                    type:'analysis', severity:'Critical' },
-];
+import { casesApi } from '../utils/api';
 
 const TYPE_ICON: Record<string, string>  = { case:'📂', evidence:'💾', analysis:'🔍', alert:'🚨' };
 const TYPE_COLOR: Record<string, string> = { case:'#3B82F6', evidence:'#60A5FA', analysis:'#10b981', alert:'#DC2626' };
 
 export default function TimelinePage() {
   const [filter, setFilter] = useState<'all'|'case'|'evidence'|'analysis'|'alert'>('all');
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = MOCK_TIMELINE.filter(e => filter === 'all' || e.type === filter);
+  useEffect(() => {
+    casesApi.timeline()
+      .then(res => setEvents(res.data))
+      .catch(err => console.error("Error fetching timeline:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filtered = events.filter(e => filter === 'all' || e.type === filter);
 
   const containerVariants = {
     hidden: {},
@@ -39,7 +35,7 @@ export default function TimelinePage() {
     <div className="space-y-6">
       <PageHeader
         title="Timeline Reconstruction"
-        subtitle="Chronological event reconstruction for NXDFI-2605-4821"
+        subtitle="Chronological event reconstruction for investigations"
         icon="⏱"
       />
 
@@ -61,7 +57,13 @@ export default function TimelinePage() {
       </div>
 
       {/* Timeline */}
-      <Card className="relative">
+      <Card className="relative min-h-[300px]">
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center text-navy-400">Loading timeline...</div>
+        ) : filtered.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center text-navy-400">No events found matching criteria.</div>
+        ) : (
+          <>
         {/* Animated vertical line */}
         <motion.div
           initial={{ height: 0 }}
@@ -104,6 +106,8 @@ export default function TimelinePage() {
             </motion.div>
           ))}
         </motion.div>
+        </>
+        )}
       </Card>
     </div>
   );

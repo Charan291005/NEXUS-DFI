@@ -49,6 +49,7 @@ export const casesApi = {
   update: (id: number, data: object) => api.put(`/cases/${id}`, data),
   delete: (id: number) => api.delete(`/cases/${id}`),
   stats:  () => api.get('/cases/dashboard/stats'),
+  timeline: () => api.get('/cases/timeline'),
 };
 
 // ── Evidence ────────────────────────────────────────────
