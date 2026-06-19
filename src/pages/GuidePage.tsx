@@ -1,99 +1,126 @@
-import { motion } from 'framer-motion';
-import { PageHeader } from '../components/ui';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { PageHeader, Card } from '../components/ui';
+
+const STEPS = [
+  {
+    title: 'Phase 1: Case Initialization',
+    desc: 'Establish the foundation of the investigation by creating a secure container for evidence and assigning an initial priority based on the incident report.',
+    details: [
+      'Navigate to Case Management.',
+      'Click "+ New Case" and define scope, priority, and status.',
+      'Assign an investigator (or claim the case yourself).',
+      'A unique Case ID is generated for tracking.'
+    ]
+  },
+  {
+    title: 'Phase 2: Evidence Acquisition & Hashing',
+    desc: 'Securely ingest digital artifacts while maintaining strict chain-of-custody protocols through automated cryptographic hashing.',
+    details: [
+      'Navigate to the Case Details page.',
+      'Upload artifacts (Images, Videos, Logs, PDFs).',
+      'The system automatically calculates and stores the SHA-256 hash.',
+      'Verify the hash to ensure the artifact remains unaltered.'
+    ]
+  },
+  {
+    title: 'Phase 3: Automated AI Forensic Analysis',
+    desc: 'Leverage the NexusDFI Engine to detect anomalies, deepfakes, manipulated metadata, and indicators of compromise.',
+    details: [
+      'In the Evidence tab, select an artifact.',
+      'Choose the appropriate analysis module (e.g., Image Forensics, Deepfake Detection, Log Analysis).',
+      'Review the AI-generated summary, Risk Score, and identified anomalies.',
+      'Cross-reference findings with Threat Intel for IP/Domain context.'
+    ]
+  },
+  {
+    title: 'Phase 4: Timeline Reconstruction',
+    desc: 'Aggregate all case events, evidence uploads, and analysis findings into a unified chronological view to establish a sequence of events.',
+    details: [
+      'Navigate to the Timeline tab.',
+      'Filter events by category (Case, Evidence, Analysis, Alert).',
+      'Identify critical timestamps that define the incident window.'
+    ]
+  },
+  {
+    title: 'Phase 5: Reporting & Case Closure',
+    desc: 'Compile all findings, chain-of-custody logs, and executive summaries into a formal PDF report suitable for stakeholders or legal proceedings.',
+    details: [
+      'Navigate to the Reports page.',
+      'Select the target case and configure the required sections.',
+      'Generate and download the PDF report.',
+      'Update the Case Status to "Closed" or "Archived".'
+    ]
+  }
+];
 
 export default function GuidePage() {
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
-  };
+  const [activeStep, setActiveStep] = useState<number | null>(0);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <PageHeader 
-        title="Platform Guide" 
-        subtitle="Learn how to navigate and utilize the NexusDFI platform effectively." 
+        title="Standard Operating Procedure" 
+        subtitle="NexusDFI Official Investigation Workflow Protocol" 
       />
 
-      <motion.div 
-        variants={container}
-        initial="hidden"
-        animate="show"
-        className="space-y-6"
-      >
-        <motion.section variants={item} className="glass p-6 rounded-2xl border border-navy-700/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-full transition-transform group-hover:scale-110" />
-          <h2 className="text-xl font-bold text-white mb-3 font-display flex items-center gap-2">
-            <span className="text-blue-400">1.</span> Uploading Evidence
-          </h2>
-          <p className="text-navy-300 text-sm leading-relaxed mb-4">
-            Begin by securely uploading digital artifacts to the platform. 
-            NexusDFI supports images (JPG, PNG), documents (PDF, DOCX), logs (TXT), and packet captures (PCAP).
-          </p>
-          <ul className="list-disc list-inside text-sm text-navy-400 space-y-2">
-            <li>Go to the <strong className="text-white">Evidence</strong> page.</li>
-            <li>Click the "Upload Evidence" button or drag and drop your file.</li>
-            <li>Once uploaded, the system generates a secure cryptographic hash (SHA-256) to maintain the chain of custody.</li>
-          </ul>
-        </motion.section>
+      <div className="space-y-4">
+        {STEPS.map((step, idx) => (
+          <Card 
+            key={idx} 
+            className={`p-0 overflow-hidden transition-colors border ${activeStep === idx ? 'border-accent-500/50' : 'border-navy-800'}`}
+          >
+            <div 
+              className={`p-5 cursor-pointer flex items-center justify-between ${activeStep === idx ? 'bg-navy-800/40' : 'hover:bg-navy-900/40'}`}
+              onClick={() => setActiveStep(activeStep === idx ? null : idx)}
+            >
+              <div className="flex items-center gap-4">
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm font-mono border ${
+                  activeStep === idx 
+                    ? 'bg-accent-500 text-white border-accent-400' 
+                    : 'bg-navy-900 text-navy-400 border-navy-700'
+                }`}>
+                  {idx + 1}
+                </div>
+                <div>
+                  <h3 className={`font-semibold font-display ${activeStep === idx ? 'text-white' : 'text-navy-100'}`}>
+                    {step.title}
+                  </h3>
+                  <p className="text-xs text-navy-400 mt-0.5 max-w-2xl hidden md:block">
+                    {step.desc}
+                  </p>
+                </div>
+              </div>
+              <span className={`text-navy-400 transition-transform ${activeStep === idx ? 'rotate-180' : ''}`}>
+                ▼
+              </span>
+            </div>
 
-        <motion.section variants={item} className="glass p-6 rounded-2xl border border-navy-700/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-bl-full transition-transform group-hover:scale-110" />
-          <h2 className="text-xl font-bold text-white mb-3 font-display flex items-center gap-2">
-            <span className="text-red-400">2.</span> Running AI Analysis
-          </h2>
-          <p className="text-navy-300 text-sm leading-relaxed mb-4">
-            NexusDFI includes advanced machine learning models to detect manipulation and threats.
-          </p>
-          <ul className="list-disc list-inside text-sm text-navy-400 space-y-2">
-            <li>Select an uploaded file from the Evidence vault.</li>
-            <li>Click <strong className="text-white">Run Analysis</strong> and choose a module:
-              <ul className="list-circle list-inside ml-6 mt-1 space-y-1">
-                <li><span className="text-blue-400 font-medium">Image Forensics:</span> Analyzes Error Level Analysis (ELA) and PRNU inconsistencies to find Photoshopped areas.</li>
-                <li><span className="text-blue-400 font-medium">Deepfake Detection:</span> Uses vision models to detect facial manipulation and GAN artifacts.</li>
-                <li><span className="text-blue-400 font-medium">Log Analysis:</span> Scans system logs for malicious IPs and suspicious activity.</li>
-              </ul>
-            </li>
-            <li>Review the detailed findings. The platform explains exactly <em>why</em> a finding is flagged and where to look.</li>
-          </ul>
-        </motion.section>
-
-        <motion.section variants={item} className="glass p-6 rounded-2xl border border-navy-700/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full transition-transform group-hover:scale-110" />
-          <h2 className="text-xl font-bold text-white mb-3 font-display flex items-center gap-2">
-            <span className="text-emerald-400">3.</span> Case Management
-          </h2>
-          <p className="text-navy-300 text-sm leading-relaxed mb-4">
-            Organize your evidence and findings into dedicated investigations.
-          </p>
-          <ul className="list-disc list-inside text-sm text-navy-400 space-y-2">
-            <li>Navigate to the <strong className="text-white">Cases</strong> tab.</li>
-            <li>Create a new case, assigning a priority level and attaching related evidence files.</li>
-            <li>Collaborate with other investigators by adding notes and visualizing the case timeline.</li>
-          </ul>
-        </motion.section>
-
-        <motion.section variants={item} className="glass p-6 rounded-2xl border border-navy-700/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/5 rounded-bl-full transition-transform group-hover:scale-110" />
-          <h2 className="text-xl font-bold text-white mb-3 font-display flex items-center gap-2">
-            <span className="text-purple-400">4.</span> Threat Intelligence & Assistant
-          </h2>
-          <p className="text-navy-300 text-sm leading-relaxed mb-4">
-            Leverage advanced tools for broader intelligence gathering.
-          </p>
-          <ul className="list-disc list-inside text-sm text-navy-400 space-y-2">
-            <li><strong className="text-white">Threat Intel:</strong> (Admin Only) View live global cyber threat indicators, CVE feeds, and active botnet trackers.</li>
-            <li><strong className="text-white">AI Assistant:</strong> Chat with NexusDFI's trained investigation model. Ask it to summarize logs, explain attack vectors, or guide you through a forensic protocol.</li>
-          </ul>
-        </motion.section>
-      </motion.div>
+            <AnimatePresence>
+              {activeStep === idx && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-t border-navy-800 bg-navy-900/20"
+                >
+                  <div className="p-6 pl-16">
+                    <p className="text-sm text-navy-300 mb-4 leading-relaxed md:hidden">{step.desc}</p>
+                    <ul className="space-y-3">
+                      {step.details.map((detail, dIdx) => (
+                        <li key={dIdx} className="flex items-start gap-3 text-sm text-navy-200">
+                          <span className="text-accent-400 mt-0.5 text-xs">■</span>
+                          <span className="leading-relaxed">{detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

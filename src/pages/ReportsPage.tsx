@@ -37,16 +37,16 @@ export default function ReportsPage() {
 
   const containerVariants = {
     hidden: {},
-    show: { transition: { staggerChildren: 0.08 } },
+    show: { transition: { staggerChildren: 0.05 } },
   };
   const itemVariants = {
     hidden: { opacity: 0, x: -16 },
-    show:   { opacity: 1, x: 0, transition: { duration: 0.4 } },
+    show:   { opacity: 1, x: 0, transition: { duration: 0.3 } },
   };
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Report Generator" subtitle="Professional forensic reports for all cases" icon="📑" />
+      <PageHeader title="Report Generator" subtitle="Professional forensic reports for all cases" />
 
       {/* Inline Toast Notifications */}
       <AnimatePresence>
@@ -57,12 +57,9 @@ export default function ReportsPage() {
             exit={{ opacity: 0, y: -10 }}
             className="toast-error"
           >
-            <span className="text-lg flex-shrink-0">⚠️</span>
+            <span className="font-bold">Error:</span>
             <span>{error}</span>
-            <button
-              onClick={() => setError('')}
-              className="ml-auto text-red-400/60 hover:text-red-400 transition-colors text-lg leading-none"
-            >✕</button>
+            <button onClick={() => setError('')} className="ml-auto text-red-400/60 hover:text-red-400">✕</button>
           </motion.div>
         )}
         {successCase && (
@@ -72,7 +69,7 @@ export default function ReportsPage() {
             exit={{ opacity: 0, y: -10 }}
             className="toast-success"
           >
-            <span className="text-lg flex-shrink-0">✅</span>
+            <span className="font-bold">Success:</span>
             <span>Report for <strong>{successCase}</strong> generated and downloaded successfully!</span>
           </motion.div>
         )}
@@ -83,47 +80,36 @@ export default function ReportsPage() {
 
         {/* Report list */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="lg:col-span-2 space-y-4">
-          <SectionHeader title="Available Cases for Reporting" icon="📄" />
-          {loading ? <Spinner /> : cases.length === 0 ? (
+          <SectionHeader title="Available Cases for Reporting" />
+          {loading ? <div className="py-8 flex justify-center"><Spinner /></div> : cases.length === 0 ? (
             <p className="text-navy-400 text-sm">No cases available. Create a case first.</p>
           ) : cases.map((c) => (
             <motion.div
               key={c.id}
               variants={itemVariants}
-              whileHover={{ y: -2, boxShadow: '0 12px 36px rgba(0,0,0,0.38)' }}
-              className="glass glass-hover p-5"
+              className="glass p-4 hover:border-navy-600 transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <motion.div
-                    whileHover={{ scale: 1.05, rotate: 3 }}
-                    className="w-12 h-14 rounded-lg flex flex-col items-center justify-center flex-shrink-0"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(220,38,38,0.12), rgba(220,38,38,0.04))',
-                      border: '1px solid rgba(220,38,38,0.18)',
-                    }}
-                  >
-                    <span className="text-lg">📄</span>
-                    <span className="text-[9px] font-bold" style={{ color: '#DC2626' }}>PDF</span>
-                  </motion.div>
+                  <div className="w-10 h-12 rounded bg-navy-800 border border-navy-700 flex flex-col items-center justify-center flex-shrink-0">
+                    <span className="text-[10px] font-bold text-navy-400">PDF</span>
+                  </div>
                   <div>
-                    <p className="text-sm font-semibold text-navy-200 font-display">{c.title}</p>
-                    <p className="text-xs mono" style={{ color: '#3B82F6' }}>{c.case_id}</p>
-                    <p className="text-xs text-navy-500 mt-1">{new Date(c.created_at).toLocaleDateString()} · {c.evidence_count} evidence files</p>
+                    <p className="text-sm font-semibold text-white font-display">{c.title}</p>
+                    <p className="text-xs mono text-accent-400">{c.case_id}</p>
+                    <p className="text-[10px] text-navy-400 mt-1 uppercase tracking-wider">{new Date(c.created_at).toLocaleDateString()} · {c.evidence_count} evidence files</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <Badge label={c.status} variant="badge-success" dot />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                  <button
                     onClick={() => generate(c.id, c.case_id)}
                     disabled={generating === c.id}
                     id={`btn-generate-report-${c.id}`}
-                    className="btn-cyber btn-primary text-xs py-1.5"
+                    className="btn-cyber btn-primary text-xs py-1.5 min-w-[120px] justify-center"
                   >
-                    {generating === c.id ? <Spinner size="sm" /> : '⬇'} Generate Report
-                  </motion.button>
+                    {generating === c.id ? <Spinner size="sm" /> : 'Generate Report'}
+                  </button>
                 </div>
               </div>
 
@@ -133,29 +119,24 @@ export default function ReportsPage() {
 
         {/* Generate new report panel */}
         <div>
-          <SectionHeader title="Report Options" icon="✨" />
+          <SectionHeader title="Report Configuration" />
           <Card className="space-y-4">
-            <p className="text-sm text-navy-300">Generate a comprehensive PDF forensic report for an active case. The report includes chain-of-custody logs, AI analysis findings, and recommendations.</p>
+            <p className="text-sm text-navy-300 leading-relaxed">
+              Generate a comprehensive PDF forensic report for an active case. The report includes chain-of-custody logs, AI analysis findings, and tactical recommendations.
+            </p>
             <div className="space-y-2 mt-4">
               <label className="label-cyber">Include Sections</label>
-              {['Executive Summary','Evidence Chain-of-Custody','Image Analysis','Deepfake Detection','Log Analysis','Risk Assessment','Recommendations','Timeline'].map(s => (
-                <label key={s} className="flex items-center gap-2 text-xs text-navy-300 cursor-pointer hover:text-navy-100 transition-colors">
+              {['Executive Summary','Chain-of-Custody Log','Image Forensics','Deepfake Detection','Log Analysis','Risk Assessment','Recommendations','Timeline Events'].map(s => (
+                <label key={s} className="flex items-center gap-2 text-xs text-navy-300 cursor-pointer hover:text-white transition-colors">
                   <input type="checkbox" defaultChecked
-                    className="rounded"
-                    style={{ accentColor: '#DC2626' }}
+                    className="rounded border-navy-600 bg-navy-900"
                   />
                   {s}
                 </label>
               ))}
             </div>
-            <div
-              className="mt-4 p-3 rounded-xl text-xs text-navy-400"
-              style={{
-                background: 'rgba(59,130,246,0.05)',
-                border: '1px solid rgba(59,130,246,0.12)',
-              }}
-            >
-              <span style={{ color: '#3B82F6' }}>ℹ</span> Reports require the FastAPI backend running on port 8000. PDF generation uses ReportLab.
+            <div className="mt-4 p-3 rounded-lg text-xs text-navy-300 border border-navy-700 bg-navy-900/50">
+              <span className="text-accent-400 font-bold mr-1">INFO:</span> Reports require the FastAPI backend running on port 8000. PDF generation uses ReportLab.
             </div>
           </Card>
         </div>

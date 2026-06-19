@@ -18,19 +18,15 @@ const PRIORITY_OPTIONS: CasePriority[] = ['Low','Medium','High','Critical'];
 type CaseFormData = CreateCaseDto;
 
 // ── Memoized table row ────────────────────────────────────
-const CaseRow = memo(function CaseRow({ c, onView, onDelete, index }: {
+const CaseRow = memo(function CaseRow({ c, onView, onDelete }: {
   c: NexusCase;
   onView: (id: number) => void;
   onDelete: (id: number) => void;
   index: number;
 }) {
   return (
-    <motion.tr
-      initial={{ opacity: 0, x: -12 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.35 }}
-    >
-      <td className="mono text-sky-400 text-xs font-medium">{c.case_id}</td>
+    <tr>
+      <td className="mono text-accent-400 text-xs font-medium">{c.case_id}</td>
       <td>
         <p className="text-navy-100 font-medium">{c.title}</p>
         <p className="text-xs text-navy-400 truncate max-w-xs">{c.description}</p>
@@ -41,23 +37,19 @@ const CaseRow = memo(function CaseRow({ c, onView, onDelete, index }: {
       <td><span className="text-xs text-navy-400 mono">{fmtDate(c.created_at)}</span></td>
       <td>
         <div className="flex gap-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          <button
             id={`btn-view-case-${c.id}`}
             onClick={(e) => { e.stopPropagation(); onView(c.id); }}
             className="btn-cyber btn-cyan py-1 text-xs"
-          >View</motion.button>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+          >View</button>
+          <button
             id={`btn-delete-case-${c.id}`}
             onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}
             className="btn-cyber btn-danger py-1 text-xs"
-          >Delete</motion.button>
+          >Delete</button>
         </div>
       </td>
-    </motion.tr>
+    </tr>
   );
 });
 
@@ -104,13 +96,8 @@ export default function CaseList() {
     setDeleteId(null);
   };
 
-  const handleView = (id: number) => {
-    navigate(`/cases/${id}`);
-  };
-
-  const handleDeleteClick = (id: number) => {
-    setDeleteId(id);
-  };
+  const handleView = (id: number) => { navigate(`/cases/${id}`); };
+  const handleDeleteClick = (id: number) => { setDeleteId(id); };
 
   const filtered = cases.filter(c => {
     const matchSearch = c.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -120,21 +107,18 @@ export default function CaseList() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="Case Management"
-        subtitle="Track and manage all forensic investigations"
-        icon="📂"
+        subtitle="Track and manage forensic investigations"
       >
-        <motion.button
-          whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
+        <button
           id="btn-new-case"
           onClick={() => setShowForm(true)}
           className="btn-cyber btn-primary"
         >
           + New Case
-        </motion.button>
+        </button>
       </PageHeader>
 
       {/* Filters */}
@@ -148,18 +132,16 @@ export default function CaseList() {
             onChange={e => setSearch(e.target.value)}
             className="input-cyber flex-1 min-w-[200px]"
           />
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {(['All', ...STATUS_OPTIONS] as const).map(s => (
-              <motion.button
+              <button
                 key={s}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
                 id={`filter-status-${s.toLowerCase()}`}
                 onClick={() => setFilterStatus(s as CaseStatus | 'All')}
                 className={`btn-cyber text-xs py-1.5 ${filterStatus === s ? 'btn-cyan' : 'btn-ghost'}`}
               >
                 {s}
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -170,7 +152,7 @@ export default function CaseList() {
         <div className="flex justify-center py-20"><Spinner size="lg" label="Loading cases..." /></div>
       ) : filtered.length === 0 ? (
         <EmptyState icon="📂" title="No cases found" description="No investigations match your filter criteria." action={
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn-cyber btn-primary" onClick={() => setShowForm(true)}>Create First Case</motion.button>
+          <button className="btn-cyber btn-primary" onClick={() => setShowForm(true)}>Create First Case</button>
         } />
       ) : (
         <Card className="overflow-hidden p-0">
@@ -206,24 +188,22 @@ export default function CaseList() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.2 }}
             className="glass p-6 w-full max-w-lg mx-4"
-            style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.5)' }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-bold text-white font-display">New Investigation Case</h2>
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-white font-display">New Investigation Case</h2>
+              <button
                 onClick={() => { setShowForm(false); reset(); }}
-                className="text-navy-400 hover:text-white text-xl transition-colors"
+                className="text-navy-400 hover:text-white text-lg transition-colors"
               >
                 ✕
-              </motion.button>
+              </button>
             </div>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
@@ -231,7 +211,7 @@ export default function CaseList() {
                 <input
                   id="input-case-title"
                   {...register('title', { required: 'Title is required' })}
-                  placeholder="e.g. Operation Shadow Storm"
+                  placeholder="e.g. USB Data Exfiltration Investigation"
                   className="input-cyber"
                 />
                 {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title.message}</p>}
@@ -241,7 +221,7 @@ export default function CaseList() {
                 <textarea
                   id="input-case-description"
                   {...register('description')}
-                  placeholder="Describe the investigation scope..."
+                  placeholder="Describe the investigation scope and objectives..."
                   className="input-cyber resize-none h-24"
                 />
               </div>
@@ -260,11 +240,10 @@ export default function CaseList() {
                 </div>
               </div>
               <div className="flex gap-3 justify-end pt-2">
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} type="button" onClick={() => { setShowForm(false); reset(); }} className="btn-cyber btn-ghost">Cancel</motion.button>
-                <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} id="btn-submit-case" type="submit" disabled={submitting} className="btn-cyber btn-primary">
-                  {submitting ? <Spinner size="sm" /> : null}
+                <button type="button" onClick={() => { setShowForm(false); reset(); }} className="btn-cyber btn-ghost">Cancel</button>
+                <button id="btn-submit-case" type="submit" disabled={submitting} className="btn-cyber btn-primary">
                   {submitting ? 'Creating...' : 'Create Case'}
-                </motion.button>
+                </button>
               </div>
             </form>
           </motion.div>

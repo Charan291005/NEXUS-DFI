@@ -9,7 +9,6 @@ import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
 import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
-import { ExternalIntelligence } from '../components/ExternalIntelligence';
 
 const DEFAULT_STATS: DashboardStats = {
   total_cases: 0,
@@ -25,33 +24,24 @@ const DEFAULT_STATS: DashboardStats = {
 };
 
 const RISK_PIE_COLORS: Record<string, string> = {
-  Critical: '#DC2626', High: '#EF4444', Medium: '#F59E0B', Low: '#3B82F6', Safe: '#10b981',
+  Critical: '#DC2626', High: '#EF4444', Medium: '#F59E0B', Low: '#3B82F6', Safe: '#22C55E',
 };
 
-const ACTIVITY_ICON: Record<string, string> = {
-  evidence_uploaded: '📁',
-  alert: '🚨',
-  analysis_complete: '🔍',
-  case_created: '📂',
-  report_generated: '📑',
+const ACTIVITY_TYPE_LABEL: Record<string, string> = {
+  evidence_uploaded: 'Evidence',
+  alert: 'Alert',
+  analysis_complete: 'Analysis',
+  case_created: 'Case',
+  report_generated: 'Report',
 };
 
-const ACTIVITY_COLOR: Record<string, string> = {
-  evidence_uploaded: '#3B82F6',
-  alert: '#DC2626',
-  analysis_complete: '#EF4444',
-  case_created: '#F87171',
-  report_generated: '#F59E0B',
-};
-
-const AnimatedCounter = memo(function AnimatedCounter({ target, duration = 1.5 }: { target: number; duration?: number }) {
+const AnimatedCounter = memo(function AnimatedCounter({ target, duration = 1.2 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
     const start  = Date.now();
     const step   = () => {
       const elapsed = (Date.now() - start) / 1000;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease-out cubic for smoother deceleration
       const eased = 1 - Math.pow(1 - progress, 3);
       setCount(Math.floor(eased * target));
       if (progress < 1) requestAnimationFrame(step);
@@ -70,17 +60,9 @@ interface CustomTooltipProps {
 const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div
-      className="px-4 py-3 text-xs rounded-xl"
-      style={{
-        background: 'rgba(17,24,39,0.97)',
-        backdropFilter: 'blur(12px)',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.45)',
-        border: '1px solid rgba(220,38,38,0.18)',
-      }}
-    >
-      <p className="text-navy-300 font-medium">{label}</p>
-      <p className="font-bold text-sm mt-0.5" style={{ color: '#DC2626' }}>{payload[0]?.value} cases</p>
+    <div className="px-3 py-2 text-xs rounded-lg" style={{ background: '#1E293B', border: '1px solid #334155' }}>
+      <p className="text-navy-400">{label}</p>
+      <p className="font-semibold text-sm text-accent-400 mt-0.5">{payload[0]?.value} cases</p>
     </div>
   );
 });
@@ -99,17 +81,17 @@ export default function Dashboard() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <Spinner size="lg" label="Loading Dashboard..." />
+      <Spinner size="lg" label="Loading dashboard..." />
     </div>
   );
 
   const containerVariants = {
     hidden: {},
-    show: { transition: { staggerChildren: 0.08 } },
+    show: { transition: { staggerChildren: 0.06 } },
   };
   const itemVariants = {
-    hidden: { opacity: 0, y: 24 },
-    show:   { opacity: 1, y: 0, transition: { duration: 0.5 } },
+    hidden: { opacity: 0, y: 12 },
+    show:   { opacity: 1, y: 0, transition: { duration: 0.3 } },
   };
 
   return (
@@ -117,21 +99,21 @@ export default function Dashboard() {
 
       {/* ── Page Header ─────────────────────────────────── */}
       <motion.div variants={itemVariants}>
-        <p className="text-[11px] text-navy-400 mono tracking-[0.15em] uppercase mb-1.5">Intelligence Overview</p>
-        <h1 className="text-3xl font-bold text-white font-display tracking-wide">
-          Welcome back, <span className="text-gradient-cyan">{user?.username}</span>
+        <p className="text-xs text-navy-400 mb-1">Overview</p>
+        <h1 className="text-2xl font-bold text-white font-display">
+          Welcome back, <span className="text-accent-400">{user?.username}</span>
         </h1>
-        <p className="text-sm text-navy-300 mt-1.5">
+        <p className="text-sm text-navy-400 mt-1">
           {new Date().toLocaleDateString('en-IN', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })}
         </p>
       </motion.div>
 
       {/* ── Stat Cards ───────────────────────────────────── */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Cases" value={<AnimatedCounter target={stats.total_cases} />}       icon="📂" color="#DC2626"  delta={`+${stats.cases_this_week}`} />
-        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats.active_investigations} />} icon="🔍" color="#3B82F6" />
-        <StatCard label="Evidence Files" value={<AnimatedCounter target={stats.evidence_files} />} icon="💾" color="#EF4444"  />
-        <StatCard label="High Risk Findings" value={<AnimatedCounter target={stats.high_risk_findings} />}     icon="⚠️" color="#DC2626"  />
+        <StatCard label="Total Cases"           value={<AnimatedCounter target={stats.total_cases} />}           color="#2563EB"  delta={`+${stats.cases_this_week}`} />
+        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats.active_investigations} />} color="#3B82F6" />
+        <StatCard label="Evidence Files"        value={<AnimatedCounter target={stats.evidence_files} />}        color="#22C55E" />
+        <StatCard label="Critical Findings"     value={<AnimatedCounter target={stats.high_risk_findings} />}    color="#EF4444" />
       </motion.div>
 
       {/* ── Charts Row ───────────────────────────────────── */}
@@ -140,20 +122,20 @@ export default function Dashboard() {
         {/* Weekly cases area chart */}
         <motion.div variants={itemVariants} className="lg:col-span-2">
           <Card>
-            <SectionHeader title="Investigation Activity" subtitle="New cases per day this week" icon="📈" />
+            <SectionHeader title="Investigation Activity" subtitle="Cases opened per day" />
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={stats.weekly_cases}>
                 <defs>
                   <linearGradient id="caseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#DC2626" stopOpacity={0.28} />
-                    <stop offset="95%" stopColor="#DC2626" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#2563EB" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(220,38,38,0.06)" />
-                <XAxis dataKey="day" tick={{ fill:'#4A6080', fontSize:11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill:'#4A6080', fontSize:11 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.4)" />
+                <XAxis dataKey="day" tick={{ fill:'#64748B', fontSize:11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill:'#64748B', fontSize:11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="count" stroke="#DC2626" strokeWidth={2.5} fill="url(#caseGrad)" />
+                <Area type="monotone" dataKey="count" stroke="#2563EB" strokeWidth={2} fill="url(#caseGrad)" />
               </AreaChart>
             </ResponsiveContainer>
           </Card>
@@ -162,7 +144,7 @@ export default function Dashboard() {
         {/* Risk pie chart */}
         <motion.div variants={itemVariants}>
           <Card>
-            <SectionHeader title="Risk Distribution" subtitle="All findings" icon="🎯" />
+            <SectionHeader title="Risk Distribution" subtitle="All findings" />
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
                 <Pie data={stats.risk_distribution} dataKey="count" nameKey="level" cx="50%" cy="50%" outerRadius={70} innerRadius={38} paddingAngle={2}>
@@ -172,11 +154,10 @@ export default function Dashboard() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: 'rgba(12,19,34,0.95)',
-                    border: '1px solid rgba(59,130,246,0.15)',
-                    borderRadius: 12,
+                    background: '#1E293B',
+                    border: '1px solid #334155',
+                    borderRadius: 8,
                     fontSize: 11,
-                    backdropFilter: 'blur(12px)',
                   }}
                 />
               </PieChart>
@@ -184,7 +165,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-1.5 mt-2">
               {stats.risk_distribution.map((r) => (
                 <div key={r.level} className="flex items-center gap-1.5 text-xs text-navy-300">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: RISK_PIE_COLORS[r.level] }} />
+                  <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: RISK_PIE_COLORS[r.level] }} />
                   <span>{r.level}</span>
                   <span className="ml-auto text-white font-medium">{r.count}</span>
                 </div>
@@ -197,26 +178,24 @@ export default function Dashboard() {
       {/* ── Activity Feed ───────────────────────────────── */}
       <motion.div variants={itemVariants}>
         <Card>
-          <SectionHeader title="Recent Activity" subtitle="Latest forensic events" icon="⚡" />
-          <div className="space-y-2">
+          <SectionHeader title="Recent Activity" subtitle="Latest investigation events" />
+          <div className="space-y-1">
             {stats.recent_activity.map((item: ActivityItem, i: number) => (
               <motion.div
                 key={item.id}
-                initial={{ opacity:0, x: 20 }}
+                initial={{ opacity:0, x: 8 }}
                 animate={{ opacity:1, x: 0 }}
-                transition={{ delay: i * 0.06 }}
-                whileHover={{ x: 4 }}
-                className="flex items-start gap-3 p-3.5 rounded-xl bg-navy-800/40 hover:bg-navy-700/30 transition-all group cursor-default"
+                transition={{ delay: i * 0.04 }}
+                className="flex items-start gap-3 p-3 rounded-lg hover:bg-navy-800/50 transition-colors"
               >
-                <div
-                  className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-sm"
-                  style={{ background: `${ACTIVITY_COLOR[item.type]}10`, border: `1px solid ${ACTIVITY_COLOR[item.type]}15` }}
-                >
-                  {ACTIVITY_ICON[item.type]}
+                <div className="mt-1">
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-navy-800 text-navy-400 border border-navy-700">
+                    {ACTIVITY_TYPE_LABEL[item.type] || item.type}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-navy-200 group-hover:text-white transition-colors leading-snug">{item.message}</p>
-                  <p className="text-[11px] text-navy-500 mt-0.5 mono">{timeAgo(item.timestamp)}</p>
+                  <p className="text-sm text-navy-200 leading-snug">{item.message}</p>
+                  <p className="text-[11px] text-navy-500 mono mt-0.5">{timeAgo(item.timestamp)}</p>
                 </div>
                 {item.severity && <RiskBadge level={item.severity as RiskLevel} />}
               </motion.div>
@@ -225,35 +204,27 @@ export default function Dashboard() {
         </Card>
       </motion.div>
 
-      {/* ── Threat Intelligence Banner ─────────────────── */}
+      {/* ── System Status ───────────────────────────────── */}
       <motion.div variants={itemVariants}>
-        <div className="glass p-5 border border-red-500/15 bg-red-500/[0.02] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center gap-4 threat-banner">
-          <motion.div
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-11 h-11 rounded-xl bg-red-500/10 flex items-center justify-center text-xl flex-shrink-0"
-            style={{ border: '1px solid rgba(239,68,68,0.15)' }}
-          >
-            🚨
-          </motion.div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-red-400 font-display">Active Threat Detected</p>
-            <p className="text-xs text-navy-300 mt-0.5">7 deepfake artifacts found across 3 active cases. Immediate review recommended by the AI Analysis Engine.</p>
+        <Card>
+          <SectionHeader title="System Status" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {[
+              { label: 'Frontend',       status: 'Operational', ok: true },
+              { label: 'Authentication', status: 'Firebase Active', ok: true },
+              { label: 'API Server',     status: 'Cloud Run', ok: true },
+              { label: 'AI Engine',      status: 'Gemini Ready', ok: true },
+            ].map((s) => (
+              <div key={s.label} className="p-3 rounded-lg bg-navy-950/50 border border-navy-800">
+                <p className="text-[10px] text-navy-400 uppercase tracking-wider mb-1">{s.label}</p>
+                <div className="flex items-center gap-1.5">
+                  <div className={`w-1.5 h-1.5 rounded-full ${s.ok ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <span className="text-xs text-navy-200 font-medium">{s.status}</span>
+                </div>
+              </div>
+            ))}
           </div>
-          <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.97 }}
-            id="btn-view-threats"
-            className="btn-cyber btn-danger flex-shrink-0 w-full sm:w-auto"
-          >
-            Review Threats
-          </motion.button>
-        </div>
-      </motion.div>
-
-      {/* ── External OSINT Intelligence ───────────────── */}
-      <motion.div variants={itemVariants}>
-        <ExternalIntelligence />
+        </Card>
       </motion.div>
 
     </motion.div>

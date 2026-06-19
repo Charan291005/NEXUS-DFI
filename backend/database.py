@@ -25,7 +25,7 @@ engine = create_engine(
 )
 
 # Enable WAL mode for SQLite — allows concurrent reads while writing
-if _is_sqlite:
+if _is_sqlite and os.getenv("DISABLE_WAL", "False") != "True":
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
@@ -34,6 +34,16 @@ if _is_sqlite:
         cursor.execute("PRAGMA cache_size=-64000")  # 64MB cache
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.close()
+
+# Ensure the directory exists if it's a file-based SQLite database
+if _is_sqlite:
+    db_path = SQLALCHEMY_DATABASE_URL.replace("sqlite:///", "")
+    db_dir = os.path.dirname(db_path)
+    if db_dir and not os.path.exists(db_dir):
+        try:
+            os.makedirs(db_dir, exist_ok=True)
+        except Exception as e:
+            print(f"Warning: Could not create database directory {db_dir}: {e}")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

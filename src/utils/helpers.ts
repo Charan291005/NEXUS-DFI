@@ -2,11 +2,11 @@ import type { CasePriority, CaseStatus, RiskLevel } from '../types';
 
 // ─── Risk helpers ────────────────────────────────────────
 export function riskColor(score: number): string {
-  if (score >= 80) return '#DC2626'; // crimson
-  if (score >= 60) return '#EF4444'; // red-400
-  if (score >= 40) return '#f59e0b'; // amber-500
-  if (score >= 20) return '#3B82F6'; // steel blue
-  return '#10b981'; // emerald-500
+  if (score >= 80) return '#DC2626'; // critical red
+  if (score >= 60) return '#EF4444'; // high
+  if (score >= 40) return '#F59E0B'; // warning amber
+  if (score >= 20) return '#3B82F6'; // blue
+  return '#22C55E'; // safe green
 }
 
 export function riskLabel(score: number): RiskLevel {
@@ -20,9 +20,9 @@ export function riskLabel(score: number): RiskLevel {
 export const RISK_COLORS: Record<RiskLevel, string> = {
   Critical: '#DC2626',
   High:     '#EF4444',
-  Medium:   '#f59e0b',
+  Medium:   '#F59E0B',
   Low:      '#3B82F6',
-  Safe:     '#10b981',
+  Safe:     '#22C55E',
 };
 
 // ─── Priority / Status helpers ───────────────────────────
@@ -99,4 +99,4 @@ export function generateCaseId(): string {
 }
 
 // ─── Chart colors ─────────────────────────────────────────
-export const CHART_COLORS = ['#DC2626','#3B82F6','#10b981','#f59e0b','#EF4444','#4A5568'];
+export const CHART_COLORS = ['#2563EB','#3B82F6','#22C55E','#F59E0B','#EF4444','#64748B'];
