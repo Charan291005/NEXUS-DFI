@@ -255,29 +255,33 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
             desc = f"Extracted {len(ips)} IPs and {len(emails)} emails for threat intelligence correlation."
             findings.append({"category": "IoC Extraction", "severity": "Medium" if len(ips) > 5 else "Low", "description": desc, "value": f"{len(ips)} IPs", "location": "Throughout Log File", "analystNote": "IP addresses and emails extracted can be cross-referenced against global threat intelligence feeds to identify known malicious actors."})
 
-        # 2. Shannon Entropy Profiling (Detecting Base64 / Encrypted payloads)
+        # 2. Shannon Entropy & 3. Signature/Pattern Matching (Combined for performance)
         high_entropy_count = 0
+        finding_counts = {}
+        compiled_patterns = [(re.compile(p, re.IGNORECASE), et, sev, desc) for p, et, sev, desc in SUSPICIOUS_PATTERNS]
+        
         for i, line in enumerate(lines[:10000]):
-            ent = _shannon_entropy(line.strip())
+            stripped_line = line.strip()
+            
+            # Entropy Check
+            ent = _shannon_entropy(stripped_line)
             if ent > 5.8:  # Typical english text is ~3.5-4.5. Base64/Crypto is > 5.8
                 high_entropy_count += 1
                 if high_entropy_count <= 5:  # Log the first few
-                    events.append({"timestamp": f"Line {i+1}", "type": "OBFUSCATION", "message": line.strip()[:100] + "...", "severity": "High"})
+                    events.append({"timestamp": f"Line {i+1}", "type": "OBFUSCATION", "message": stripped_line[:100] + "...", "severity": "High"})
+            
+            # Signature Matching
+            for pattern, event_type, severity, description in compiled_patterns:
+                if pattern.search(line):
+                    finding_counts[event_type] = finding_counts.get(event_type, 0) + 1
+                    if finding_counts[event_type] <= 3:
+                        events.append({"timestamp": f"Line {i+1}", "type": event_type, "message": stripped_line[:100], "severity": severity})
         
         if high_entropy_count > 0:
             risk_score += min(high_entropy_count * 5, 40)
             findings.append({"category": "Shannon Entropy Profiling", "severity": "High", "description": f"{high_entropy_count} lines found with abnormally high entropy (potential base64 payload).", "value": f"{high_entropy_count} Lines", "location": f"E.g., Line {events[0]['timestamp'] if events else 'N/A'}", "analystNote": "High entropy (>5.8) indicates dense, randomized data, which is a strong signature for obfuscated code, encrypted payloads, or base64 reverse shells."})
         else:
             findings.append({"category": "Shannon Entropy Profiling", "severity": "Safe", "description": "No obfuscated or encrypted payloads detected in logs.", "value": "Normal", "location": "All Lines Analyzed", "analystNote": "Entropy levels match normal human-readable text."})
-
-        # 3. Signature & Pattern Matching
-        finding_counts = {}
-        for i, line in enumerate(lines[:10000]):
-            for pattern, event_type, severity, description in SUSPICIOUS_PATTERNS:
-                if re.search(pattern, line, re.IGNORECASE):
-                    finding_counts[event_type] = finding_counts.get(event_type, 0) + 1
-                    if finding_counts[event_type] <= 3:
-                        events.append({"timestamp": f"Line {i+1}", "type": event_type, "message": line.strip()[:100], "severity": severity})
 
         sig_score = 0
         SEV_WEIGHTS = {"Critical": 20, "High": 10, "Medium": 5, "Low": 1}
