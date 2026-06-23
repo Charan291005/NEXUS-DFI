@@ -4,7 +4,7 @@ import {
   AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { casesApi } from '../utils/api';
+import { casesApi, newsApi } from '../utils/api';
 import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
 import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
@@ -22,6 +22,13 @@ const DEFAULT_STATS: DashboardStats = {
   recent_activity: [],
   weekly_cases: [],
 };
+
+interface NewsArticle {
+  title: string;
+  link: string;
+  pub_date: string;
+  description: string;
+}
 
 const RISK_PIE_COLORS: Record<string, string> = {
   Critical: '#DC2626', High: '#EF4444', Medium: '#F59E0B', Low: '#3B82F6', Safe: '#22C55E',
@@ -70,12 +77,18 @@ const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: Cu
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats,   setStats]   = useState<DashboardStats>(DEFAULT_STATS);
+  const [news,    setNews]    = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    casesApi.stats()
-      .then(r => setStats(r.data))
-      .catch(() => setStats(DEFAULT_STATS))
+    Promise.all([
+      casesApi.stats().catch(() => ({ data: DEFAULT_STATS })),
+      newsApi.getLatest().catch(() => ({ data: [] }))
+    ])
+      .then(([statsRes, newsRes]) => {
+        setStats(statsRes.data);
+        setNews(newsRes.data);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -175,34 +188,79 @@ export default function Dashboard() {
         </motion.div>
       </div>
 
-      {/* ── Activity Feed ───────────────────────────────── */}
-      <motion.div variants={itemVariants}>
-        <Card>
-          <SectionHeader title="Recent Activity" subtitle="Latest investigation events" />
-          <div className="space-y-1">
-            {stats.recent_activity.map((item: ActivityItem, i: number) => (
-              <motion.div
-                key={item.id}
-                initial={{ opacity:0, x: 8 }}
-                animate={{ opacity:1, x: 0 }}
-                transition={{ delay: i * 0.04 }}
-                className="flex items-start gap-3 p-3 rounded-lg hover:bg-navy-800/50 transition-colors"
-              >
-                <div className="mt-1">
-                  <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-navy-800 text-navy-400 border border-navy-700">
-                    {ACTIVITY_TYPE_LABEL[item.type] || item.type}
-                  </span>
+      {/* ── Activity & News Feed ───────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <motion.div variants={itemVariants}>
+          <Card>
+            <SectionHeader title="Recent Activity" subtitle="Latest investigation events" />
+            <div className="space-y-1">
+              {stats.recent_activity.length > 0 ? stats.recent_activity.map((item: ActivityItem, i: number) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity:0, x: 8 }}
+                  animate={{ opacity:1, x: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-navy-800/50 transition-colors"
+                >
+                  <div className="mt-1">
+                    <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-navy-800 text-navy-400 border border-navy-700">
+                      {ACTIVITY_TYPE_LABEL[item.type] || item.type}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-navy-200 leading-snug">{item.message}</p>
+                    <p className="text-[11px] text-navy-500 mono mt-0.5">{timeAgo(item.timestamp)}</p>
+                  </div>
+                  {item.severity && <RiskBadge level={item.severity as RiskLevel} />}
+                </motion.div>
+              )) : (
+                <div className="p-4 text-center text-sm text-navy-400 border border-dashed border-navy-700 rounded-lg">
+                  No recent activity found.
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-navy-200 leading-snug">{item.message}</p>
-                  <p className="text-[11px] text-navy-500 mono mt-0.5">{timeAgo(item.timestamp)}</p>
+              )}
+            </div>
+          </Card>
+        </motion.div>
+
+        {/* ── Cyber Intelligence Feed ────────────────────── */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <SectionHeader 
+              title="Live Intelligence Feed" 
+              subtitle="Real-time cybercrime & forensics news" 
+              action={<span className="flex items-center gap-1 text-[10px] text-[#c1ff00] font-mono uppercase tracking-wider"><span className="w-1.5 h-1.5 rounded-full bg-[#c1ff00] animate-pulse" /> Live</span>}
+            />
+            <div className="space-y-3 mt-2 h-[320px] overflow-y-auto pr-2 custom-scrollbar">
+              {news.length > 0 ? news.map((article, i) => (
+                <motion.a
+                  key={i}
+                  href={article.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity:0, y: 8 }}
+                  animate={{ opacity:1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="block p-3 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.04)] hover:border-[rgba(26,47,251,0.3)] transition-all cursor-pointer group"
+                >
+                  <h4 className="text-[13px] font-semibold text-[#f0f1fa] group-hover:text-[#1a2ffb] transition-colors leading-snug mb-1">
+                    {article.title}
+                  </h4>
+                  <p className="text-[11px] text-[#7a7d8e] line-clamp-2 mb-2 leading-relaxed">
+                    {article.description}
+                  </p>
+                  <p className="text-[9px] text-[#4a4d5c] font-mono uppercase tracking-wider">
+                    {article.pub_date}
+                  </p>
+                </motion.a>
+              )) : (
+                <div className="flex flex-col items-center justify-center h-full opacity-50">
+                   <Spinner size="sm" label="Fetching live feeds..." />
                 </div>
-                {item.severity && <RiskBadge level={item.severity as RiskLevel} />}
-              </motion.div>
-            ))}
-          </div>
-        </Card>
-      </motion.div>
+              )}
+            </div>
+          </Card>
+        </motion.div>
+      </div>
 
       {/* ── System Status ───────────────────────────────── */}
       <motion.div variants={itemVariants}>

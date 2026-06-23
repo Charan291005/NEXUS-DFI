@@ -112,3 +112,8 @@ export const analysisApi = {
   getStats:          () =>
     api.get('/analysis/stats'),
 };
+
+// ── News ────────────────────────────────────────────────
+export const newsApi = {
+  getLatest: () => api.get('/news'),
+};
