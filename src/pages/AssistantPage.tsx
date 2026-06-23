@@ -4,6 +4,7 @@ import { analysisApi } from '../utils/api';
 import { Card, Spinner } from '../components/ui';
 import { FiPaperclip, FiSend, FiCpu, FiX, FiCheck } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
+import { extractTextFromFile } from '../utils/fileParser';
 
 interface Message {
   id: number;
@@ -136,6 +137,7 @@ How can I assist you with your investigation today?`;
     const saved = localStorage.getItem('nexus_ai_provider');
     if (saved) return saved;
     const key = localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY;
+    // Default to pollinations since the user wants a free keyless option
     return key ? 'gemini' : 'pollinations';
   });
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
@@ -230,7 +232,7 @@ How can I assist you with your investigation today?`;
 
   const callAiDirect = useCallback(async (question: string, currentProvider: string, currentApiKey: string): Promise<string> => {
     const prov = currentProvider.toLowerCase();
-    const systemPrompt = `You are the NexusDFI Forensic Assistant. Your primary goal is to support the investigator with technical analysis, but you MUST be highly empathetic, warm, and supportive. Acknowledge the stress of their work, offer clear, structured advice, and be very professional yet human. Use markdown for formatting.`;
+    const systemPrompt = `You are the NexusDFI Forensic Assistant. Your primary goal is to support the investigator with technical analysis, but you are also a highly capable general-purpose AI. You MUST answer any question the user asks, whether it is about digital forensics, coding, general knowledge, or casual chat. Be highly empathetic, warm, and supportive. Acknowledge the stress of their work, offer clear, structured advice, and be very professional yet human. Use markdown for formatting.`;
     
     if (prov === 'pollinations') {
       try {
@@ -321,15 +323,34 @@ How can I assist you with your investigation today?`;
     if (loading) return;
 
     let finalQuery = textToSend;
+
+    // Process attached files
     if (attachedFiles.length > 0) {
-      const fileNames = attachedFiles.map(f => f.name).join(', ');
-      finalQuery += `\n\n[Context: User attached the following files for analysis: ${fileNames}]`;
+      setLoading(true);
+      // We push a temporary loading message for the UI feedback
+      setMessages(prev => [...prev, {
+        id: Date.now() - 1,
+        role: 'assistant',
+        content: 'Extracting data from attached files... Please wait.',
+        timestamp: new Date().toISOString()
+      }]);
+
+      let extractedContext = '';
+      for (const file of attachedFiles) {
+        const text = await extractTextFromFile(file);
+        extractedContext += `\n\n--- Content of ${file.name} ---\n${text}\n---`;
+      }
+
+      // Remove the temporary loading message
+      setMessages(prev => prev.filter(m => m.content !== 'Extracting data from attached files... Please wait.'));
+
+      finalQuery += `\n\n[Context: The user has attached the following files for you to read. Answer their prompt based on this context.]${extractedContext}`;
     }
 
     const userMsg: Message = { 
       id: Date.now(), 
       role: 'user', 
-      content: finalQuery, 
+      content: textToSend + (attachedFiles.length > 0 ? `\n\n*(Attached ${attachedFiles.length} file(s))*` : ''), 
       timestamp: new Date().toISOString() 
     };
 
