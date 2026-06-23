@@ -56,6 +56,14 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         db.add(user)
         db.commit()
         db.refresh(user)
+        
+        # Seed demo data for the new user to prevent an empty dashboard
+        from backend.seeder import seed_demo_data
+        try:
+            seed_demo_data(db, user.id)
+        except Exception as e:
+            print(f"[WARN] Failed to seed demo data for {email}: {e}")
+            
     return user
 
 
