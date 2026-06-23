@@ -47,45 +47,85 @@ export default function Layout() {
 
   // Page transition variants
   const pageVariants = {
-    initial: { opacity: 0, y: 8 },
-    animate: { opacity: 1, y: 0 },
-    exit:    { opacity: 0, y: -8 },
+    initial: { opacity: 0, y: 12, filter: 'blur(4px)' },
+    animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+    exit:    { opacity: 0, y: -8, filter: 'blur(4px)' },
   };
 
   return (
-    <div className="flex h-screen overflow-hidden page-bg">
+    <div className="flex h-screen overflow-hidden page-bg noise-overlay">
 
       {/* ── Sidebar ─────────────────────────────────────── */}
       <motion.aside
         animate={{ width: collapsed ? 64 : 240 }}
-        transition={{ duration: 0.2, ease: 'easeInOut' }}
+        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="sidebar flex flex-col h-screen flex-shrink-0 overflow-hidden"
       >
         {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-4 border-b border-navy-800">
-          <div
-            className="w-8 h-8 flex-shrink-0 rounded-lg flex items-center justify-center overflow-hidden"
-            style={{ background: '#F8FAFC' }}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '20px 16px',
+          borderBottom: '1px solid rgba(255,255,255,0.04)',
+        }}>
+          <motion.div
+            whileHover={{ boxShadow: '0 0 20px rgba(26,47,251,0.3)' }}
+            style={{
+              width: '32px',
+              height: '32px',
+              flexShrink: 0,
+              borderRadius: '10px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              transition: 'box-shadow 0.3s ease',
+            }}
           >
-            <img src="/nexusdfi-logo.png" alt="NexusDFI" className="w-6 h-6 object-contain" />
-          </div>
+            <img src="/nexusdfi-logo.png" alt="NexusDFI" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
+          </motion.div>
           <AnimatePresence>
             {!collapsed && (
               <motion.div
                 initial={{ opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.15 }}
+                transition={{ duration: 0.2 }}
               >
-                <p className="text-white font-semibold text-sm font-display">NexusDFI</p>
-                <p className="text-[10px] text-navy-400">Digital Forensics</p>
+                <p style={{ color: '#f0f1fa', fontWeight: 700, fontSize: '13px', letterSpacing: '-0.02em' }}>NEXUSDFI</p>
+                <p style={{ color: '#22222e', fontSize: '9px', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'IBM Plex Mono', monospace" }}>Digital Forensics</p>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+        {/* Nav section label */}
+        <AnimatePresence>
+          {!collapsed && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                padding: '16px 16px 8px',
+                fontSize: '9px',
+                fontWeight: 600,
+                color: '#22222e',
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}
+            >
+              Navigation
+            </motion.p>
+          )}
+        </AnimatePresence>
+
+        {/* Nav links */}
+        <nav style={{ flex: 1, padding: '4px 8px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
           {NAV_ITEMS.filter(item => !user || item.allowedRoles.includes(user.role)).map((item) => (
             <NavLink
               key={item.to}
@@ -101,37 +141,59 @@ export default function Layout() {
                     initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -8 }}
-                    transition={{ duration: 0.1 }}
-                    className="whitespace-nowrap text-sm"
+                    transition={{ duration: 0.15 }}
+                    style={{ whiteSpace: 'nowrap', fontSize: '13px' }}
                   >
                     {item.label}
                   </motion.span>
                 )}
               </AnimatePresence>
               {collapsed && (
-                <span className="text-xs font-medium">{item.label[0]}</span>
+                <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '-0.01em' }}>{item.label[0]}</span>
               )}
             </NavLink>
           ))}
         </nav>
 
         {/* Footer */}
-        <div className="px-2 py-3 border-t border-navy-800">
+        <div style={{ padding: '8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
           {/* User */}
-          <NavLink to="/profile" className="block w-full">
+          <NavLink to="/profile" style={{ display: 'block', width: '100%', textDecoration: 'none' }}>
             <div
-              className={`flex items-center gap-2 px-2.5 py-2 rounded-lg bg-navy-950/50 hover:bg-navy-800 transition-colors ${collapsed ? 'justify-center' : ''}`}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '8px 10px',
+                borderRadius: '12px',
+                background: 'rgba(255,255,255,0.02)',
+                transition: 'background 0.2s ease',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.04)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
             >
               <div
-                className="w-7 h-7 flex-shrink-0 rounded-md flex items-center justify-center text-xs font-semibold text-white"
-                style={{ background: '#2563EB' }}
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  flexShrink: 0,
+                  borderRadius: '8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  color: '#000000',
+                  background: 'linear-gradient(135deg, #1a2ffb, #c1ff00)',
+                }}
               >
                 {user?.username?.[0]?.toUpperCase() ?? 'U'}
               </div>
               {!collapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-navy-100 font-medium truncate">{user?.username}</p>
-                  <p className="text-[10px] text-navy-400">{user?.role}</p>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '12px', color: '#b0b3c0', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.username}</p>
+                  <p style={{ fontSize: '10px', color: '#22222e', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.06em' }}>{user?.role}</p>
                 </div>
               )}
             </div>
@@ -141,45 +203,120 @@ export default function Layout() {
           <button
             id="btn-logout"
             onClick={handleLogout}
-            className={`nav-link w-full mt-1 text-navy-400 hover:text-red-400 hover:bg-red-500/8 ${collapsed ? 'justify-center' : ''}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+              padding: '8px 10px',
+              marginTop: '4px',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'transparent',
+              color: '#4a4d5c',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#F87171';
+              e.currentTarget.style.background = 'rgba(239,68,68,0.06)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#4a4d5c';
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
-            {!collapsed ? <span className="text-sm">Sign Out</span> : <span className="text-xs">×</span>}
+            {!collapsed ? <span>Sign Out</span> : <span style={{ fontSize: '11px' }}>×</span>}
           </button>
 
           {/* Collapse toggle */}
           <button
             id="btn-collapse"
             onClick={() => setCollapsed(!collapsed)}
-            className={`nav-link w-full mt-1 ${collapsed ? 'justify-center' : ''}`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              width: '100%',
+              padding: '8px 10px',
+              marginTop: '2px',
+              borderRadius: '12px',
+              border: 'none',
+              background: 'transparent',
+              color: '#22222e',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = '#7a7d8e';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = '#22222e';
+              e.currentTarget.style.background = 'transparent';
+            }}
           >
             <motion.span
               animate={{ rotate: collapsed ? 0 : 180 }}
-              transition={{ duration: 0.2 }}
-              className="text-xs inline-block"
+              transition={{ duration: 0.3 }}
+              style={{ display: 'inline-block', fontSize: '10px' }}
             >
               ▶
             </motion.span>
-            {!collapsed && <span className="text-sm">Collapse</span>}
+            {!collapsed && <span>Collapse</span>}
           </button>
         </div>
       </motion.aside>
 
       {/* ── Main Content ─────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden">
-        {/* Top bar */}
+        {/* Top bar — Lusion-style transparent blur */}
         <header
-          className="sticky top-0 z-10 px-6 py-3 flex items-center justify-between border-b border-navy-800"
-          style={{ background: 'rgba(11,18,32,0.92)', backdropFilter: 'blur(12px)' }}
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            padding: '12px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid rgba(255,255,255,0.04)',
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
         >
-          <div className="flex items-center gap-3">
-            <h2 className="text-sm font-semibold text-navy-100 font-display">{currentPage}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <h2 style={{
+              fontSize: '14px',
+              fontWeight: 700,
+              color: '#f0f1fa',
+              letterSpacing: '-0.02em',
+            }}>{currentPage}</h2>
           </div>
-          <div className="flex items-center gap-4">
-            <span className="text-[11px] text-navy-400 mono">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <span style={{
+              fontSize: '11px',
+              color: '#4a4d5c',
+              fontFamily: "'IBM Plex Mono', monospace",
+              letterSpacing: '0.04em',
+            }}>
               {time.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
             </span>
-            <div className="h-4 w-px bg-navy-700" />
-            <span className="text-[11px] mono tabular-nums text-navy-300">
+            <div style={{ height: '16px', width: '1px', background: 'rgba(255,255,255,0.06)' }} />
+            <span style={{
+              fontSize: '11px',
+              fontFamily: "'IBM Plex Mono', monospace",
+              fontVariantNumeric: 'tabular-nums',
+              color: '#c1ff00',
+              letterSpacing: '0.04em',
+            }}>
               {time.toLocaleTimeString('en-IN', { hour12: false })}
             </span>
           </div>
@@ -193,7 +330,7 @@ export default function Layout() {
             initial="initial"
             animate="animate"
             exit="exit"
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="p-6"
           >
             <Outlet />
@@ -208,17 +345,40 @@ export default function Layout() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-6 right-6 z-50 p-5 max-w-sm rounded-xl shadow-elevated border border-navy-700"
-            style={{ background: '#1E293B' }}
+            style={{
+              position: 'fixed',
+              bottom: '24px',
+              right: '24px',
+              zIndex: 50,
+              padding: '20px',
+              maxWidth: '360px',
+              borderRadius: '16px',
+              background: 'rgba(15,15,25,0.9)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255,255,255,0.06)',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
+            }}
           >
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 text-amber-400 text-sm">⚠</div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+              <div style={{ marginTop: '2px', color: '#FBBF24', fontSize: '14px' }}>⚠</div>
               <div>
-                <h3 className="text-sm font-semibold text-white mb-1 font-display">Session Timeout</h3>
-                <p className="text-xs text-navy-300 leading-relaxed mb-3">
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#f0f1fa', marginBottom: '4px', letterSpacing: '-0.02em' }}>Session Timeout</h3>
+                <p style={{ fontSize: '12px', color: '#7a7d8e', lineHeight: 1.5, marginBottom: '12px' }}>
                   You have been inactive for 14 minutes. You will be automatically logged out in 1 minute.
                 </p>
-                <button className="py-1.5 px-4 bg-accent-500 text-white text-xs font-semibold rounded-lg hover:bg-accent-600 transition-colors cursor-pointer">
+                <button style={{
+                  padding: '8px 20px',
+                  background: '#1a2ffb',
+                  color: '#ffffff',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  borderRadius: '100px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  letterSpacing: '0.04em',
+                  textTransform: 'uppercase',
+                }}>
                   Stay Logged In
                 </button>
               </div>
