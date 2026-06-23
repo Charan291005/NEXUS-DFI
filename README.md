@@ -30,11 +30,12 @@
 
 **NexusDFI** is an AI-powered, enterprise-grade **Digital Forensics Intelligence** platform built for law enforcement, security researchers, forensic analysts, and competitive hackathons. It integrates:
 
-- 🧠 **Google Gemini AI** — context-aware forensic investigation assistant
+- 🧠 **Keyless AI & Gemini** — fully capable forensic & general chatbot (Pollinations default)
 - 🔒 **Firebase Auth** — zero-friction Google Sign-In with JWT verification
 - 🖼️ **Computer Vision** — ELA image tampering detection via OpenCV + Pillow
-- 📊 **Real-time Analytics** — animated dashboards with Recharts
+- 📊 **Real-time Analytics** — true-synced dashboards with Recharts and Investigation Pipelines
 - ☁️ **Cloud-native** — Firebase Hosting frontend + Cloud Run backend
+- 🌍 **Threat Intelligence** — live asynchronous RSS feeds (The Hacker News)
 
 The UI draws inspiration from **CrowdStrike Falcon** and **Splunk Enterprise** — a dark, premium, glassmorphism aesthetic built for power users.
 
@@ -50,7 +51,8 @@ The UI draws inspiration from **CrowdStrike Falcon** and **Splunk Enterprise** �
 | 🖼️ **Image Forensics (ELA)** | Pillow + OpenCV | Error Level Analysis, EXIF metadata, tampering probability score |
 | 🤖 **Deepfake Detection** | OpenCV + DCT | GAN fingerprint frequency analysis + facial landmark scoring |
 | 📋 **Log Analysis** | Python Regex | Anomaly detection, IP extraction, timeline reconstruction |
-| 💬 **AI Assistant** | Gemini 2.0 Flash | Context-aware forensic Q&A with streaming chat UI |
+| 💬 **AI Assistant** | Pollinations/Gemini | True general AI chatbot with local file parsing (PDF, DOCX, OCR) |
+| 🌍 **Live Threat Intel** | FastAPI + RSS | Asynchronous parsing of live cyber intelligence feeds |
 | ⏱️ **Timeline Reconstruction** | React | Chronological case event visualization |
 | 📊 **Risk Assessment** | Custom engine | 0–100 animated risk meter with 5-level classification |
 | 📑 **PDF Report Generator** | ReportLab | Court-ready forensic reports with chain-of-custody |
@@ -76,6 +78,7 @@ The UI draws inspiration from **CrowdStrike Falcon** and **Splunk Enterprise** �
 | React Hook Form | 7 | Form management |
 | Firebase SDK | 12 | Google Sign-In auth |
 | Axios | 1.x | HTTP client with interceptors |
+| Local Parsers | Latest | `pdfjs-dist`, `mammoth`, `tesseract.js` for true file extraction |
 
 </td>
 <td valign="top" width="50%">
@@ -83,7 +86,7 @@ The UI draws inspiration from **CrowdStrike Falcon** and **Splunk Enterprise** �
 ### ⚙️ Backend
 | Technology | Version | Purpose |
 |-----------|---------|---------|
-| FastAPI | Latest | REST API framework |
+| FastAPI | Latest | REST API framework (Async threadpools) |
 | Python | 3.11+ | Runtime |
 | SQLAlchemy | 2.x | ORM |
 | SQLite | 3 | Database (WAL mode) |
@@ -302,7 +305,7 @@ NEXUS-DFI/
 │   │   ├── EvidencePage.tsx        # Drag-drop upload + AI analysis
 │   │   ├── TimelinePage.tsx        # Chronological event reconstruction
 │   │   ├── ReportsPage.tsx         # PDF forensic report generator
-│   │   └── AssistantPage.tsx       # Gemini AI chat assistant
+│   │   └── AssistantPage.tsx       # ChatGPT-style AI with PDF/DOCX/OCR file parsing
 │   ├── 📂 components/
 │   │   ├── Layout.tsx              # Sidebar + animated header shell
 │   │   └── ui.tsx                  # StatCard, Badge, Spinner, RiskMeter
@@ -398,7 +401,7 @@ Ensure your frontend dev server runs on `http://localhost:5173` (Vite default). 
 <details>
 <summary><b>🤖 AI Assistant gives no response</b></summary>
 
-The AI Assistant requires a valid `GEMINI_API_KEY` in your `.env` file. Get one free at [Google AI Studio](https://aistudio.google.com/app/apikey). The backend reads this key at startup.
+By default, the platform uses a free, keyless **Pollinations AI** engine so it works out-of-the-box. If you switch the settings to use **Google Gemini** or **OpenAI**, you must provide a valid API key (e.g. `GEMINI_API_KEY` in `.env` or input it directly in the Assistant settings UI).
 
 </details>
 
