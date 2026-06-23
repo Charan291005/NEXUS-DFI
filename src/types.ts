@@ -86,6 +86,12 @@ export interface DashboardStats {
   evidence_by_type: { type: string; count: number }[];
   recent_activity: ActivityItem[];
   weekly_cases: { day: string; count: number }[];
+  pipeline?: {
+    open_cases: number;
+    pending_evidence: number;
+    analysis_in_progress: number;
+    ready_for_report: number;
+  };
 }
 
 export interface ActivityItem {

@@ -9,6 +9,8 @@ import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
 import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
+import { useRealtimeStats } from '../hooks/useRealtimeStats';
+import { FiArrowRight, FiCheckCircle, FiClock, FiFileText, FiFolder } from 'react-icons/fi';
 
 const DEFAULT_STATS: DashboardStats = {
   total_cases: 0,
@@ -76,23 +78,27 @@ const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: Cu
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [stats,   setStats]   = useState<DashboardStats>(DEFAULT_STATS);
+  
+  // Use our real-time hook for stats. It handles polling in the background.
+  const { stats, setStats, isLive } = useRealtimeStats(DEFAULT_STATS, 30000);
+  
   const [news,    setNews]    = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      casesApi.stats().catch(() => ({ data: DEFAULT_STATS })),
-      newsApi.getLatest().catch(() => ({ data: [] }))
-    ])
-      .then(([statsRes, newsRes]) => {
-        setStats(statsRes.data);
-        setNews(newsRes.data);
-      })
-      .finally(() => setLoading(false));
+    // Fetch stats instantly
+    casesApi.stats()
+      .then(r => setStats(r.data))
+      .catch(() => setStats(DEFAULT_STATS))
+      .finally(() => setLoadingStats(false));
+
+    // Fetch news independently without blocking the UI
+    newsApi.getLatest()
+      .then(r => setNews(r.data))
+      .catch(() => setNews([]));
   }, []);
 
-  if (loading) return (
+  if (loadingStats) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <Spinner size="lg" label="Loading dashboard..." />
     </div>
@@ -111,22 +117,60 @@ export default function Dashboard() {
     <motion.div variants={containerVariants} initial="hidden" animate="show" className="space-y-6">
 
       {/* ── Page Header ─────────────────────────────────── */}
+      <motion.div variants={itemVariants} className="flex justify-between items-end">
+        <div>
+          <p className="text-xs text-navy-400 mb-1">Overview</p>
+          <h1 className="text-2xl font-bold text-white font-display">
+            Welcome back, <span className="text-accent-400">{user?.username}</span>
+          </h1>
+          <p className="text-sm text-navy-400 mt-1">
+            {new Date().toLocaleDateString('en-IN', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })}
+          </p>
+        </div>
+        {isLive && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1a2ffb]/10 border border-[#1a2ffb]/30">
+            <span className="w-2 h-2 rounded-full bg-[#c1ff00] animate-pulse"></span>
+            <span className="text-xs font-mono text-[#c1ff00]">SYNCED</span>
+          </div>
+        )}
+      </motion.div>
+
+      {/* ── Investigation Workflow Tracker ───────────────── */}
       <motion.div variants={itemVariants}>
-        <p className="text-xs text-navy-400 mb-1">Overview</p>
-        <h1 className="text-2xl font-bold text-white font-display">
-          Welcome back, <span className="text-accent-400">{user?.username}</span>
-        </h1>
-        <p className="text-sm text-navy-400 mt-1">
-          {new Date().toLocaleDateString('en-IN', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })}
-        </p>
+        <Card>
+          <SectionHeader title="Active Investigation Pipeline" subtitle="Cross-layer correlation tracking" />
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mt-2">
+            {[
+              { label: 'Open Cases', count: stats?.pipeline?.open_cases || 0, icon: <FiFolder />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+              { label: 'Pending Evidence', count: stats?.pipeline?.pending_evidence || 0, icon: <FiFileText />, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+              { label: 'Analysis Running', count: stats?.pipeline?.analysis_in_progress || 0, icon: <FiClock />, color: 'text-purple-400', bg: 'bg-purple-400/10' },
+              { label: 'Ready for Report', count: stats?.pipeline?.ready_for_report || 0, icon: <FiCheckCircle />, color: 'text-[#c1ff00]', bg: 'bg-[#c1ff00]/10' },
+            ].map((step, idx, arr) => (
+              <div key={step.label} className="flex-1 flex items-center justify-between md:justify-center relative group">
+                <div className="flex flex-col items-center p-4 rounded-xl border border-dashed border-navy-700 bg-navy-900/30 hover:border-navy-500 hover:bg-navy-800/50 transition-all w-full md:w-auto min-w-[140px]">
+                  <div className={`p-3 rounded-full ${step.bg} ${step.color} mb-3 group-hover:scale-110 transition-transform`}>
+                    {step.icon}
+                  </div>
+                  <h4 className="text-2xl font-bold text-white font-display mb-1">{step.count}</h4>
+                  <p className="text-[10px] uppercase tracking-wider text-navy-400 font-medium text-center">{step.label}</p>
+                </div>
+                {idx < arr.length - 1 && (
+                  <div className="hidden md:flex absolute -right-6 z-10 text-navy-600">
+                    <FiArrowRight size={24} />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Card>
       </motion.div>
 
       {/* ── Stat Cards ───────────────────────────────────── */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Cases"           value={<AnimatedCounter target={stats.total_cases} />}           color="#2563EB"  delta={`+${stats.cases_this_week}`} />
-        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats.active_investigations} />} color="#3B82F6" />
-        <StatCard label="Evidence Files"        value={<AnimatedCounter target={stats.evidence_files} />}        color="#22C55E" />
-        <StatCard label="Critical Findings"     value={<AnimatedCounter target={stats.high_risk_findings} />}    color="#EF4444" />
+        <StatCard label="Total Cases"           value={<AnimatedCounter target={stats?.total_cases || 0} />}           color="#2563EB"  delta={`+${stats?.cases_this_week || 0}`} />
+        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats?.active_investigations || 0} />} color="#3B82F6" />
+        <StatCard label="Evidence Files"        value={<AnimatedCounter target={stats?.evidence_files || 0} />}        color="#22C55E" />
+        <StatCard label="Critical Findings"     value={<AnimatedCounter target={stats?.high_risk_findings || 0} />}    color="#EF4444" />
       </motion.div>
 
       {/* ── Charts Row ───────────────────────────────────── */}
@@ -137,7 +181,7 @@ export default function Dashboard() {
           <Card>
             <SectionHeader title="Investigation Activity" subtitle="Cases opened per day" />
             <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={stats.weekly_cases}>
+              <AreaChart data={stats?.weekly_cases || []}>
                 <defs>
                   <linearGradient id="caseGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%"  stopColor="#2563EB" stopOpacity={0.2} />
@@ -160,8 +204,8 @@ export default function Dashboard() {
             <SectionHeader title="Risk Distribution" subtitle="All findings" />
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
-                <Pie data={stats.risk_distribution} dataKey="count" nameKey="level" cx="50%" cy="50%" outerRadius={70} innerRadius={38} paddingAngle={2}>
-                  {stats.risk_distribution.map((entry, i) => (
+                <Pie data={stats?.risk_distribution || []} dataKey="count" nameKey="level" cx="50%" cy="50%" outerRadius={70} innerRadius={38} paddingAngle={2}>
+                  {(stats?.risk_distribution || []).map((entry, i) => (
                     <Cell key={i} fill={RISK_PIE_COLORS[entry.level]} />
                   ))}
                 </Pie>
@@ -176,7 +220,7 @@ export default function Dashboard() {
               </PieChart>
             </ResponsiveContainer>
             <div className="grid grid-cols-2 gap-1.5 mt-2">
-              {stats.risk_distribution.map((r) => (
+              {(stats?.risk_distribution || []).map((r) => (
                 <div key={r.level} className="flex items-center gap-1.5 text-xs text-navy-300">
                   <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: RISK_PIE_COLORS[r.level] }} />
                   <span>{r.level}</span>
@@ -194,7 +238,7 @@ export default function Dashboard() {
           <Card>
             <SectionHeader title="Recent Activity" subtitle="Latest investigation events" />
             <div className="space-y-1">
-              {stats.recent_activity.length > 0 ? stats.recent_activity.map((item: ActivityItem, i: number) => (
+              {stats?.recent_activity?.length ? stats.recent_activity.map((item: ActivityItem, i: number) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity:0, x: 8 }}

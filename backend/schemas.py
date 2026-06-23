@@ -98,6 +98,7 @@ class DashboardStats(BaseModel):
     evidence_by_type:      List[Dict[str, Any]]
     recent_activity:       List[Dict[str, Any]]
     weekly_cases:          List[Dict[str, Any]]
+    pipeline:              Dict[str, int]
 
 
 # ── AI Assistant ──────────────────────────────────────────

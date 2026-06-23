@@ -121,12 +121,41 @@ def dashboard_stats(db: Session = Depends(get_db), current: User = Depends(get_c
     activity.sort(key=lambda x: x["timestamp"], reverse=True)
     activity = activity[:10]
 
+    # Calculate Pipeline/Workflow correlation
+    pipeline = {
+        "open_cases": sum(1 for c in cases_all if c.status == "Open") if 'cases_all' in locals() else db.query(func.count(Case.id)).filter(Case.owner_id == current.id, Case.status == "Open").scalar() or 0,
+        "pending_evidence": 0,
+        "analysis_in_progress": 0,
+        "ready_for_report": 0
+    }
+    
+    # Efficient pipeline counting
+    all_cases_user = db.query(Case).filter(Case.owner_id == current.id).all()
+    case_id_list = [c.id for c in all_cases_user]
+    
+    if case_id_list:
+        ev_counts = dict(db.query(Evidence.case_id, func.count(Evidence.id)).filter(Evidence.case_id.in_(case_id_list)).group_by(Evidence.case_id).all())
+        ar_counts = dict(db.query(Evidence.case_id, func.count(AnalysisResult.id)).join(AnalysisResult).filter(Evidence.case_id.in_(case_id_list)).group_by(Evidence.case_id).all())
+        
+        for c in all_cases_user:
+            e_count = ev_counts.get(c.id, 0)
+            a_count = ar_counts.get(c.id, 0)
+            
+            if c.status == "Closed": continue
+            if e_count == 0:
+                pipeline["pending_evidence"] += 1
+            elif e_count > 0 and a_count == 0:
+                pipeline["analysis_in_progress"] += 1
+            elif a_count > 0:
+                pipeline["ready_for_report"] += 1
+
     return DashboardStats(
         total_cases=total_cases, active_investigations=active_count,
         evidence_files=ev_count, high_risk_findings=high_risk,
         deepfake_detections=deepfakes, cases_this_week=cases_week,
         risk_distribution=risk_dist, evidence_by_type=evidence_by_type,
         recent_activity=activity, weekly_cases=weekly_cases,
+        pipeline=pipeline
     )
 
 
