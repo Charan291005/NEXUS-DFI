@@ -1,32 +1,36 @@
 @import "tailwindcss";
 
 /* ─── Google Fonts ───────────────────────────────────────── */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 
-/* ─── Tailwind v4 theme tokens ──────────────────────────── */
+/* ─── Tailwind v4 theme tokens — Lusion-inspired ────────── */
 @theme {
   --font-family-sans: 'Inter', system-ui, sans-serif;
   --font-family-mono: 'IBM Plex Mono', 'Consolas', monospace;
 
-  /* Enterprise Navy backgrounds */
-  --color-navy-950: #0B1220;
-  --color-navy-900: #111827;
-  --color-navy-850: #0F1729;
-  --color-navy-800: #1E293B;
-  --color-navy-700: #334155;
-  --color-navy-600: #475569;
-  --color-navy-500: #64748B;
-  --color-navy-400: #94A3B8;
-  --color-navy-300: #CBD5E1;
-  --color-navy-200: #E2E8F0;
-  --color-navy-100: #F8FAFC;
+  /* Lusion-inspired Dark Palette */
+  --color-navy-950: #000000;
+  --color-navy-900: #0a0a0f;
+  --color-navy-850: #0d0d14;
+  --color-navy-800: #16161e;
+  --color-navy-700: #22222e;
+  --color-navy-600: #2b2e3a;
+  --color-navy-500: #4a4d5c;
+  --color-navy-400: #7a7d8e;
+  --color-navy-300: #b0b3c0;
+  --color-navy-200: #d8dae3;
+  --color-navy-100: #f0f1fa;
 
-  /* Primary accent — Enterprise Blue */
-  --color-accent-600: #1D4ED8;
-  --color-accent-500: #2563EB;
-  --color-accent-400: #3B82F6;
-  --color-accent-300: #60A5FA;
-  --color-accent-200: #93C5FD;
+  /* Electric Blue Accent (Lusion signature) */
+  --color-accent-600: #0a1ec8;
+  --color-accent-500: #1a2ffb;
+  --color-accent-400: #3d4fff;
+  --color-accent-300: #6670ff;
+  --color-accent-200: #9da4ff;
+
+  /* Neon Green Accent */
+  --color-neon: #c1ff00;
+  --color-neon-dim: #8fb800;
 
   /* Status colors */
   --color-success-500: #22C55E;
@@ -38,9 +42,11 @@
   --color-critical-500: #DC2626;
 
   /* Shadows */
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-elevated: 0 8px 24px rgba(0,0,0,0.45);
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+  --shadow-card-hover: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(26,47,251,0.1);
+  --shadow-elevated: 0 16px 48px rgba(0,0,0,0.7);
+  --shadow-glow-blue: 0 0 20px rgba(26,47,251,0.3), 0 0 60px rgba(26,47,251,0.1);
+  --shadow-glow-neon: 0 0 20px rgba(193,255,0,0.2), 0 0 60px rgba(193,255,0,0.06);
 }
 
 /* ─── Base ─────────────────────────────────────────────── */
@@ -58,269 +64,367 @@ html, body, #root {
 
 body {
   font-family: 'Inter', system-ui, sans-serif;
-  background-color: #0B1220;
-  color: #F8FAFC;
+  background-color: #000000;
+  color: #f0f1fa;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
 }
 
-/* ─── Scrollbar ─────────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* ─── Scrollbar — Lusion ultra-thin ────────────────────── */
+::-webkit-scrollbar { width: 3px; height: 3px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1a2ffb;
   border-radius: 8px;
 }
-::-webkit-scrollbar-thumb:hover { background: #475569; }
-::selection { background: rgba(37,99,235,0.3); color: #ffffff; }
+::-webkit-scrollbar-thumb:hover { background: #3d4fff; }
+::selection { background: rgba(26,47,251,0.35); color: #ffffff; }
+
+/* ─── Noise texture overlay ─────────────────────────────── */
+.noise-overlay::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
 
 /* ─── Heading font ──────────────────────────────────────── */
-.font-display { font-family: 'IBM Plex Sans', 'Inter', system-ui, sans-serif; font-weight: 600; }
+.font-display { font-family: 'Inter', system-ui, sans-serif; font-weight: 700; letter-spacing: -0.03em; }
 
-/* ─── Card / Surface Design ──────────────────────────── */
+/* ─── Card / Surface Design — Lusion glassmorphism ───── */
 .glass {
-  background: #1E293B;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  background: rgba(15, 15, 25, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.5);
   position: relative;
   overflow: hidden;
 }
 
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 50%, rgba(26,47,251,0.08) 100%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
 .glass-hover {
-  transition: all 0.2s ease;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .glass-hover:hover {
-  border-color: #475569;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  border-color: rgba(26, 47, 251, 0.15);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(26,47,251,0.1);
+  transform: translateY(-2px);
 }
 
 /* ─── Page background ───────────────────────────────────── */
 .page-bg {
   min-height: 100vh;
-  background-color: #0B1220;
+  background-color: #000000;
 }
 
-/* ─── Buttons ───────────────────────────────────────────── */
+/* ─── Buttons — Lusion-style ────────────────────────────── */
 .btn-cyber {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 500;
+  padding: 0.6rem 1.25rem;
+  border-radius: 100px;
+  font-weight: 600;
   font-size: 0.8125rem;
-  transition: all 0.15s ease;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.02em;
+  position: relative;
+  overflow: hidden;
 }
 .btn-cyber:disabled { opacity: 0.4; cursor: not-allowed; }
 
-/* Primary — Enterprise Blue */
+/* Primary — Electric Blue */
 .btn-primary {
-  background: #2563EB;
+  background: #1a2ffb;
   color: #ffffff;
-  border-color: #2563EB;
+  border-color: #1a2ffb;
 }
 .btn-primary:hover:not(:disabled) {
-  background: #1D4ED8;
-  box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+  background: #c1ff00;
+  color: #000000;
+  border-color: #c1ff00;
+  box-shadow: 0 0 30px rgba(193,255,0,0.25);
 }
 
-/* Secondary Blue — outline */
+/* Secondary — outline */
 .btn-cyan {
-  background: rgba(37,99,235,0.1);
-  color: #60A5FA;
-  border-color: rgba(37,99,235,0.3);
+  background: rgba(26,47,251,0.08);
+  color: #6670ff;
+  border-color: rgba(26,47,251,0.2);
 }
 .btn-cyan:hover:not(:disabled) {
-  background: rgba(37,99,235,0.18);
-  border-color: rgba(37,99,235,0.5);
+  background: rgba(26,47,251,0.15);
+  border-color: rgba(26,47,251,0.4);
+  box-shadow: 0 0 20px rgba(26,47,251,0.15);
 }
 
 .btn-danger {
-  background: rgba(239,68,68,0.1);
+  background: rgba(239,68,68,0.08);
   color: #F87171;
-  border-color: rgba(239,68,68,0.25);
+  border-color: rgba(239,68,68,0.2);
 }
 .btn-danger:hover:not(:disabled) {
-  background: rgba(239,68,68,0.18);
-  border-color: rgba(239,68,68,0.4);
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
 }
 
 .btn-warm {
-  background: rgba(245,158,11,0.1);
+  background: rgba(245,158,11,0.08);
   color: #FBBF24;
-  border-color: rgba(245,158,11,0.25);
+  border-color: rgba(245,158,11,0.2);
 }
 .btn-warm:hover:not(:disabled) {
-  background: rgba(245,158,11,0.18);
+  background: rgba(245,158,11,0.15);
 }
 
 .btn-ghost {
   background: transparent;
-  color: #94A3B8;
+  color: #7a7d8e;
   border-color: transparent;
 }
 .btn-ghost:hover:not(:disabled) {
-  color: #F8FAFC;
-  background: rgba(255,255,255,0.05);
+  color: #f0f1fa;
+  background: rgba(255,255,255,0.04);
 }
 
-/* ─── Badges ────────────────────────────────────────────── */
+/* ─── Badges — Lusion glow ─────────────────────────────── */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 6px;
-  font-size: 0.65rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 100px;
+  font-size: 0.625rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
 }
-.badge-success { background: rgba(34,197,94,0.12); color: #4ADE80; border: 1px solid rgba(34,197,94,0.2); }
-.badge-warning { background: rgba(245,158,11,0.12); color: #FBBF24; border: 1px solid rgba(245,158,11,0.2); }
-.badge-danger  { background: rgba(239,68,68,0.12); color: #F87171; border: 1px solid rgba(239,68,68,0.2); }
-.badge-info    { background: rgba(37,99,235,0.1); color: #60A5FA; border: 1px solid rgba(37,99,235,0.2); }
-.badge-purple  { background: rgba(147,51,234,0.1); color: #A78BFA; border: 1px solid rgba(147,51,234,0.2); }
-.badge-gray    { background: rgba(148,163,184,0.1); color: #94A3B8; border: 1px solid rgba(148,163,184,0.15); }
+.badge-success { background: rgba(34,197,94,0.1); color: #4ADE80; border: 1px solid rgba(34,197,94,0.15); }
+.badge-warning { background: rgba(245,158,11,0.1); color: #FBBF24; border: 1px solid rgba(245,158,11,0.15); }
+.badge-danger  { background: rgba(239,68,68,0.1); color: #F87171; border: 1px solid rgba(239,68,68,0.15); }
+.badge-info    { background: rgba(26,47,251,0.08); color: #6670ff; border: 1px solid rgba(26,47,251,0.15); }
+.badge-purple  { background: rgba(147,51,234,0.08); color: #A78BFA; border: 1px solid rgba(147,51,234,0.15); }
+.badge-gray    { background: rgba(122,125,142,0.08); color: #7a7d8e; border: 1px solid rgba(122,125,142,0.1); }
 
-/* ─── Input ─────────────────────────────────────────────── */
+/* ─── Input — Lusion borderless bottom-line ────────────── */
 .input-cyber {
   width: 100%;
-  background: #111827;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  padding: 0.6rem 0.875rem;
-  color: #F8FAFC;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0;
+  padding: 0.5rem 0 0.625rem;
+  color: #f0f1fa;
   font-family: 'Inter', sans-serif;
-  font-size: 0.8125rem;
-  transition: all 0.15s ease;
+  font-size: 0.875rem;
+  font-weight: 400;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
+  letter-spacing: 0.01em;
 }
-.input-cyber option { background: #1E293B; color: #F8FAFC; }
-.input-cyber::placeholder { color: #64748B; }
+.input-cyber option { background: #0a0a0f; color: #f0f1fa; }
+.input-cyber::placeholder { color: #4a4d5c; font-weight: 400; }
 .input-cyber:focus {
-  border-color: #2563EB;
-  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+  border-bottom-color: #1a2ffb;
+  box-shadow: 0 2px 0 0 rgba(26,47,251,0.6);
+}
+
+/* Select inputs need special treatment */
+select.input-cyber {
+  background: #0a0a0f;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 0.6rem 0.875rem;
+}
+select.input-cyber:focus {
+  border-color: #1a2ffb;
+  box-shadow: 0 0 0 3px rgba(26,47,251,0.1);
+}
+
+/* Textarea inputs */
+textarea.input-cyber {
+  background: rgba(10,10,15,0.5);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 0.75rem;
+  resize: vertical;
+}
+textarea.input-cyber:focus {
+  border-color: rgba(26,47,251,0.3);
+  box-shadow: 0 0 0 3px rgba(26,47,251,0.1);
 }
 
 /* ─── Labels / Dividers ─────────────────────────────────── */
 .label-cyber {
   display: block;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #94A3B8;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #4a4d5c;
   margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 .divider-cyber {
   height: 1px;
-  background: #334155;
+  background: rgba(255,255,255,0.06);
   border: none;
   margin: 1.5rem 0;
 }
 
 /* ─── Risk meter ────────────────────────────────────────── */
 .risk-track {
-  height: 6px;
+  height: 4px;
   border-radius: 9999px;
-  background: #1E293B;
+  background: #16161e;
   overflow: hidden;
   position: relative;
 }
 
-/* ─── Nav ───────────────────────────────────────────────── */
+/* ─── Nav — Lusion-style ────────────────────────────────── */
 .nav-link {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.55rem 0.75rem;
-  border-radius: 8px;
-  color: #94A3B8;
+  padding: 0.6rem 0.875rem;
+  border-radius: 12px;
+  color: #4a4d5c;
   font-size: 0.8125rem;
   font-weight: 500;
-  transition: all 0.15s ease;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid transparent;
   cursor: pointer;
   text-decoration: none;
   position: relative;
+  overflow: hidden;
 }
 .nav-link:hover {
-  color: #F8FAFC;
-  background: rgba(37,99,235,0.08);
+  color: #f0f1fa;
+  background: rgba(255,255,255,0.04);
 }
 .nav-link.active {
-  color: #60A5FA;
-  background: rgba(37,99,235,0.1);
-  border-color: rgba(37,99,235,0.2);
+  color: #1a2ffb;
+  background: rgba(26,47,251,0.06);
+  border-color: rgba(26,47,251,0.1);
 }
 .nav-link.active::before {
   content: '';
   position: absolute;
-  left: -0.5rem;
-  top: 25%;
-  bottom: 25%;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
   width: 3px;
+  height: 16px;
   border-radius: 0 3px 3px 0;
-  background: #2563EB;
+  background: #1a2ffb;
+}
+
+/* Active indicator dot (neon green) */
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #c1ff00;
+  box-shadow: 0 0 8px rgba(193,255,0,0.5);
 }
 
 /* ─── Stat card ─────────────────────────────────────────── */
 .stat-card {
   position: relative;
   overflow: hidden;
-  padding: 1.25rem;
-  background: #1E293B;
-  border: 1px solid #334155;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  transition: all 0.2s ease;
+  padding: 1.5rem;
+  background: rgba(15, 15, 25, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stat-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s ease;
 }
 .stat-card:hover {
-  border-color: #475569;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+  border-color: rgba(26,47,251,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(26,47,251,0.08);
+  transform: translateY(-2px);
+}
+.stat-card:hover::before {
+  opacity: 1;
 }
 
 /* ─── Table ─────────────────────────────────────────────── */
 .table-cyber { width: 100%; border-collapse: collapse; }
 .table-cyber th {
   padding: 0.75rem 1rem;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #64748B;
-  border-bottom: 1px solid #334155;
+  letter-spacing: 0.08em;
+  color: #4a4d5c;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   text-align: left;
 }
 .table-cyber td {
   padding: 0.875rem 1rem;
   font-size: 0.8125rem;
-  color: #CBD5E1;
-  border-bottom: 1px solid rgba(51,65,85,0.5);
+  color: #b0b3c0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
   vertical-align: middle;
 }
 .table-cyber tbody tr {
-  transition: background 0.15s ease;
+  transition: background 0.2s ease;
 }
 .table-cyber tbody tr:hover td {
-  background: rgba(37,99,235,0.04);
+  background: rgba(26,47,251,0.03);
 }
 .table-cyber tr:last-child td { border-bottom: none; }
 
-/* ─── Text gradients ────────────────────────────────────── */
+/* ─── Text gradients — Lusion-inspired ──────────────────── */
 .text-gradient-cyan {
-  background: linear-gradient(135deg, #3B82F6, #60A5FA);
+  background: linear-gradient(135deg, #1a2ffb, #6670ff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .text-gradient-orange {
-  background: linear-gradient(135deg, #2563EB, #3B82F6);
+  background: linear-gradient(135deg, #1a2ffb, #3d4fff);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -332,13 +436,13 @@ body {
   background-clip: text;
 }
 .text-gradient-warm {
-  background: linear-gradient(135deg, #F59E0B, #FBBF24);
+  background: linear-gradient(135deg, #c1ff00, #8fb800);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .text-gradient-multi {
-  background: linear-gradient(135deg, #2563EB, #7C3AED, #3B82F6);
+  background: linear-gradient(135deg, #1a2ffb, #c1ff00);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -347,10 +451,30 @@ body {
 /* ─── Mono font ─────────────────────────────────────────── */
 .mono { font-family: 'IBM Plex Mono', 'Consolas', monospace; }
 
-/* ─── Fade-in animation ─────────────────────────────────── */
+/* ─── Animations — Lusion-style ─────────────────────────── */
 @keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes textReveal {
+  from { opacity: 0; transform: translate3d(0, 1.2em, 0) rotate(3deg); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) rotate(0deg); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(26,47,251,0.2); }
+  50% { box-shadow: 0 0 40px rgba(26,47,251,0.4), 0 0 80px rgba(26,47,251,0.1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 /* ─── Status indicator ──────────────────────────────────── */
@@ -358,7 +482,8 @@ body {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #22C55E;
+  background: #c1ff00;
+  box-shadow: 0 0 8px rgba(193,255,0,0.5);
 }
 
 /* ─── Pulse animation for status dot ────────────────────── */
@@ -370,10 +495,10 @@ body {
   animation: pulse-subtle 2s ease-in-out infinite;
 }
 
-/* ─── Sidebar styles ────────────────────────────────────── */
+/* ─── Sidebar styles — Lusion ───────────────────────────── */
 .sidebar {
-  background: #111827;
-  border-right: 1px solid #1E293B;
+  background: #0a0a0f;
+  border-right: 1px solid rgba(255,255,255,0.04);
 }
 
 /* ─── Chat styles ───────────────────────────────────────── */
@@ -385,7 +510,7 @@ body {
   display: inline-block;
   width: 2px;
   height: 1em;
-  background: #3B82F6;
+  background: #1a2ffb;
   margin-left: 2px;
   vertical-align: text-bottom;
   animation: blink-cursor 0.8s step-end infinite;
@@ -409,19 +534,19 @@ body {
   align-items: center;
   gap: 0.6rem;
   padding: 0.65rem 0.875rem;
-  background: #1E293B;
-  border: 1px solid #334155;
-  border-radius: 8px;
-  color: #94A3B8;
+  background: rgba(15,15,25,0.6);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  color: #7a7d8e;
   font-size: 0.8125rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: left;
 }
 .quick-prompt-card:hover {
-  border-color: rgba(37,99,235,0.4);
-  color: #F8FAFC;
-  background: rgba(37,99,235,0.06);
+  border-color: rgba(26,47,251,0.2);
+  color: #f0f1fa;
+  background: rgba(26,47,251,0.05);
 }
 
 /* ─── Toast / inline notification ──────────────────────── */
@@ -430,9 +555,9 @@ body {
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
-  background: rgba(239,68,68,0.1);
-  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: 12px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.15);
   color: #F87171;
   font-size: 0.8125rem;
   animation: fadeSlideUp 0.3s ease;
@@ -442,10 +567,74 @@ body {
   align-items: center;
   gap: 0.6rem;
   padding: 0.75rem 1rem;
-  border-radius: 8px;
-  background: rgba(34,197,94,0.08);
-  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 12px;
+  background: rgba(34,197,94,0.06);
+  border: 1px solid rgba(34,197,94,0.15);
   color: #4ADE80;
   font-size: 0.8125rem;
   animation: fadeSlideUp 0.3s ease;
+}
+
+/* ─── Lusion-style hover button text effect ─────────────── */
+.btn-lusion {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  border-radius: 100px;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: transparent;
+  color: #f0f1fa;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.btn-lusion:hover {
+  background: #1a2ffb;
+  border-color: #1a2ffb;
+  box-shadow: 0 0 30px rgba(26,47,251,0.3);
+}
+
+/* ─── Gradient animated border ──────────────────────────── */
+@keyframes borderRotate {
+  0% { --angle: 0deg; }
+  100% { --angle: 360deg; }
+}
+
+@property --angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(from var(--angle), #1a2ffb, #c1ff00, #1a2ffb);
+  animation: borderRotate 4s linear infinite;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* ─── Lusion loading counter ────────────────────────────── */
+.loading-counter {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: #4a4d5c;
 }
