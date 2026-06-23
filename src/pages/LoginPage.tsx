@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Spinner } from '../components/ui';
@@ -7,24 +7,26 @@ import ParticleCanvas from '../components/ParticleCanvas';
 import CustomCursor from '../components/CustomCursor';
 
 // ── Lusion-style stagger animation variants ─────────────
-const stagger = {
+const lusionEase: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+const stagger: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.1, delayChildren: 0.6 } },
 };
 
-const textReveal = {
+const textReveal: Variants = {
   hidden: { opacity: 0, y: 40, rotateX: -15 },
-  show: { opacity: 1, y: 0, rotateX: 0, transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } },
+  show: { opacity: 1, y: 0, rotateX: 0, transition: { duration: 0.8, ease: lusionEase } },
 };
 
-const fadeIn = {
+const fadeIn: Variants = {
   hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 0.6, ease: 'easeOut' } },
+  show: { opacity: 1, transition: { duration: 0.6 } },
 };
 
-const slideUp = {
+const slideUp: Variants = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: lusionEase } },
 };
 
 export default function LoginPage() {
