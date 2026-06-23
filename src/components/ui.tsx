@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { riskColor, riskLabel } from '../utils/helpers';
 import type { RiskLevel } from '../types';
 
-// ─── Stat Card ────────────────────────────────────────────
+// ─── Stat Card — Lusion glassmorphism ─────────────────────
 interface StatCardProps {
   label:    string;
   value:    ReactNode;
@@ -14,32 +14,56 @@ interface StatCardProps {
 }
 export function StatCard({ label, value, color, delta, subtitle }: StatCardProps) {
   return (
-    <div className="stat-card">
+    <motion.div
+      className="stat-card"
+      whileHover={{ y: -2 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <p className="text-[11px] text-navy-400 uppercase tracking-[0.08em] font-medium mb-1">{label}</p>
-          <p className="text-2xl font-bold font-display" style={{ color }}>{value}</p>
-          {subtitle && <p className="text-xs text-navy-400 mt-1">{subtitle}</p>}
+          <p style={{
+            fontSize: '10px',
+            color: '#4a4d5c',
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            fontWeight: 600,
+            marginBottom: '8px',
+            fontFamily: "'IBM Plex Mono', monospace",
+          }}>{label}</p>
+          <p style={{
+            fontSize: '28px',
+            fontWeight: 800,
+            letterSpacing: '-0.03em',
+            color,
+            lineHeight: 1,
+          }}>{value}</p>
+          {subtitle && <p style={{ fontSize: '12px', color: '#4a4d5c', marginTop: '8px' }}>{subtitle}</p>}
           {delta && (
-            <p className="text-xs mt-1 font-medium" style={{ color: delta.startsWith('+') ? '#22C55E' : '#EF4444' }}>
+            <p style={{
+              fontSize: '11px',
+              marginTop: '8px',
+              fontWeight: 600,
+              color: delta.startsWith('+') ? '#c1ff00' : '#F87171',
+              fontFamily: "'IBM Plex Mono', monospace",
+            }}>
               {delta} this week
             </p>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-// ─── Glass Card ───────────────────────────────────────────
+// ─── Glass Card — Lusion-style ────────────────────────────
 type CardProps = HTMLMotionProps<'div'>;
 export function Card({ children, className = '', id, ...props }: CardProps) {
   return (
     <motion.div
       id={id}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className={`glass p-5 ${className}`}
       {...props}
     >
@@ -54,8 +78,13 @@ export function SectionHeader({ title, subtitle, action }: SectionHeaderProps) {
   return (
     <div className="flex items-center justify-between mb-4">
       <div>
-        <h2 className="text-base font-semibold text-white font-display">{title}</h2>
-        {subtitle && <p className="text-xs text-navy-400 mt-0.5">{subtitle}</p>}
+        <h2 style={{
+          fontSize: '15px',
+          fontWeight: 700,
+          color: '#f0f1fa',
+          letterSpacing: '-0.02em',
+        }}>{title}</h2>
+        {subtitle && <p style={{ fontSize: '12px', color: '#4a4d5c', marginTop: '4px' }}>{subtitle}</p>}
       </div>
       {action && <div>{action}</div>}
     </div>
@@ -69,28 +98,28 @@ export function RiskMeter({ score }: { score: number }) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-xs">
-        <span className="text-navy-400 font-medium">Risk Score</span>
+        <span style={{ color: '#4a4d5c', fontWeight: 600, fontSize: '11px', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Risk Score</span>
         <span className="font-semibold" style={{ color }}>{label}</span>
       </div>
       <div className="risk-track">
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${score}%` }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
+          transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
           className="h-full rounded-full"
           style={{ background: color }}
         />
       </div>
-      <div className="flex justify-between text-[10px] text-navy-500">
-        <span>0 Safe</span>
-        <span className="font-mono font-semibold" style={{ color }}>{score}/100</span>
-        <span>100 Critical</span>
+      <div className="flex justify-between" style={{ fontSize: '10px', color: '#22222e' }}>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>0 Safe</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color }}>{score}/100</span>
+        <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>100 Critical</span>
       </div>
     </div>
   );
 }
 
-// ─── Badge ────────────────────────────────────────────────
+// ─── Badge — Lusion glow ─────────────────────────────────
 interface BadgeProps { label: string; variant?: string; dot?: boolean; }
 export function Badge({ label, variant = 'badge-info', dot }: BadgeProps) {
   return (
@@ -101,13 +130,23 @@ export function Badge({ label, variant = 'badge-info', dot }: BadgeProps) {
   );
 }
 
-// ─── Loading Spinner ──────────────────────────────────────
+// ─── Loading Spinner — Lusion pulsing ring ────────────────
 export function Spinner({ size = 'md', label }: { size?: 'sm' | 'md' | 'lg'; label?: string }) {
-  const s = size === 'sm' ? 'w-4 h-4' : size === 'lg' ? 'w-10 h-10' : 'w-6 h-6';
+  const s = size === 'sm' ? 16 : size === 'lg' ? 40 : 24;
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className={`${s} rounded-full border-2 border-navy-700 border-t-accent-400 animate-spin`} />
-      {label && <p className="text-xs text-navy-400">{label}</p>}
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }}
+        style={{
+          width: s,
+          height: s,
+          borderRadius: '50%',
+          border: `2px solid rgba(255,255,255,0.04)`,
+          borderTopColor: '#1a2ffb',
+        }}
+      />
+      {label && <p style={{ fontSize: '11px', color: '#4a4d5c', fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.06em' }}>{label}</p>}
     </div>
   );
 }
@@ -117,13 +156,14 @@ interface EmptyStateProps { icon: string; title: string; description: string; ac
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="flex flex-col items-center justify-center py-16 text-center"
     >
-      <div className="text-4xl mb-3 opacity-30">{icon}</div>
-      <h3 className="text-base font-semibold text-navy-200 mb-1 font-display">{title}</h3>
-      <p className="text-sm text-navy-400 max-w-xs mb-5">{description}</p>
+      <div style={{ fontSize: '48px', marginBottom: '12px', opacity: 0.2 }}>{icon}</div>
+      <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#b0b3c0', marginBottom: '4px', letterSpacing: '-0.02em' }}>{title}</h3>
+      <p style={{ fontSize: '13px', color: '#4a4d5c', maxWidth: '280px', marginBottom: '20px', lineHeight: 1.5 }}>{description}</p>
       {action}
     </motion.div>
   );
@@ -143,21 +183,26 @@ interface PageHeaderProps { title: string; subtitle?: string; icon?: string; chi
 export function PageHeader({ title, subtitle, children }: PageHeaderProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: -4 }}
+      initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className="flex items-center justify-between mb-6"
     >
       <div>
-        <h1 className="text-xl font-bold text-white font-display">{title}</h1>
-        {subtitle && <p className="text-sm text-navy-400 mt-0.5">{subtitle}</p>}
+        <h1 style={{
+          fontSize: '22px',
+          fontWeight: 800,
+          color: '#f0f1fa',
+          letterSpacing: '-0.03em',
+        }}>{title}</h1>
+        {subtitle && <p style={{ fontSize: '13px', color: '#4a4d5c', marginTop: '4px' }}>{subtitle}</p>}
       </div>
       {children && <div className="flex items-center gap-3">{children}</div>}
     </motion.div>
   );
 }
 
-// ─── Confirmation Modal ───────────────────────────────────
+// ─── Confirmation Modal — Lusion glassmorphism ────────────
 interface ConfirmModalProps {
   open: boolean;
   title: string;
@@ -173,16 +218,26 @@ export function ConfirmModal({ open, title, message, onConfirm, onCancel, danger
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0,0,0,0.7)',
+        backdropFilter: 'blur(8px)',
+      }}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.2 }}
-        className="glass p-6 max-w-sm w-full mx-4"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+        className="glass"
+        style={{ padding: '24px', maxWidth: '380px', width: '100%', margin: '0 16px' }}
       >
-        <h3 className="text-base font-semibold text-white mb-2 font-display">{title}</h3>
-        <p className="text-sm text-navy-300 mb-5">{message}</p>
+        <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#f0f1fa', marginBottom: '8px', letterSpacing: '-0.02em' }}>{title}</h3>
+        <p style={{ fontSize: '13px', color: '#7a7d8e', marginBottom: '20px', lineHeight: 1.5 }}>{message}</p>
         <div className="flex gap-3 justify-end">
           <button onClick={onCancel} className="btn-cyber btn-ghost">Cancel</button>
           <button onClick={onConfirm} className={`btn-cyber ${danger ? 'btn-danger' : 'btn-primary'}`}>Confirm</button>
