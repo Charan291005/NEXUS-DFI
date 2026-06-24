@@ -8,7 +8,7 @@ SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./nexusdfi.db")
 
 _is_sqlite = SQLALCHEMY_DATABASE_URL.startswith("sqlite")
 
-connect_args = {"check_same_thread": False} if _is_sqlite else {}
+connect_args = {"check_same_thread": False, "timeout": 30} if _is_sqlite else {}
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,

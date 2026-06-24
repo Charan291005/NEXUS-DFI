@@ -318,6 +318,9 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
 
 
 # ── Shared Gemini API Helper ───────────────────────────────
+http_session = requests.Session()
+
+
 def _gemini_request(prompt: str, api_key: str, model: str = "gemini-flash-latest") -> str:
     """
     Make a request to the Gemini API.
@@ -335,7 +338,7 @@ def _gemini_request(prompt: str, api_key: str, model: str = "gemini-flash-latest
             "maxOutputTokens": 1024,
         },
     }
-    response = requests.post(url, headers=headers, json=payload, timeout=20)
+    response = http_session.post(url, headers=headers, json=payload, timeout=20)
     response.raise_for_status()
     data = response.json()
     return data["candidates"][0]["content"]["parts"][0]["text"]
@@ -356,7 +359,7 @@ def _make_ai_request(prompt: str, system_prompt: str, provider: str, api_key: st
             payload = {"messages": messages, "model": "openai"}
             
             for attempt in range(2):
-                response = requests.post(url, json=payload, timeout=8)
+                response = http_session.post(url, json=payload, timeout=8)
                 if response.status_code == 429 and attempt < 1:
                     continue
                 response.raise_for_status()
@@ -378,7 +381,7 @@ def _make_ai_request(prompt: str, system_prompt: str, provider: str, api_key: st
                 "temperature": 0.7,
                 "max_tokens": 1024
             }
-            response = requests.post(url, headers=headers, json=payload, timeout=20)
+            response = http_session.post(url, headers=headers, json=payload, timeout=20)
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
 
@@ -398,7 +401,7 @@ def _make_ai_request(prompt: str, system_prompt: str, provider: str, api_key: st
                 "temperature": 0.7,
                 "max_tokens": 1024
             }
-            response = requests.post(url, headers=headers, json=payload, timeout=20)
+            response = http_session.post(url, headers=headers, json=payload, timeout=20)
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
 
