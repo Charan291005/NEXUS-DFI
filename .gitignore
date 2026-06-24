@@ -23,7 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
-# Database, env & uploads
+# Database, env, uploads & cache
 *.db
+*.db-shm
+*.db-wal
 .env
 uploads/
+__pycache__/
+*.pyc
+.firebase/
