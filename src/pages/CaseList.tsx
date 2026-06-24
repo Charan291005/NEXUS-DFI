@@ -1,6 +1,6 @@
 import { useEffect, useState, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { casesApi } from '../utils/api';
 import type { NexusCase, CaseStatus, CasePriority, CreateCaseDto } from '../types';
 import {
@@ -17,39 +17,63 @@ const PRIORITY_OPTIONS: CasePriority[] = ['Low','Medium','High','Critical'];
 
 type CaseFormData = CreateCaseDto;
 
-// ── Memoized table row ────────────────────────────────────
-const CaseRow = memo(function CaseRow({ c, onView, onDelete }: {
+// ── Memoized Glassmorphism Case Card ────────────────────────────────────
+const CaseCard = memo(function CaseCard({ c, onView, onDelete, index }: {
   c: NexusCase;
   onView: (id: number) => void;
   onDelete: (id: number) => void;
   index: number;
 }) {
   return (
-    <tr>
-      <td className="mono text-accent-400 text-xs font-medium">{c.case_id}</td>
-      <td>
-        <p className="text-navy-100 font-medium">{c.title}</p>
-        <p className="text-xs text-navy-400 truncate max-w-xs">{c.description}</p>
-      </td>
-      <td><Badge label={c.status} variant={STATUS_COLORS[c.status]} dot /></td>
-      <td><Badge label={c.priority} variant={PRIORITY_COLORS[c.priority]} /></td>
-      <td><span className="mono text-navy-300 text-sm">{c.evidence_count ?? 0} files</span></td>
-      <td><span className="text-xs text-navy-400 mono">{fmtDate(c.created_at)}</span></td>
-      <td>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.3 }}
+      whileHover={{ y: -4 }}
+      className="glass glass-hover p-5 flex flex-col justify-between group relative overflow-hidden text-left"
+      onClick={() => onView(c.id)}
+      style={{ cursor: 'pointer' }}
+    >
+      {/* Absolute subtle gradient edge */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-500 via-neon to-accent-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="mono text-accent-400 text-xs font-semibold bg-accent-500/10 px-2.5 py-1 rounded-md border border-accent-500/20">
+            {c.case_id}
+          </span>
+          <div className="flex items-center gap-2">
+            <Badge label={c.status} variant={STATUS_COLORS[c.status]} dot />
+            <Badge label={c.priority} variant={PRIORITY_COLORS[c.priority]} />
+          </div>
+        </div>
+
+        <h3 className="text-base font-bold text-white font-display mb-1.5 group-hover:text-accent-200 transition-colors">
+          {c.title}
+        </h3>
+        <p className="text-xs text-navy-400 line-clamp-2 mb-6 leading-relaxed">
+          {c.description || 'No description provided for this investigation.'}
+        </p>
+      </div>
+
+      <div className="pt-4 border-t border-navy-800/80 flex items-center justify-between text-xs text-navy-400">
+        <div className="flex items-center gap-2">
+          <span className="text-navy-300 font-medium mono bg-navy-900/60 px-2 py-0.5 rounded border border-navy-800">
+            🗂️ {c.evidence_count ?? 0} files
+          </span>
+          <span className="mono text-[11px]">{fmtDate(c.created_at)}</span>
+        </div>
         <div className="flex gap-2">
-          <button
-            id={`btn-view-case-${c.id}`}
-            onClick={(e) => { e.stopPropagation(); onView(c.id); }}
-            className="btn-cyber btn-cyan py-1 text-xs"
-          >View</button>
           <button
             id={`btn-delete-case-${c.id}`}
             onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}
-            className="btn-cyber btn-danger py-1 text-xs"
-          >Delete</button>
+            className="btn-cyber btn-danger py-1 px-2.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            Delete
+          </button>
         </div>
-      </td>
-    </tr>
+      </div>
+    </motion.div>
   );
 });
 
@@ -107,10 +131,10 @@ export default function CaseList() {
   });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
         title="Case Management"
-        subtitle="Track and manage forensic investigations"
+        subtitle="Track, filter, and manage high-fidelity forensic investigations"
       >
         <button
           id="btn-new-case"
@@ -121,16 +145,43 @@ export default function CaseList() {
         </button>
       </PageHeader>
 
+      {/* Top Metrics HUD */}
+      {!loading && (
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="glass p-4 rounded-xl border border-navy-800 border-l-4 border-l-accent-500 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-navy-400 uppercase tracking-widest font-mono font-semibold">Total Investigations</p>
+              <p className="text-2xl font-bold text-white font-display mt-1">{cases.length}</p>
+            </div>
+            <span className="text-2xl opacity-20">📁</span>
+          </div>
+          <div className="glass p-4 rounded-xl border border-navy-800 border-l-4 border-l-neon flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-navy-400 uppercase tracking-widest font-mono font-semibold">Active Cases</p>
+              <p className="text-2xl font-bold text-white font-display mt-1">{cases.filter(c => c.status === 'Open' || c.status === 'Active').length}</p>
+            </div>
+            <span className="text-2xl opacity-20">⚡</span>
+          </div>
+          <div className="glass p-4 rounded-xl border border-navy-800 border-l-4 border-l-warning-500 flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-navy-400 uppercase tracking-widest font-mono font-semibold">Evidence Secured</p>
+              <p className="text-2xl font-bold text-white font-display mt-1">{cases.reduce((acc, c) => acc + (c.evidence_count ?? 0), 0)}</p>
+            </div>
+            <span className="text-2xl opacity-20">🔒</span>
+          </div>
+        </motion.div>
+      )}
+
       {/* Filters */}
       <Card>
-        <div className="flex flex-wrap gap-3 items-center">
+        <div className="flex flex-wrap gap-3 items-center justify-between">
           <input
             id="input-search-cases"
             type="text"
-            placeholder="Search cases..."
+            placeholder="Search by title or Case ID..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="input-cyber flex-1 min-w-[200px]"
+            className="input-cyber flex-1 min-w-[240px]"
           />
           <div className="flex gap-1.5 flex-wrap">
             {(['All', ...STATUS_OPTIONS] as const).map(s => (
@@ -138,7 +189,7 @@ export default function CaseList() {
                 key={s}
                 id={`filter-status-${s.toLowerCase()}`}
                 onClick={() => setFilterStatus(s as CaseStatus | 'All')}
-                className={`btn-cyber text-xs py-1.5 ${filterStatus === s ? 'btn-cyan' : 'btn-ghost'}`}
+                className={`btn-cyber text-xs py-1.5 px-3.5 ${filterStatus === s ? 'btn-cyan' : 'btn-ghost'}`}
               >
                 {s}
               </button>
@@ -147,108 +198,97 @@ export default function CaseList() {
         </div>
       </Card>
 
-      {/* Cases table */}
+      {/* Cases grid */}
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" label="Loading cases..." /></div>
+        <div className="flex justify-center py-20"><Spinner size="lg" label="Loading cases vault..." /></div>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="📂" title="No cases found" description="No investigations match your filter criteria." action={
+        <EmptyState icon="📂" title="No investigations found" description="No cases match your search or filter criteria." action={
           <button className="btn-cyber btn-primary" onClick={() => setShowForm(true)}>Create First Case</button>
         } />
       ) : (
-        <Card className="overflow-hidden p-0">
-          <table className="table-cyber">
-            <thead>
-              <tr>
-                <th>Case ID</th>
-                <th>Title</th>
-                <th>Status</th>
-                <th>Priority</th>
-                <th>Evidence</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((c, i) => (
-                <CaseRow
-                  key={c.id}
-                  c={c}
-                  onView={handleView}
-                  onDelete={handleDeleteClick}
-                  index={i}
-                />
-              ))}
-            </tbody>
-          </table>
-        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {filtered.map((c, i) => (
+            <CaseCard
+              key={c.id}
+              c={c}
+              onView={handleView}
+              onDelete={handleDeleteClick}
+              index={i}
+            />
+          ))}
+        </div>
       )}
 
       {/* Create Case Modal */}
-      {showForm && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-        >
+      <AnimatePresence>
+        {showForm && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.2 }}
-            className="glass p-6 w-full max-w-lg mx-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
           >
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-base font-semibold text-white font-display">New Investigation Case</h2>
-              <button
-                onClick={() => { setShowForm(false); reset(); }}
-                className="text-navy-400 hover:text-white text-lg transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <label className="label-cyber">Case Title *</label>
-                <input
-                  id="input-case-title"
-                  {...register('title', { required: 'Title is required' })}
-                  placeholder="e.g. USB Data Exfiltration Investigation"
-                  className="input-cyber"
-                />
-                {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title.message}</p>}
-              </div>
-              <div>
-                <label className="label-cyber">Description</label>
-                <textarea
-                  id="input-case-description"
-                  {...register('description')}
-                  placeholder="Describe the investigation scope and objectives..."
-                  className="input-cyber resize-none h-24"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="label-cyber">Status</label>
-                  <select id="select-case-status" {...register('status')} className="input-cyber">
-                    {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="label-cyber">Priority</label>
-                  <select id="select-case-priority" {...register('priority')} className="input-cyber">
-                    {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="flex gap-3 justify-end pt-2">
-                <button type="button" onClick={() => { setShowForm(false); reset(); }} className="btn-cyber btn-ghost">Cancel</button>
-                <button id="btn-submit-case" type="submit" disabled={submitting} className="btn-cyber btn-primary">
-                  {submitting ? 'Creating...' : 'Create Case'}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              className="glass p-6 w-full max-w-lg mx-4 border border-navy-700 shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-base font-semibold text-white font-display">New Investigation Case</h2>
+                <button
+                  onClick={() => { setShowForm(false); reset(); }}
+                  className="text-navy-400 hover:text-white text-lg transition-colors"
+                >
+                  ✕
                 </button>
               </div>
-            </form>
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <div>
+                  <label className="label-cyber">Case Title *</label>
+                  <input
+                    id="input-case-title"
+                    {...register('title', { required: 'Title is required' })}
+                    placeholder="e.g. USB Data Exfiltration Investigation"
+                    className="input-cyber"
+                  />
+                  {errors.title && <p className="text-xs text-red-400 mt-1">{errors.title.message}</p>}
+                </div>
+                <div>
+                  <label className="label-cyber">Description</label>
+                  <textarea
+                    id="input-case-description"
+                    {...register('description')}
+                    placeholder="Describe the investigation scope and objectives..."
+                    className="input-cyber resize-none h-24"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="label-cyber">Status</label>
+                    <select id="select-case-status" {...register('status')} className="input-cyber">
+                      {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="label-cyber">Priority</label>
+                    <select id="select-case-priority" {...register('priority')} className="input-cyber">
+                      {PRIORITY_OPTIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex gap-3 justify-end pt-2">
+                  <button type="button" onClick={() => { setShowForm(false); reset(); }} className="btn-cyber btn-ghost">Cancel</button>
+                  <button id="btn-submit-case" type="submit" disabled={submitting} className="btn-cyber btn-primary">
+                    {submitting ? 'Creating...' : 'Create Case'}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </motion.div>
-        </motion.div>
-      )}
+        )}
+      </AnimatePresence>
 
       <ConfirmModal
         open={deleteId !== null}
