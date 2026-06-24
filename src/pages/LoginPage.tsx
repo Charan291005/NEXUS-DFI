@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Spinner } from '../components/ui';
 import ParticleCanvas from '../components/ParticleCanvas';
 import CustomCursor from '../components/CustomCursor';
+import gsap from 'gsap';
 
 // ── Lusion-style stagger animation variants ─────────────
 const lusionEase: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -29,6 +30,291 @@ const slideUp: Variants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: lusionEase } },
 };
 
+// ── GSAP Text Scramble Effect ────────────────────────────
+function useTextScramble(finalText: string, trigger: boolean, delay = 0) {
+  const [display, setDisplay] = useState('');
+  const chars = '!<>-_\\/[]{}—=+*^?#_NEXUS01';
+  useEffect(() => {
+    if (!trigger) { setDisplay(''); return; }
+    let frame = 0;
+    const totalFrames = 30;
+    const timer = setTimeout(() => {
+      const interval = setInterval(() => {
+        frame++;
+        const progress = frame / totalFrames;
+        const result = finalText.split('').map((char, i) => {
+          if (char === ' ') return ' ';
+          if (i / finalText.length < progress) return finalText[i];
+          return chars[Math.floor(Math.random() * chars.length)];
+        }).join('');
+        setDisplay(result);
+        if (frame >= totalFrames) clearInterval(interval);
+      }, 30);
+      return () => clearInterval(interval);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [trigger, finalText, delay]);
+  return display;
+}
+
+// ── Magnetic Button Hook ─────────────────────────────────
+function useMagneticRef() {
+  const ref = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const handleMove = (e: MouseEvent) => {
+      const rect = el.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const dx = e.clientX - cx;
+      const dy = e.clientY - cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const maxDist = 120;
+      if (dist < maxDist) {
+        const pull = (1 - dist / maxDist) * 0.35;
+        gsap.to(el, { x: dx * pull, y: dy * pull, duration: 0.4, ease: 'power3.out' });
+      } else {
+        gsap.to(el, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' });
+      }
+    };
+    const handleLeave = () => {
+      gsap.to(el, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.5)' });
+    };
+    window.addEventListener('mousemove', handleMove);
+    el.addEventListener('mouseleave', handleLeave);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      el.removeEventListener('mouseleave', handleLeave);
+    };
+  }, []);
+  return ref;
+}
+
+// ── Floating Grid Lines Background ───────────────────────
+function FloatingGrid() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const lines = el.querySelectorAll('.grid-line');
+    gsap.set(lines, { opacity: 0, scaleY: 0 });
+    gsap.to(lines, {
+      opacity: (i) => 0.03 + (i % 3) * 0.015,
+      scaleY: 1,
+      duration: 1.8,
+      stagger: 0.08,
+      delay: 1.5,
+      ease: 'power3.out',
+    });
+    // Subtle floating
+    lines.forEach((line, i) => {
+      gsap.to(line, {
+        y: `+=${8 + (i % 3) * 4}`,
+        duration: 3 + (i % 4) * 0.5,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut',
+        delay: i * 0.2,
+      });
+    });
+  }, []);
+  return (
+    <div ref={containerRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          className="grid-line"
+          style={{
+            position: 'absolute',
+            left: `${8 + i * 8}%`,
+            top: 0,
+            bottom: 0,
+            width: '1px',
+            background: `linear-gradient(180deg, transparent 0%, rgba(26,47,251,0.15) 30%, rgba(26,47,251,0.15) 70%, transparent 100%)`,
+            transformOrigin: 'top',
+          }}
+        />
+      ))}
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div
+          key={`h-${i}`}
+          className="grid-line"
+          style={{
+            position: 'absolute',
+            top: `${10 + i * 12}%`,
+            left: 0,
+            right: 0,
+            height: '1px',
+            background: `linear-gradient(90deg, transparent 0%, rgba(26,47,251,0.1) 30%, rgba(26,47,251,0.1) 70%, transparent 100%)`,
+            transformOrigin: 'left',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ── Morphing Gradient Orbs ───────────────────────────────
+function MorphingOrbs() {
+  const orbsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = orbsRef.current;
+    if (!el) return;
+    const orbs = el.querySelectorAll('.morph-orb');
+    orbs.forEach((orb, i) => {
+      const tl = gsap.timeline({ repeat: -1, yoyo: true, delay: i * 1.5 });
+      tl.to(orb, {
+        x: `+=${40 + i * 20}`,
+        y: `+=${30 - i * 15}`,
+        scale: 1.2 + i * 0.1,
+        borderRadius: `${40 + i * 10}% ${60 - i * 5}% ${50 + i * 8}% ${45 - i * 3}%`,
+        duration: 6 + i * 2,
+        ease: 'sine.inOut',
+      });
+      tl.to(orb, {
+        x: `-=${20 + i * 10}`,
+        y: `-=${40 - i * 10}`,
+        scale: 0.9,
+        borderRadius: `${55}% ${45}% ${60}% ${40}%`,
+        duration: 5 + i,
+        ease: 'sine.inOut',
+      });
+    });
+  }, []);
+  return (
+    <div ref={orbsRef} style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+      <div className="morph-orb" style={{
+        position: 'absolute', top: '15%', left: '20%', width: '300px', height: '300px',
+        borderRadius: '40% 60% 55% 45%',
+        background: 'radial-gradient(circle, rgba(26,47,251,0.08) 0%, transparent 70%)',
+        filter: 'blur(40px)',
+      }} />
+      <div className="morph-orb" style={{
+        position: 'absolute', bottom: '20%', right: '10%', width: '250px', height: '250px',
+        borderRadius: '55% 45% 50% 50%',
+        background: 'radial-gradient(circle, rgba(193,255,0,0.04) 0%, transparent 70%)',
+        filter: 'blur(50px)',
+      }} />
+      <div className="morph-orb" style={{
+        position: 'absolute', top: '50%', left: '50%', width: '200px', height: '200px',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(102,112,255,0.05) 0%, transparent 70%)',
+        filter: 'blur(60px)',
+      }} />
+    </div>
+  );
+}
+
+// ── GSAP Character Reveal Component ──────────────────────
+function GsapCharReveal({ text, className, style, delay = 0, isReady }: {
+  text: string; className?: string; style?: React.CSSProperties; delay?: number; isReady: boolean;
+}) {
+  const containerRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    if (!isReady || !containerRef.current) return;
+    const chars = containerRef.current.querySelectorAll('.gsap-char');
+    gsap.set(chars, { opacity: 0, y: 60, rotateX: -90 });
+    gsap.to(chars, {
+      opacity: 1, y: 0, rotateX: 0,
+      duration: 0.8,
+      stagger: 0.025,
+      delay,
+      ease: 'power4.out',
+    });
+  }, [isReady, delay]);
+  return (
+    <span ref={containerRef} className={className} style={{ ...style, display: 'inline-block', perspective: '600px' }}>
+      {text.split('').map((char, i) => (
+        <span key={i} className="gsap-char" style={{ display: 'inline-block', willChange: 'transform, opacity' }}>
+          {char === ' ' ? '\u00A0' : char}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// ── Workflow Step with Magnetic Hover ─────────────────────
+function WorkflowStep({ step, label, index, isReady }: {
+  step: string; label: string; index: number; isReady: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const handleMove = useCallback((e: React.MouseEvent) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (e.clientX - cx) * 0.15;
+    const dy = (e.clientY - cy) * 0.15;
+    gsap.to(ref.current, { x: dx, y: dy, duration: 0.3, ease: 'power2.out' });
+  }, []);
+  const handleLeave = useCallback(() => {
+    if (!ref.current) return;
+    gsap.to(ref.current, { x: 0, y: 0, duration: 0.5, ease: 'elastic.out(1, 0.4)' });
+  }, []);
+
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, x: -30 }}
+      animate={isReady ? { opacity: 1, x: 0 } : {}}
+      transition={{ duration: 0.6, delay: 1.2 + index * 0.12, ease: [0.16, 1, 0.3, 1] }}
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      style={{
+        display: 'flex', alignItems: 'center', gap: '16px',
+        padding: '8px 12px', borderRadius: '12px',
+        transition: 'background 0.3s ease',
+        cursor: 'default',
+      }}
+      whileHover={{ background: 'rgba(26,47,251,0.06)' }}
+    >
+      <span style={{
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: '11px', fontWeight: 700, color: '#1a2ffb',
+        minWidth: '28px',
+        background: 'rgba(26,47,251,0.08)',
+        padding: '3px 6px', borderRadius: '6px',
+        textAlign: 'center',
+        border: '1px solid rgba(26,47,251,0.15)',
+      }}>{step}</span>
+      <div style={{ width: '20px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
+      <span style={{ fontSize: '13px', color: '#7a7d8e', fontWeight: 400 }}>{label}</span>
+    </motion.div>
+  );
+}
+
+// ── Pulsing Ring Loader ──────────────────────────────────
+function PulsingRingLoader({ progress }: { progress: number }) {
+  const ringRef = useRef<SVGCircleElement>(null);
+  useEffect(() => {
+    if (!ringRef.current) return;
+    const circumference = 2 * Math.PI * 45;
+    gsap.to(ringRef.current, {
+      strokeDashoffset: circumference - (progress / 100) * circumference,
+      duration: 0.2,
+      ease: 'power2.out',
+    });
+  }, [progress]);
+  const circumference = 2 * Math.PI * 45;
+  return (
+    <svg width="120" height="120" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+      <circle
+        ref={ringRef}
+        cx="50" cy="50" r="45" fill="none"
+        stroke="#1a2ffb"
+        strokeWidth="1.5"
+        strokeDasharray={circumference}
+        strokeDashoffset={circumference}
+        strokeLinecap="round"
+        style={{ filter: 'drop-shadow(0 0 6px rgba(26,47,251,0.5))' }}
+      />
+    </svg>
+  );
+}
+
+
 export default function LoginPage() {
   const { login, loginWithEmail, signupWithEmail, user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -40,10 +326,40 @@ export default function LoginPage() {
   const [loadProgress, setLoadProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
 
+  const magneticBtnRef = useMagneticRef();
+  const formRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  const scrambledTitle = useTextScramble('NEXUSDFI', isReady, 400);
+
+  // GSAP entrance for form fields
+  useEffect(() => {
+    if (!isReady || !formRef.current) return;
+    const inputs = formRef.current.querySelectorAll('.gsap-field');
+    gsap.fromTo(inputs,
+      { opacity: 0, y: 30, scale: 0.97 },
+      { opacity: 1, y: 0, scale: 1, duration: 0.7, stagger: 0.1, delay: 0.8, ease: 'power3.out' }
+    );
+  }, [isReady]);
+
+  // GSAP hero section parallax on mouse
+  useEffect(() => {
+    if (!isReady) return;
+    const handleMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth - 0.5) * 20;
+      const y = (e.clientY / window.innerHeight - 0.5) * 10;
+      if (heroRef.current) {
+        gsap.to(heroRef.current, { x, y, duration: 1.2, ease: 'power2.out' });
+      }
+    };
+    window.addEventListener('mousemove', handleMove);
+    return () => window.removeEventListener('mousemove', handleMove);
+  }, [isReady]);
+
   // Lusion-style loading counter
   useEffect(() => {
-    const duration = 1800;
-    const steps = 60;
+    const duration = 2200;
+    const steps = 80;
     const increment = 100 / steps;
     let current = 0;
     const timer = setInterval(() => {
@@ -51,7 +367,7 @@ export default function LoginPage() {
       if (current >= 100) {
         setLoadProgress(100);
         clearInterval(timer);
-        setTimeout(() => setIsReady(true), 300);
+        setTimeout(() => setIsReady(true), 400);
       } else {
         setLoadProgress(Math.floor(current));
       }
@@ -106,12 +422,12 @@ export default function LoginPage() {
     <div className="noise-overlay" style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#000000' }}>
       <CustomCursor />
 
-      {/* ── Loading Overlay (Lusion preloader) ─────────────── */}
+      {/* ── Loading Overlay (GSAP Pulsing Ring Preloader) ────── */}
       <AnimatePresence>
         {!isReady && (
           <motion.div
             initial={{ opacity: 1 }}
-            exit={{ opacity: 0, transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] } }}
+            exit={{ opacity: 0, scale: 1.05, filter: 'blur(10px)', transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] } }}
             style={{
               position: 'fixed',
               inset: 0,
@@ -124,16 +440,17 @@ export default function LoginPage() {
               gap: '24px',
             }}
           >
-            {/* Progress bar */}
-            <div style={{ width: '200px', height: '1px', background: 'rgba(255,255,255,0.06)' }}>
-              <motion.div
-                animate={{ width: `${loadProgress}%` }}
-                transition={{ duration: 0.1 }}
-                style={{ height: '100%', background: '#1a2ffb' }}
-              />
-            </div>
-            <div className="loading-counter">
-              {String(loadProgress).padStart(3, '0')}%
+            <PulsingRingLoader progress={loadProgress} />
+            <div style={{ textAlign: 'center' }}>
+              <div className="loading-counter" style={{ fontSize: '24px', fontWeight: 700, color: '#f0f1fa', letterSpacing: '-0.02em' }}>
+                {String(loadProgress).padStart(3, '0')}
+              </div>
+              <p style={{
+                fontSize: '10px', color: '#4a4d5c', fontFamily: "'IBM Plex Mono', monospace",
+                letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: '8px',
+              }}>
+                INITIALIZING NEXUS SYSTEMS
+              </p>
             </div>
           </motion.div>
         )}
@@ -155,7 +472,7 @@ export default function LoginPage() {
           <ParticleCanvas />
 
           {/* Overlay content on top of particles */}
-          <div style={{
+          <div ref={heroRef} style={{
             position: 'absolute',
             inset: 0,
             display: 'flex',
@@ -164,7 +481,7 @@ export default function LoginPage() {
             padding: '3rem',
             zIndex: 2,
           }}>
-            {/* Top — Logo */}
+            {/* Top — Logo with scramble */}
             <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={isReady ? { opacity: 1, y: 0 } : {}}
@@ -186,39 +503,49 @@ export default function LoginPage() {
                 <img src="/nexusdfi-logo.png" alt="NexusDFI" style={{ width: '26px', height: '26px', objectFit: 'contain', filter: 'brightness(1.2)' }} />
               </div>
               <div>
-                <p style={{ color: '#f0f1fa', fontWeight: 700, fontSize: '14px', letterSpacing: '-0.02em' }}>NEXUSDFI</p>
-                <p style={{ color: '#4a4d5c', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Digital Forensics</p>
+                <p style={{
+                  color: '#f0f1fa', fontWeight: 700, fontSize: '14px', letterSpacing: '-0.02em',
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}>
+                  {scrambledTitle || 'NEXUSDFI'}
+                </p>
+                <p style={{ color: '#4a4d5c', fontSize: '10px', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Digital Forensics Intelligence</p>
               </div>
             </motion.div>
 
-            {/* Center — Hero text */}
+            {/* Center — Hero text with GSAP char reveal */}
             <motion.div
               variants={stagger}
               initial="hidden"
               animate={isReady ? "show" : "hidden"}
               style={{ maxWidth: '500px' }}
             >
-              <motion.h1
-                variants={textReveal}
-                style={{
-                  fontSize: 'clamp(2rem, 4vw, 3.5rem)',
-                  fontWeight: 800,
-                  color: '#f0f1fa',
-                  lineHeight: 1.05,
-                  letterSpacing: '-0.04em',
-                  marginBottom: '24px',
-                }}
-              >
-                Digital Forensics
-                <br />
-                <span style={{
-                  background: 'linear-gradient(135deg, #1a2ffb, #6670ff)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}>
-                  Intelligence Platform
-                </span>
-              </motion.h1>
+              <div style={{
+                fontSize: 'clamp(2rem, 4vw, 3.5rem)',
+                fontWeight: 800,
+                color: '#f0f1fa',
+                lineHeight: 1.05,
+                letterSpacing: '-0.04em',
+                marginBottom: '24px',
+              }}>
+                <GsapCharReveal
+                  text="Digital Forensics"
+                  isReady={isReady}
+                  delay={0.5}
+                  style={{ display: 'block' }}
+                />
+                <GsapCharReveal
+                  text="Intelligence Platform"
+                  isReady={isReady}
+                  delay={0.9}
+                  style={{
+                    display: 'block',
+                    background: 'linear-gradient(135deg, #1a2ffb, #6670ff)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                />
+              </div>
 
               <motion.p
                 variants={slideUp}
@@ -234,10 +561,10 @@ export default function LoginPage() {
                 performing AI-assisted forensic analysis, and generating investigation reports.
               </motion.p>
 
-              {/* Workflow steps — Lusion number style */}
+              {/* Workflow steps with magnetic hover */}
               <motion.div
                 variants={fadeIn}
-                style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '12px' }}
+                style={{ marginTop: '48px', display: 'flex', flexDirection: 'column', gap: '4px' }}
               >
                 {[
                   { step: '01', label: 'Case Creation & Assignment' },
@@ -245,23 +572,7 @@ export default function LoginPage() {
                   { step: '03', label: 'AI-Powered Forensic Analysis' },
                   { step: '04', label: 'Report Generation & Export' },
                 ].map((item, i) => (
-                  <motion.div
-                    key={item.step}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={isReady ? { opacity: 1, x: 0 } : {}}
-                    transition={{ duration: 0.5, delay: 1.2 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '16px' }}
-                  >
-                    <span style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      color: '#1a2ffb',
-                      minWidth: '24px',
-                    }}>{item.step}</span>
-                    <div style={{ width: '16px', height: '1px', background: 'rgba(255,255,255,0.08)' }} />
-                    <span style={{ fontSize: '13px', color: '#7a7d8e', fontWeight: 400 }}>{item.label}</span>
-                  </motion.div>
+                  <WorkflowStep key={item.step} step={item.step} label={item.label} index={i} isReady={isReady} />
                 ))}
               </motion.div>
             </motion.div>
@@ -304,22 +615,14 @@ export default function LoginPage() {
             padding: '2rem',
             background: '#0a0a0f',
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          {/* Subtle gradient glow behind card */}
-          <div style={{
-            position: 'absolute',
-            top: '30%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '400px',
-            height: '400px',
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(26,47,251,0.06) 0%, transparent 70%)',
-            pointerEvents: 'none',
-          }} />
+          <FloatingGrid />
+          <MorphingOrbs />
 
           <motion.div
+            ref={formRef}
             variants={stagger}
             initial="hidden"
             animate={isReady ? "show" : "hidden"}
@@ -371,7 +674,7 @@ export default function LoginPage() {
 
             {/* Email/Password form */}
             <form onSubmit={handleEmailAuth}>
-              <motion.div variants={slideUp} style={{ marginBottom: '20px', position: 'relative' }}>
+              <div className="gsap-field" style={{ marginBottom: '20px', position: 'relative' }}>
                 <label style={{
                   display: 'block',
                   fontSize: '10px',
@@ -392,9 +695,9 @@ export default function LoginPage() {
                   id="input-email"
                   data-cursor="TYPE"
                 />
-              </motion.div>
+              </div>
 
-              <motion.div variants={slideUp} style={{ marginBottom: '28px', position: 'relative' }}>
+              <div className="gsap-field" style={{ marginBottom: '28px', position: 'relative' }}>
                 <label style={{
                   display: 'block',
                   fontSize: '10px',
@@ -415,42 +718,46 @@ export default function LoginPage() {
                   id="input-password"
                   data-cursor="TYPE"
                 />
-              </motion.div>
+              </div>
 
-              <motion.button
-                variants={slideUp}
-                type="submit"
-                disabled={loading}
-                data-cursor="CLICK"
-                id="btn-email-auth"
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: '100px',
-                  background: '#1a2ffb',
-                  color: '#ffffff',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  letterSpacing: '0.04em',
-                  textTransform: 'uppercase',
-                  border: 'none',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                  opacity: loading ? 0.5 : 1,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                }}
-                whileHover={!loading ? {
-                  backgroundColor: '#c1ff00',
-                  color: '#000000',
-                  boxShadow: '0 0 40px rgba(193,255,0,0.3)',
-                } : {}}
-                whileTap={!loading ? { scale: 0.98 } : {}}
-              >
-                {loading ? <Spinner size="sm" /> : <span>{isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}</span>}
-              </motion.button>
+              <div className="gsap-field">
+                <motion.button
+                  ref={magneticBtnRef}
+                  type="submit"
+                  disabled={loading}
+                  data-cursor="CLICK"
+                  id="btn-email-auth"
+                  style={{
+                    width: '100%',
+                    padding: '14px',
+                    borderRadius: '100px',
+                    background: '#1a2ffb',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    letterSpacing: '0.04em',
+                    textTransform: 'uppercase',
+                    border: 'none',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                    opacity: loading ? 0.5 : 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                  whileHover={!loading ? {
+                    backgroundColor: '#c1ff00',
+                    color: '#000000',
+                    boxShadow: '0 0 50px rgba(193,255,0,0.35), 0 0 100px rgba(193,255,0,0.1)',
+                  } : {}}
+                  whileTap={!loading ? { scale: 0.97 } : {}}
+                >
+                  {loading ? <Spinner size="sm" /> : <span>{isSignUp ? 'CREATE ACCOUNT' : 'SIGN IN'}</span>}
+                </motion.button>
+              </div>
             </form>
 
             {/* Divider */}
@@ -482,6 +789,7 @@ export default function LoginPage() {
               type="button"
               id="btn-google-signin"
               data-cursor="CLICK"
+              className="gsap-field"
               style={{
                 width: '100%',
                 display: 'flex',
@@ -498,8 +806,9 @@ export default function LoginPage() {
                 opacity: loading ? 0.5 : 1,
               }}
               whileHover={!loading ? {
-                borderColor: 'rgba(255,255,255,0.2)',
-                background: 'rgba(255,255,255,0.03)',
+                borderColor: 'rgba(26,47,251,0.3)',
+                background: 'rgba(26,47,251,0.05)',
+                boxShadow: '0 0 30px rgba(26,47,251,0.1)',
               } : {}}
             >
               {loading ? (
@@ -543,9 +852,9 @@ export default function LoginPage() {
             <AnimatePresence>
               {error && (
                 <motion.div
-                  initial={{ opacity: 0, y: -8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
+                  initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.95 }}
                   className="toast-error"
                   style={{ marginTop: '20px' }}
                 >
