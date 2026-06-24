@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { evidenceApi, analysisApi } from '../utils/api';
 import type { NexusEvidence } from '../types';
 import { PageHeader, Card, Spinner, RiskMeter, RiskBadge, Badge } from '../components/ui';
-import { fileIcon, fmtDateTime, riskColor, riskLabel } from '../utils/helpers';
+import { fileIcon, fmtDateTime, riskColor } from '../utils/helpers';
 
 export default function EvidencePage() {
   const [evidence, setEvidence] = useState<NexusEvidence[]>([]);
@@ -12,7 +12,6 @@ export default function EvidencePage() {
   const [analyzing, setAnalyzing] = useState(false);
   const [verifying, setVerifying] = useState<number | null>(null);
   const [activeFilter, setActiveFilter] = useState<'All' | 'image' | 'video' | 'log' | 'pdf' | 'document' | 'other'>('All');
-  const [activeTab, setActiveTab] = useState<'summary' | 'findings' | 'metadata' | 'timeline'>('summary');
 
   useEffect(() => {
     evidenceApi.list(1) // Showing all for demo
