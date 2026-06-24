@@ -7,12 +7,15 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-          framer: ['framer-motion'],
-          charts: ['recharts'],
-          firebase: ['firebase'],
-          pdf: ['pdfjs-dist'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react')) return 'react';
+            if (id.includes('framer-motion')) return 'framer';
+            if (id.includes('recharts')) return 'charts';
+            if (id.includes('firebase')) return 'firebase';
+            if (id.includes('pdfjs-dist')) return 'pdf';
+            return 'vendor';
+          }
         }
       }
     }
