@@ -247,28 +247,7 @@ function MorphingOrbs() {
   );
 }
 
-// ── Scanning Line Effect ─────────────────────────────────
-function ScanLine() {
-  const lineRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!lineRef.current) return;
-    gsap.to(lineRef.current, {
-      top: '100%',
-      duration: 4,
-      repeat: -1,
-      ease: 'none',
-      delay: 2,
-    });
-  }, []);
-  return (
-    <div ref={lineRef} style={{
-      position: 'absolute', top: '-2px', left: 0, right: 0, height: '2px',
-      background: 'linear-gradient(90deg, transparent 0%, rgba(26,47,251,0.4) 40%, rgba(193,255,0,0.3) 60%, transparent 100%)',
-      pointerEvents: 'none', zIndex: 1,
-      boxShadow: '0 0 20px rgba(26,47,251,0.3), 0 2px 40px rgba(26,47,251,0.1)',
-    }} />
-  );
-}
+
 
 // ── Rotating DNA Helix SVG ───────────────────────────────
 function DnaHelix() {
@@ -896,7 +875,6 @@ export default function LoginPage() {
           <FloatingGrid />
           <MorphingOrbs />
           <CursorTrail />
-          <ScanLine />
 
           <TiltCard isReady={isReady}>
             <motion.div
