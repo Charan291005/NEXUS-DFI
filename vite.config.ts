@@ -5,9 +5,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    rollupOptions: {
       output: {
-        // Letting Vite handle chunks automatically
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          framer: ['framer-motion'],
+          charts: ['recharts'],
+          firebase: ['firebase'],
+          pdf: ['pdfjs-dist'],
+        }
       }
     }
   }

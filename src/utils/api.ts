@@ -15,16 +15,22 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 - clear token and redirect to login
+// Handle 401 - clear token and redirect to login, plus robust error/timeout handling
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
-    const originalRequest = err.config;
+    const originalRequest = err.config || {};
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       localStorage.removeItem('nexus_token');
       localStorage.removeItem('nexus_user');
       window.location.href = '/login';
+    } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+      console.warn('API request timed out. Retrying once...', originalRequest.url);
+      if (!originalRequest._retryTimeout) {
+        originalRequest._retryTimeout = true;
+        return api(originalRequest);
+      }
     }
     return Promise.reject(err);
   }
