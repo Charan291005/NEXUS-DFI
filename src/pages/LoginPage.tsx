@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type FormEvent } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -35,7 +35,7 @@ function useTextScramble(finalText: string, trigger: boolean, delay = 0) {
   const [display, setDisplay] = useState('');
   const chars = '!<>-_\\/[]{}—=+*^?#_NEXUS01';
   useEffect(() => {
-    if (!trigger) { setDisplay(''); return; }
+    if (!trigger) { const t = setTimeout(() => setDisplay(''), 0); return () => clearTimeout(t); }
     let frame = 0;
     const totalFrames = 30;
     const timer = setTimeout(() => {
@@ -681,7 +681,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleEmailAuth = async (e: any) => {
+  const handleEmailAuth = async (e: FormEvent) => {
     e.preventDefault();
     if (!email || !password) { setError('Please enter both email and password.'); return; }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -693,14 +693,15 @@ export default function LoginPage() {
     try {
       if (isSignUp) { await signupWithEmail(email, password); }
       else { await loginWithEmail(email, password); }
-    } catch (err: any) {
-      const code = err.code || '';
+    } catch (err: unknown) {
+      const errorObj = err as { code?: string; message?: string };
+      const code = errorObj.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') setError('Incorrect email or password.');
       else if (code === 'auth/wrong-password') setError('Incorrect password.');
       else if (code === 'auth/email-already-in-use') setError('An account with this email already exists.');
       else if (code === 'auth/too-many-requests') setError('Too many failed attempts. Try again later.');
       else if (code === 'auth/weak-password') setError('Password is too weak.');
-      else { setError(err.message || 'Authentication failed.'); console.error("Auth Error:", err); }
+      else { setError(errorObj.message || 'Authentication failed.'); console.error("Auth Error:", err); }
     } finally {
       setLoading(false);
     }

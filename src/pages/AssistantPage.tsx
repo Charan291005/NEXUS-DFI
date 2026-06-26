@@ -230,7 +230,7 @@ How can I assist you with your investigation today?`;
     }, intervalMs);
   }, []);
 
-  const callAiDirect = useCallback(async (question: string, currentProvider: string, currentApiKey: string): Promise<string> => {
+  const callAiDirect = useCallback(async function callDirect(question: string, currentProvider: string, currentApiKey: string): Promise<string> {
     const prov = currentProvider.toLowerCase();
     const systemPrompt = `You are the NexusDFI Forensic Assistant. Your primary goal is to support the investigator with technical analysis, but you are also a highly capable general-purpose AI. You MUST answer any question the user asks, whether it is about digital forensics, coding, general knowledge, or casual chat. Be highly empathetic, warm, and supportive. Acknowledge the stress of their work, offer clear, structured advice, and be very professional yet human. Use markdown for formatting.`;
     
@@ -255,7 +255,7 @@ How can I assist you with your investigation today?`;
       } catch (err) {
         const backupKey = currentApiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
         if (backupKey) {
-          return await callAiDirect(question, 'gemini', backupKey);
+          return await callDirect(question, 'gemini', backupKey);
         }
         throw err;
       }

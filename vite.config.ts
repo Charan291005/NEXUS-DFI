@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
+    target: 'esnext',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -14,6 +17,9 @@ export default defineConfig({
             if (id.includes('recharts')) return 'charts';
             if (id.includes('firebase')) return 'firebase';
             if (id.includes('pdfjs-dist')) return 'pdf';
+            if (id.includes('tesseract.js')) return 'tesseract';
+            if (id.includes('mammoth')) return 'mammoth';
+            if (id.includes('gsap')) return 'gsap';
             return 'vendor';
           }
         }

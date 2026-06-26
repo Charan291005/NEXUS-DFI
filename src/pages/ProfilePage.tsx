@@ -5,6 +5,7 @@ import { PageHeader, Card, SectionHeader } from '../components/ui';
 export default function ProfilePage() {
   const { user, token } = useAuth();
   const [requestStatus, setRequestStatus] = useState<'idle' | 'loading' | 'pending' | 'already_admin'>('idle');
+  const [defaultDate] = useState(() => Date.now());
 
   const handleRequestAdmin = async () => {
     setRequestStatus('loading');
@@ -39,7 +40,7 @@ export default function ProfilePage() {
               <span className="w-1.5 h-1.5 rounded-full bg-accent-400"></span>
               <span className="text-xs font-semibold text-accent-400 uppercase tracking-wider">{user?.role}</span>
             </div>
-            <p className="text-xs text-navy-400 mt-4 mono">ID: {user?.id ?? 'N/A'} | Joined: {new Date(user?.created_at || Date.now()).toLocaleDateString()}</p>
+            <p className="text-xs text-navy-400 mt-4 mono">ID: {user?.id ?? 'N/A'} | Joined: {new Date(user?.created_at || defaultDate).toLocaleDateString()}</p>
           </Card>
 
           <Card className="p-6 border-navy-800">

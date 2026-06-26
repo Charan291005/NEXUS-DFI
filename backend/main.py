@@ -21,7 +21,7 @@ os.makedirs("uploads", exist_ok=True)
 app = FastAPI(
     title="NexusDFI — Digital Forensics Intelligence API",
     description="AI-powered digital forensics analysis platform",
-    version="2.5.0",
+    version="3.0.0",
     docs_url="/api/docs",
     redoc_url="/api/redoc",
 )
@@ -58,7 +58,7 @@ app.include_router(news.router,     prefix="/api/news",     tags=["News"])
 async def root():
     return {
         "platform": "NexusDFI",
-        "version":  "2.5.0",
+        "version":  "3.0.0",
         "status":   "operational",
         "tagline":  "Transforming Digital Evidence into Actionable Intelligence",
     }

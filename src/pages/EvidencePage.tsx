@@ -44,7 +44,7 @@ export default function EvidencePage() {
     try {
       const res = await evidenceApi.verify(ev.id);
       if (res.data.status === 'verified') {
-        const u = { ...ev, _verified: true } as any;
+        const u = { ...ev, _verified: true } as NexusEvidence & { _verified?: boolean };
         setSelected(u);
         setEvidence(prev => prev.map(e => e.id === ev.id ? u : e));
       }
@@ -185,7 +185,7 @@ export default function EvidencePage() {
                       disabled={verifying === selected.id}
                       className="text-xs text-navy-300 hover:text-white transition-colors font-mono inline-flex items-center gap-1 mt-1"
                     >
-                      {verifying === selected.id ? '⏳ Verifying via SHA-256...' : (selected as any)._verified ? '🟢 Cryptographically Match Verified' : '🔄 Click to Re-verify Ledger Hash'}
+                      {verifying === selected.id ? '⏳ Verifying via SHA-256...' : (selected as NexusEvidence & { _verified?: boolean })._verified ? '🟢 Cryptographically Match Verified' : '🔄 Click to Re-verify Ledger Hash'}
                     </button>
                   </div>
                 </div>

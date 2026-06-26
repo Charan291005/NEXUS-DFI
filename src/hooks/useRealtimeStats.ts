@@ -8,7 +8,8 @@ export function useRealtimeStats(initialStats: DashboardStats | null, intervalMs
 
   useEffect(() => {
     if (initialStats) {
-      setStats(initialStats);
+      const t = setTimeout(() => setStats(initialStats), 0);
+      return () => clearTimeout(t);
     }
   }, [initialStats]);
 
@@ -22,7 +23,7 @@ export function useRealtimeStats(initialStats: DashboardStats | null, intervalMs
           setStats(res.data);
           setIsLive(true);
         }
-      } catch (err) {
+      } catch {
         if (mounted) setIsLive(false);
       }
     };

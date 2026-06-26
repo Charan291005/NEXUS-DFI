@@ -24,12 +24,16 @@ class ErrorBoundary extends Component<{ children: ReactNode }, ErrorBoundaryStat
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex items-center justify-center min-h-screen page-bg">
-          <div className="glass p-8 max-w-md text-center">
-            <div className="text-4xl mb-4">⚠️</div>
-            <h2 className="text-lg font-bold text-white mb-2">Something went wrong</h2>
-            <p className="text-sm text-navy-300 mb-4">{this.state.error?.message ?? 'An unexpected error occurred.'}</p>
-            <button onClick={() => window.location.reload()} className="btn-cyber btn-primary">Reload Page</button>
+        <div className="flex items-center justify-center min-h-screen page-bg p-4" role="alert" aria-live="assertive">
+          <div className="glass p-8 max-w-lg text-center border border-red-500/30 rounded-2xl shadow-2xl backdrop-blur-xl bg-navy-950/80">
+            <div className="text-5xl mb-4 animate-bounce">⚠️</div>
+            <h2 className="text-xl font-display font-bold text-white mb-2">System Interruption Detected</h2>
+            <p className="text-sm text-navy-300 mb-6 border-l-2 border-red-500/50 pl-3 text-left bg-red-500/10 py-2 rounded-r">
+              <span className="font-mono text-red-400 font-semibold">Error:</span> {this.state.error?.message ?? 'An unexpected runtime anomaly occurred.'}
+            </p>
+            <button onClick={() => window.location.reload()} className="btn-cyber btn-primary w-full py-2.5 text-sm font-mono tracking-wider uppercase">
+              ⚡ Reinitialize Application Shell
+            </button>
           </div>
         </div>
       );

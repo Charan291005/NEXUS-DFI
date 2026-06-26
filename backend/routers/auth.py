@@ -30,23 +30,29 @@ try:
 
     FIREBASE_AVAILABLE = True
 except Exception as e:
-    print(f"[WARN] Firebase Admin SDK failed to init: {e}")
+    import logging
+    logging.warning(f"[WARN] Firebase Admin SDK failed to init: {e}. Check GOOGLE_APPLICATION_CREDENTIALS or Cloud Run metadata.")
     FIREBASE_AVAILABLE = False
     firebase_auth = None
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     if not token:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No token provided")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="No authentication token provided in request header.")
 
     if not FIREBASE_AVAILABLE or firebase_auth is None:
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Auth service unavailable")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Firebase Authentication service is currently unavailable or improperly configured on the backend."
+        )
 
     try:
         decoded_token = firebase_auth.verify_id_token(token)
         email = decoded_token.get("email") or decoded_token.get("uid")
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Firebase token: {str(e)}")
+        import logging
+        logging.error(f"[AUTH ERROR] Token verification failed: {e}")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid or expired Firebase token: {str(e)}")
 
     user = db.query(User).filter(User.username == email).first()
     if not user:

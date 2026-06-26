@@ -96,7 +96,7 @@ export default function Dashboard() {
     newsApi.getLatest()
       .then(r => setNews(r.data))
       .catch(() => setNews([]));
-  }, []);
+  }, [setStats]);
 
   if (loadingStats) return (
     <div className="flex items-center justify-center min-h-[60vh]">

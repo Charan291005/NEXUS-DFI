@@ -53,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               role: fallbackRole,
               created_at: new Date().toISOString()
             };
-            setUser(u as any);
+            setUser(u as NexusUser);
             localStorage.setItem('nexus_user', JSON.stringify(u));
           }
         } catch (err) {

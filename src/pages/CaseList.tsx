@@ -1,4 +1,4 @@
-import { useEffect, useState, memo } from 'react';
+import { useEffect, useState, memo, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { casesApi } from '../utils/api';
@@ -120,15 +120,17 @@ export default function CaseList() {
     setDeleteId(null);
   };
 
-  const handleView = (id: number) => { navigate(`/cases/${id}`); };
-  const handleDeleteClick = (id: number) => { setDeleteId(id); };
+  const handleView = useCallback((id: number) => { navigate(`/cases/${id}`); }, [navigate]);
+  const handleDeleteClick = useCallback((id: number) => { setDeleteId(id); }, []);
 
-  const filtered = cases.filter(c => {
-    const matchSearch = c.title.toLowerCase().includes(search.toLowerCase()) ||
-                        c.case_id.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'All' || c.status === filterStatus;
-    return matchSearch && matchStatus;
-  });
+  const filtered = useMemo(() => {
+    return cases.filter(c => {
+      const matchSearch = c.title.toLowerCase().includes(search.toLowerCase()) ||
+                          c.case_id.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = filterStatus === 'All' || c.status === filterStatus;
+      return matchSearch && matchStatus;
+    });
+  }, [cases, search, filterStatus]);
 
   return (
     <div className="space-y-6">
