@@ -43,6 +43,24 @@ app.add_middleware(
 )
 app.add_middleware(GZipMiddleware, minimum_size=1000)
 
+from fastapi.responses import JSONResponse
+from fastapi import Request, HTTPException
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": True, "message": exc.detail},
+    )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    import traceback
+    traceback.print_exc()
+    return JSONResponse(
+        status_code=500,
+        content={"error": True, "message": "An unexpected internal server error occurred."},
+    )
 # Static file serving for uploaded evidence
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
