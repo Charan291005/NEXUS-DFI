@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { PageHeader, Card, RiskBadge } from '../components/ui';
 import { fmtDateTime } from '../utils/helpers';
@@ -21,7 +21,7 @@ export default function TimelinePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const filtered = events.filter(e => filter === 'all' || e.type === filter);
+  const filtered = useMemo(() => events.filter(e => filter === 'all' || e.type === filter), [events, filter]);
 
   const containerVariants = {
     hidden: {},

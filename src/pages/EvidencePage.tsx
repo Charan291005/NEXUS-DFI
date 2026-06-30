@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { evidenceApi, analysisApi } from '../utils/api';
 import type { NexusEvidence } from '../types';
@@ -54,7 +54,7 @@ export default function EvidencePage() {
     setVerifying(null);
   };
 
-  const filteredEvidence = evidence.filter(e => activeFilter === 'All' || e.file_type === activeFilter);
+  const filteredEvidence = useMemo(() => evidence.filter(e => activeFilter === 'All' || e.file_type === activeFilter), [evidence, activeFilter]);
 
   const containerVariants = {
     hidden: {},
