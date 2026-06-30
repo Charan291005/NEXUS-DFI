@@ -23,10 +23,12 @@ else
     echo "Database already initialized ($USERCOUNT users found). Skipping seed."
 fi
 
-# Start the FastAPI server using Uvicorn with optimal settings for Cloud Run
-echo "Starting FastAPI server on port ${PORT:-8000}..."
-exec uvicorn backend.main:app \
-    --host 0.0.0.0 \
-    --port ${PORT:-8000} \
-    --workers 1 \
-    --no-access-log
+# Start the FastAPI server using Gunicorn with Uvicorn workers for production optimization
+echo "Starting FastAPI server on port ${PORT:-8000} using Gunicorn..."
+exec gunicorn backend.main:app \
+    --bind 0.0.0.0:${PORT:-8000} \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --workers 4 \
+    --timeout 120 \
+    --access-logfile - \
+    --error-logfile -

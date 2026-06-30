@@ -7,9 +7,12 @@ from typing import Optional
 
 import jwt
 
-SECRET_KEY  = os.getenv("SECRET_KEY", "nexusdfi-secret-key-change-in-production-2024")
-ALGORITHM   = "HS256"
-TOKEN_EXPIRE_HOURS = 24
+from backend.config import get_settings
+
+settings = get_settings()
+SECRET_KEY  = settings.secret_key
+ALGORITHM   = settings.algorithm
+TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
 
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
@@ -36,7 +39,7 @@ def create_token(user_id: int, username: str) -> str:
     payload = {
         "sub":      str(user_id),
         "username": username,
-        "exp":      datetime.utcnow() + timedelta(hours=TOKEN_EXPIRE_HOURS),
+        "exp":      datetime.utcnow() + timedelta(minutes=TOKEN_EXPIRE_MINUTES),
         "iat":      datetime.utcnow(),
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)

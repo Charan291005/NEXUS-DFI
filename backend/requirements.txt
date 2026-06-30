@@ -12,3 +12,5 @@ firebase-admin
 Pillow
 numpy
 opencv-python-headless
+aiosqlite
+gunicorn

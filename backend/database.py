@@ -4,7 +4,10 @@ import os
 from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./nexusdfi.db")
+from backend.config import get_settings
+
+settings = get_settings()
+SQLALCHEMY_DATABASE_URL = settings.database_url
 
 _is_sqlite = SQLALCHEMY_DATABASE_URL.startswith("sqlite")
 
@@ -25,7 +28,7 @@ engine = create_engine(
 )
 
 # Enable WAL mode for SQLite — allows concurrent reads while writing
-if _is_sqlite and os.getenv("DISABLE_WAL", "False") != "True":
+if _is_sqlite and not settings.disable_wal:
     @event.listens_for(engine, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         cursor = dbapi_connection.cursor()
