@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PageHeader, Card, SectionHeader, Badge, Spinner } from '../components/ui';
+import { PageHeader, Card, SectionHeader, Badge, Spinner, SkeletonCard } from '../components/ui';
 import { analysisApi, casesApi } from '../utils/api';
 import type { NexusCase } from '../types';
 
@@ -40,8 +40,8 @@ export default function ReportsPage() {
     show: { transition: { staggerChildren: 0.05 } },
   };
   const itemVariants = {
-    hidden: { opacity: 0, x: -16 },
-    show:   { opacity: 1, x: 0, transition: { duration: 0.3 } },
+    hidden: { opacity: 0, x: -16, filter: 'blur(4px)' },
+    show:   { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const } },
   };
 
   return (
@@ -81,13 +81,18 @@ export default function ReportsPage() {
         {/* Report list */}
         <motion.div variants={containerVariants} initial="hidden" animate="show" className="lg:col-span-2 space-y-4">
           <SectionHeader title="Available Cases for Reporting" />
-          {loading ? <div className="py-8 flex justify-center"><Spinner /></div> : cases.length === 0 ? (
+          {loading ? (
+            <div className="space-y-4">
+              {[1,2,3].map(i => <SkeletonCard key={i} height={70} />)}
+            </div>
+          ) : cases.length === 0 ? (
             <p className="text-navy-400 text-sm">No cases available. Create a case first.</p>
           ) : cases.map((c) => (
             <motion.div
               key={c.id}
               variants={itemVariants}
-              className="glass p-4 hover:border-navy-600 transition-colors"
+              className="glass p-4 hover:border-navy-600 transition-all card-spotlight"
+              whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(26,47,251,0.08)' }}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -107,6 +112,9 @@ export default function ReportsPage() {
                     disabled={generating === c.id}
                     id={`btn-generate-report-${c.id}`}
                     className="btn-cyber btn-primary text-xs py-1.5 min-w-[120px] justify-center"
+                    style={{ transition: 'all 0.2s ease' }}
+                    onMouseEnter={(e) => { if (generating !== c.id) e.currentTarget.style.transform = 'scale(1.03)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                   >
                     {generating === c.id ? <Spinner size="sm" /> : 'Generate Report'}
                   </button>
@@ -120,7 +128,7 @@ export default function ReportsPage() {
         {/* Generate new report panel */}
         <div>
           <SectionHeader title="Report Configuration" />
-          <Card className="space-y-4">
+          <Card className="space-y-4 animated-border">
             <p className="text-sm text-navy-300 leading-relaxed">
               Generate a comprehensive PDF forensic report for an active case. The report includes chain-of-custody logs, AI analysis findings, and tactical recommendations.
             </p>

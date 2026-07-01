@@ -165,7 +165,7 @@ Be direct and highly professional. Use **bold** for key findings.`;
       </div>
 
       {/* Input panel */}
-      <Card className="p-5 border border-navy-800">
+      <Card className="p-5 border border-navy-800 animated-border">
         <div className="space-y-4">
           <div>
             <label className="text-xs font-semibold text-navy-400 tracking-widest uppercase mb-2 block">
@@ -203,13 +203,17 @@ Be direct and highly professional. Use **bold** for key findings.`;
             <p className="text-[10px] text-navy-500 uppercase tracking-widest mb-2 font-semibold">Test Indicators</p>
             <div className="flex gap-2 flex-wrap">
               {EXAMPLE_INDICATORS.map((ex, i) => (
-                <button
+                <motion.button
                   key={i}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.08 }}
+                  whileHover={{ y: -2, borderColor: 'rgba(26,47,251,0.3)' }}
                   onClick={() => { setIndicator(ex.value); analyze(ex.value); }}
                   className="text-xs px-3 py-1.5 rounded border border-navy-700 bg-navy-800/40 text-navy-300 hover:text-white hover:border-navy-600 transition-colors"
                 >
                   {ex.label}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
@@ -230,7 +234,10 @@ Be direct and highly professional. Use **bold** for key findings.`;
         {result && !loading && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             
-            <Card className="p-5 border border-navy-800 flex items-center justify-between">
+            <Card className="p-5 border border-navy-800 flex items-center justify-between" style={{
+              borderLeft: `3px solid ${getRiskColor(result.risk_score)}`,
+              boxShadow: `0 0 20px ${getRiskColor(result.risk_score)}10`,
+            }}>
               <div>
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded border" style={{ borderColor: `${getRiskColor(result.risk_score)}40`, color: getRiskColor(result.risk_score) }}>
                   {getRiskLabel(result.risk_score)}
@@ -239,7 +246,13 @@ Be direct and highly professional. Use **bold** for key findings.`;
                 <p className="text-xs text-navy-400 mt-1">{TYPE_LABELS[result.type]}</p>
               </div>
               <div className="text-right">
-                <span className="text-3xl font-bold font-mono" style={{ color: getRiskColor(result.risk_score) }}>{result.risk_score}</span>
+                <motion.span
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 15, delay: 0.2 }}
+                  className="text-3xl font-bold font-mono inline-block"
+                  style={{ color: getRiskColor(result.risk_score) }}
+                >{result.risk_score}</motion.span>
                 <span className="text-xs text-navy-400 mono ml-1">/ 100</span>
                 <p className="text-[10px] text-navy-500 mt-1 font-semibold uppercase tracking-widest">Risk Score</p>
               </div>
