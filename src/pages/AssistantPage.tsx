@@ -476,10 +476,18 @@ How can I assist you with your investigation today?`;
               transition={{ duration: 0.3 }}
               className={`flex gap-4 w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              {/* AI Avatar */}
+              {/* AI Avatar with orbit ring */}
               {msg.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-[#1a2ffb]/20 border border-[#1a2ffb]/30 flex items-center justify-center flex-shrink-0 mt-1">
-                  <FiCpu className="text-[#1a2ffb] w-4 h-4" />
+                <div className="orbit-spinner" style={{ width: '36px', height: '36px', flexShrink: 0, marginTop: '4px' }}>
+                  <div className="orbit-ring" />
+                  <div style={{
+                    width: '32px', height: '32px', borderRadius: '50%',
+                    background: 'rgba(26,47,251,0.15)',
+                    border: '1px solid rgba(26,47,251,0.25)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <FiCpu style={{ color: '#1a2ffb', width: '14px', height: '14px' }} />
+                  </div>
                 </div>
               )}
 
@@ -514,13 +522,17 @@ How can I assist you with your investigation today?`;
           {messages.length === 1 && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full mt-8">
               {QUICK_PROMPTS.map((p, i) => (
-                <button
+                <motion.button
                   key={i}
                   onClick={() => sendMessage(p.label)}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + i * 0.08 }}
+                  whileHover={{ y: -2, boxShadow: '0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(26,47,251,0.1)' }}
                   className="text-left p-4 rounded-xl border border-navy-700 bg-navy-800/30 hover:bg-navy-800 transition-colors group"
                 >
-                  <p className="text-sm text-navy-200 group-hover:text-white">{p.label}</p>
-                </button>
+                  <p className="text-sm text-navy-200 group-hover:text-white transition-colors">{p.label}</p>
+                </motion.button>
               ))}
             </div>
           )}
@@ -549,7 +561,7 @@ How can I assist you with your investigation today?`;
           )}
 
           {/* Chat Input Box */}
-          <div className="relative bg-navy-900 border border-navy-700 rounded-2xl shadow-2xl focus-within:border-navy-500 focus-within:ring-1 focus-within:ring-navy-500 transition-all flex items-end">
+          <div className="relative bg-navy-900 border border-navy-700 rounded-2xl shadow-2xl focus-within:border-[rgba(26,47,251,0.4)] focus-within:shadow-[0_0_24px_rgba(26,47,251,0.1)] transition-all flex items-end animated-border">
             
             {/* Hidden File Input */}
             <input 

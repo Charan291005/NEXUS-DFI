@@ -61,8 +61,8 @@ export default function EvidencePage() {
     show: { transition: { staggerChildren: 0.05 } },
   };
   const itemVariants = {
-    hidden: { opacity: 0, x: -16 },
-    show:   { opacity: 1, x: 0, transition: { duration: 0.25 } },
+    hidden: { opacity: 0, x: -16, filter: 'blur(4px)' },
+    show:   { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const } },
   };
 
   return (
@@ -75,13 +75,25 @@ export default function EvidencePage() {
       {/* Filter Pills HUD */}
       <Card className="py-3 px-5 flex items-center justify-between gap-4 flex-wrap">
         <span className="text-xs font-mono uppercase tracking-widest text-navy-400 font-semibold">Filter by Asset Type:</span>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap relative">
           {(['All', 'image', 'video', 'log', 'pdf', 'document', 'other'] as const).map(f => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className={`btn-cyber text-xs py-1.5 px-3.5 ${activeFilter === f ? 'btn-primary' : 'btn-ghost'}`}
+              className={`btn-cyber text-xs py-1.5 px-3.5 relative ${activeFilter === f ? 'btn-primary' : 'btn-ghost'}`}
             >
+              {activeFilter === f && (
+                <motion.div
+                  layoutId="evidence-filter-pill"
+                  style={{
+                    position: 'absolute', inset: 0, borderRadius: '100px',
+                    background: 'rgba(26,47,251,0.08)',
+                    border: '1px solid rgba(26,47,251,0.2)',
+                    zIndex: -1,
+                  }}
+                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                />
+              )}
               {f === 'All' ? 'All Artifacts' : f.toUpperCase()}
             </button>
           ))}
@@ -117,6 +129,9 @@ export default function EvidencePage() {
                       ? 'bg-accent-500/10 border-accent-500/40 shadow-lg shadow-accent-500/5'
                       : 'bg-navy-900/30 border-navy-800 hover:bg-navy-800/60 hover:border-navy-700'
                   }`}
+                  style={selected?.id === ev.id ? {
+                    boxShadow: '0 0 20px rgba(26,47,251,0.08), 0 0 0 1px rgba(26,47,251,0.15)',
+                  } : undefined}
                 >
                   <div className="w-10 h-10 rounded-xl bg-navy-800 border border-navy-700 flex items-center justify-center flex-shrink-0 text-lg shadow-inner">
                     {fileIcon(ev.file_type)}
@@ -228,10 +243,21 @@ export default function EvidencePage() {
                   {/* Loading State */}
                   {analyzing && (
                     <div className="p-12 text-center rounded-2xl border border-navy-700 bg-navy-900/60 shadow-2xl space-y-4">
-                      <Spinner size="lg" label="Exec NΞXUS Neural Pipelines..." />
+                      <Spinner size="lg" label="Deploying NΞXUS Neural Pipelines..." />
                       <p className="text-xs text-navy-400 font-mono">
                         Scanning metadata structures, extracting compression artifacts, and evaluating threat vectors...
                       </p>
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: '80%' }}
+                        transition={{ duration: 8, ease: 'linear' }}
+                        style={{
+                          height: '2px',
+                          background: 'linear-gradient(90deg, #1a2ffb, #c1ff00)',
+                          borderRadius: '4px',
+                          margin: '8px auto 0',
+                        }}
+                      />
                     </div>
                   )}
 
