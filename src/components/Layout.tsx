@@ -2,16 +2,23 @@ import { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import {
+  FiGrid, FiFolder, FiShield, FiClock, FiFileText,
+  FiCpu, FiTarget, FiBookOpen, FiLogOut, FiChevronLeft,
+  FiCommand
+} from 'react-icons/fi';
+import AmbientCanvas from './AmbientCanvas';
+import CommandPalette from './CommandPalette';
 
 const NAV_ITEMS = [
-  { to: '/dashboard',    label: 'Dashboard',       allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/cases',        label: 'Cases',            allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/evidence',     label: 'Evidence',         allowedRoles: ['Admin', 'Investigator'] },
-  { to: '/timeline',     label: 'Timeline',         allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/reports',      label: 'Reports',          allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
-  { to: '/assistant',    label: 'Analysis Assistant', allowedRoles: ['Admin', 'Investigator'] },
-  { to: '/threat-intel', label: 'Threat Intel',      allowedRoles: ['Admin'] },
-  { to: '/guide',        label: 'Workflow',          allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/dashboard',    label: 'Dashboard',         icon: FiGrid,     allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/cases',        label: 'Cases',             icon: FiFolder,   allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/evidence',     label: 'Evidence',          icon: FiShield,   allowedRoles: ['Admin', 'Investigator'] },
+  { to: '/timeline',     label: 'Timeline',          icon: FiClock,    allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/reports',      label: 'Reports',           icon: FiFileText, allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
+  { to: '/assistant',    label: 'AI Assistant',       icon: FiCpu,      allowedRoles: ['Admin', 'Investigator'] },
+  { to: '/threat-intel', label: 'Threat Intel',       icon: FiTarget,   allowedRoles: ['Admin'] },
+  { to: '/guide',        label: 'Workflow',           icon: FiBookOpen, allowedRoles: ['Admin', 'Investigator', 'Viewer'] },
 ];
 
 const PAGE_TITLES: Record<string, string> = {
@@ -54,13 +61,22 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden page-bg noise-overlay">
+      {/* ── Command Palette ─────────────────────────────── */}
+      <CommandPalette />
+
+      {/* ── Ambient Background ──────────────────────────── */}
+      <AmbientCanvas />
 
       {/* ── Sidebar ─────────────────────────────────────── */}
       <motion.aside
-        animate={{ width: collapsed ? 64 : 240 }}
+        animate={{ width: collapsed ? 68 : 240 }}
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="sidebar flex flex-col h-screen flex-shrink-0 overflow-hidden"
+        style={{ position: 'relative', zIndex: 10 }}
       >
+        {/* Glow strip */}
+        <div className="sidebar-glow" />
+
         {/* Logo */}
         <div style={{
           display: 'flex',
@@ -71,6 +87,8 @@ export default function Layout() {
         }}>
           <motion.div
             whileHover={{ boxShadow: '0 0 20px rgba(26,47,251,0.3)' }}
+            animate={{ boxShadow: ['0 0 0px rgba(26,47,251,0)', '0 0 12px rgba(26,47,251,0.2)', '0 0 0px rgba(26,47,251,0)'] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             style={{
               width: '32px',
               height: '32px',
@@ -82,7 +100,6 @@ export default function Layout() {
               overflow: 'hidden',
               background: 'rgba(255,255,255,0.04)',
               border: '1px solid rgba(255,255,255,0.06)',
-              transition: 'box-shadow 0.3s ease',
             }}
           >
             <img src="/nexusdfi-logo.png" alt="NexusDFI" style={{ width: '22px', height: '22px', objectFit: 'contain' }} />
@@ -126,37 +143,88 @@ export default function Layout() {
 
         {/* Nav links */}
         <nav style={{ flex: 1, padding: '4px 8px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
-          {NAV_ITEMS.filter(item => !user || item.allowedRoles.includes(user.role)).map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
-              className={({ isActive }) =>
-                `nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center' : ''}`
-              }
-            >
-              <AnimatePresence>
-                {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -8 }}
-                    transition={{ duration: 0.15 }}
-                    style={{ whiteSpace: 'nowrap', fontSize: '13px' }}
-                  >
-                    {item.label}
-                  </motion.span>
+          {NAV_ITEMS.filter(item => !user || item.allowedRoles.includes(user.role)).map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                id={`nav-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
+                className={({ isActive }) =>
+                  `nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center' : ''}`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {/* Animated active pill */}
+                    {isActive && (
+                      <motion.div
+                        layoutId="nav-active-pill"
+                        className="nav-active-pill"
+                        transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                      />
+                    )}
+                    <Icon
+                      size={16}
+                      style={{
+                        flexShrink: 0,
+                        color: isActive ? '#1a2ffb' : '#4a4d5c',
+                        transition: 'color 0.2s ease',
+                      }}
+                    />
+                    <AnimatePresence>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: -8 }}
+                          transition={{ duration: 0.15 }}
+                          style={{ whiteSpace: 'nowrap', fontSize: '13px' }}
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
+                  </>
                 )}
-              </AnimatePresence>
-              {collapsed && (
-                <span style={{ fontSize: '11px', fontWeight: 600, letterSpacing: '-0.01em' }}>{item.label[0]}</span>
-              )}
-            </NavLink>
-          ))}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Footer */}
         <div style={{ padding: '8px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+          {/* ⌘K Shortcut hint */}
+          <AnimatePresence>
+            {!collapsed && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '6px 10px',
+                  marginBottom: '4px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255,255,255,0.04)',
+                  background: 'rgba(255,255,255,0.02)',
+                  cursor: 'default',
+                }}
+              >
+                <FiCommand size={12} style={{ color: '#4a4d5c' }} />
+                <span style={{ fontSize: '11px', color: '#4a4d5c', flex: 1 }}>Command palette</span>
+                <kbd style={{
+                  fontSize: '9px', fontFamily: "'IBM Plex Mono', monospace",
+                  color: '#4a4d5c', background: 'rgba(255,255,255,0.04)',
+                  padding: '1px 5px', borderRadius: '4px',
+                  border: '1px solid rgba(255,255,255,0.06)',
+                }}>⌘K</kbd>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* User */}
           <NavLink to="/profile" style={{ display: 'block', width: '100%', textDecoration: 'none' }}>
             <div
@@ -174,6 +242,7 @@ export default function Layout() {
               onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
             >
               <div
+                className="avatar-ring"
                 style={{
                   width: '28px',
                   height: '28px',
@@ -229,7 +298,8 @@ export default function Layout() {
               e.currentTarget.style.background = 'transparent';
             }}
           >
-            {!collapsed ? <span>Sign Out</span> : <span style={{ fontSize: '11px' }}>×</span>}
+            <FiLogOut size={14} style={{ flexShrink: 0 }} />
+            {!collapsed && <span>Sign Out</span>}
           </button>
 
           {/* Collapse toggle */}
@@ -263,11 +333,11 @@ export default function Layout() {
             }}
           >
             <motion.span
-              animate={{ rotate: collapsed ? 0 : 180 }}
+              animate={{ rotate: collapsed ? 180 : 0 }}
               transition={{ duration: 0.3 }}
-              style={{ display: 'inline-block', fontSize: '10px' }}
+              style={{ display: 'inline-flex', fontSize: '14px' }}
             >
-              ▶
+              <FiChevronLeft />
             </motion.span>
             {!collapsed && <span>Collapse</span>}
           </button>
@@ -275,7 +345,7 @@ export default function Layout() {
       </motion.aside>
 
       {/* ── Main Content ─────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden aurora-bg" style={{ position: 'relative', zIndex: 1 }}>
         {/* Top bar — Lusion-style transparent blur */}
         <header
           style={{
@@ -299,8 +369,38 @@ export default function Layout() {
               color: '#f0f1fa',
               letterSpacing: '-0.02em',
             }}>{currentPage}</h2>
+            <div style={{
+              width: '4px', height: '4px', borderRadius: '50%',
+              background: '#c1ff00', boxShadow: '0 0 8px rgba(193,255,0,0.5)',
+            }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* ⌘K trigger */}
+            <button
+              onClick={() => {
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', metaKey: true, ctrlKey: true }));
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                padding: '5px 10px', borderRadius: '8px',
+                border: '1px solid rgba(255,255,255,0.06)',
+                background: 'rgba(255,255,255,0.02)',
+                color: '#4a4d5c', fontSize: '11px', cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(26,47,251,0.2)';
+                e.currentTarget.style.color = '#7a7d8e';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
+                e.currentTarget.style.color = '#4a4d5c';
+              }}
+            >
+              <FiCommand size={11} />
+              <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px' }}>⌘K</span>
+            </button>
+
             <span style={{
               fontSize: '11px',
               color: '#4a4d5c',
@@ -332,6 +432,7 @@ export default function Layout() {
             exit="exit"
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="p-6"
+            style={{ position: 'relative', zIndex: 1 }}
           >
             <Outlet />
           </motion.div>
@@ -342,9 +443,9 @@ export default function Layout() {
       <AnimatePresence>
         {showTimeoutWarning && (
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
             style={{
               position: 'fixed',
               bottom: '24px',
@@ -356,11 +457,15 @@ export default function Layout() {
               background: 'rgba(15,15,25,0.9)',
               backdropFilter: 'blur(20px)',
               border: '1px solid rgba(255,255,255,0.06)',
-              boxShadow: '0 16px 48px rgba(0,0,0,0.7)',
+              boxShadow: '0 16px 48px rgba(0,0,0,0.7), 0 0 0 1px rgba(239,68,68,0.1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-              <div style={{ marginTop: '2px', color: '#FBBF24', fontSize: '14px' }}>⚠</div>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                style={{ marginTop: '2px', color: '#FBBF24', fontSize: '14px' }}
+              >⚠</motion.div>
               <div>
                 <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#f0f1fa', marginBottom: '4px', letterSpacing: '-0.02em' }}>Session Timeout</h3>
                 <p style={{ fontSize: '12px', color: '#7a7d8e', lineHeight: 1.5, marginBottom: '12px' }}>
