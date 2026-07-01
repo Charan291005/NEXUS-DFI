@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { casesApi, newsApi } from '../utils/api';
 import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
-import { StatCard, Card, SectionHeader, Spinner, RiskBadge, SkeletonCard } from '../components/ui';
+import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import { useRealtimeStats } from '../hooks/useRealtimeStats';
@@ -99,15 +99,13 @@ export default function Dashboard() {
   const { stats, setStats, isLive } = useRealtimeStats(DEFAULT_STATS, 30000);
   
   const [news,    setNews]    = useState<NewsArticle[]>([]);
-  const [loadingStats, setLoadingStats] = useState(true);
   const [loadingNews, setLoadingNews] = useState(true);
 
   useEffect(() => {
     // Fetch stats instantly
     casesApi.stats()
       .then(r => setStats(r.data))
-      .catch(() => setStats(DEFAULT_STATS))
-      .finally(() => setLoadingStats(false));
+      .catch(() => setStats(DEFAULT_STATS));
 
     // Fetch news independently without blocking the UI
     newsApi.getLatest()
@@ -116,20 +114,7 @@ export default function Dashboard() {
       .finally(() => setLoadingNews(false));
   }, [setStats]);
 
-  if (loadingStats) return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-end">
-        <div>
-          <div className="skeleton skeleton-text" style={{ width: '120px' }} />
-          <div className="skeleton skeleton-text" style={{ width: '280px', height: '24px' }} />
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1,2,3,4].map(i => <SkeletonCard key={i} height={100} />)}
-      </div>
-      <SkeletonCard height={240} />
-    </div>
-  );
+
 
   const containerVariants = {
     hidden: {},
