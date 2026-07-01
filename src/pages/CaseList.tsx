@@ -1,10 +1,10 @@
-import { useEffect, useState, memo, useCallback, useMemo } from 'react';
+import { useEffect, useState, memo, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { casesApi } from '../utils/api';
 import type { NexusCase, CaseStatus, CasePriority, CreateCaseDto } from '../types';
 import {
-  PageHeader, Card, Badge, Spinner, EmptyState, ConfirmModal
+  PageHeader, Card, Badge, EmptyState, ConfirmModal, SkeletonCard
 } from '../components/ui';
 import {
   STATUS_COLORS, PRIORITY_COLORS, fmtDate, generateCaseId
@@ -24,18 +24,33 @@ const CaseCard = memo(function CaseCard({ c, onView, onDelete, index }: {
   onDelete: (id: number) => void;
   index: number;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    cardRef.current.style.setProperty('--spotlight-x', `${e.clientX - rect.left}px`);
+    cardRef.current.style.setProperty('--spotlight-y', `${e.clientY - rect.top}px`);
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.04, duration: 0.3 }}
-      whileHover={{ y: -4 }}
-      className="glass glass-hover p-5 flex flex-col justify-between group relative overflow-hidden text-left"
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      initial={{ opacity: 0, y: 16, filter: 'blur(4px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={{ delay: index * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -4, boxShadow: '0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(26,47,251,0.1)' }}
+      className="glass glass-hover card-spotlight p-5 flex flex-col justify-between group relative overflow-hidden text-left"
       onClick={() => onView(c.id)}
       style={{ cursor: 'pointer' }}
     >
-      {/* Absolute subtle gradient edge */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-accent-500 via-neon to-accent-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+      {/* Animated gradient top edge */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, height: '2px',
+        background: 'linear-gradient(90deg, transparent, #1a2ffb, #c1ff00, transparent)',
+        opacity: 0, transition: 'opacity 0.3s ease',
+      }} className="case-accent-line" />
 
       <div>
         <div className="flex items-center justify-between gap-2 mb-3">
@@ -64,15 +79,24 @@ const CaseCard = memo(function CaseCard({ c, onView, onDelete, index }: {
           <span className="mono text-[11px]">{fmtDate(c.created_at)}</span>
         </div>
         <div className="flex gap-2">
-          <button
+          <motion.button
             id={`btn-delete-case-${c.id}`}
             onClick={(e) => { e.stopPropagation(); onDelete(c.id); }}
-            className="btn-cyber btn-danger py-1 px-2.5 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+            className="btn-cyber btn-danger py-1 px-2.5 text-xs"
+            initial={{ opacity: 0, x: 10 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            style={{ opacity: 0 }}
+            whileHover={{ scale: 1.05 }}
           >
             Delete
-          </button>
+          </motion.button>
         </div>
       </div>
+
+      <style>{`
+        .glass:hover .case-accent-line { opacity: 1 !important; }
+        .glass:hover .btn-danger { opacity: 1 !important; }
+      `}</style>
     </motion.div>
   );
 });
@@ -148,29 +172,33 @@ export default function CaseList() {
       </PageHeader>
 
       {/* Top Metrics HUD */}
-      {!loading && (
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[1,2,3].map(i => <SkeletonCard key={i} height={80} />)}
+        </div>
+      ) : (
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="glass p-4 rounded-xl border border-navy-800 border-l-4 border-l-accent-500 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-navy-400 uppercase tracking-widest font-mono font-semibold">Total Investigations</p>
-              <p className="text-2xl font-bold text-white font-display mt-1">{cases.length}</p>
-            </div>
-            <span className="text-2xl opacity-20">📁</span>
-          </div>
-          <div className="glass p-4 rounded-xl border border-navy-800 border-l-4 border-l-neon flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-navy-400 uppercase tracking-widest font-mono font-semibold">Active Cases</p>
-              <p className="text-2xl font-bold text-white font-display mt-1">{cases.filter(c => c.status === 'Open' || c.status === 'Active').length}</p>
-            </div>
-            <span className="text-2xl opacity-20">⚡</span>
-          </div>
-          <div className="glass p-4 rounded-xl border border-navy-800 border-l-4 border-l-warning-500 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-navy-400 uppercase tracking-widest font-mono font-semibold">Evidence Secured</p>
-              <p className="text-2xl font-bold text-white font-display mt-1">{cases.reduce((acc, c) => acc + (c.evidence_count ?? 0), 0)}</p>
-            </div>
-            <span className="text-2xl opacity-20">🔒</span>
-          </div>
+          {[
+            { label: 'Total Investigations', value: cases.length, color: '#1a2ffb', icon: '📁' },
+            { label: 'Active Cases', value: cases.filter(c => c.status === 'Open' || c.status === 'Active').length, color: '#c1ff00', icon: '⚡' },
+            { label: 'Evidence Secured', value: cases.reduce((acc, c) => acc + (c.evidence_count ?? 0), 0), color: '#F59E0B', icon: '🔒' },
+          ].map((m, i) => (
+            <motion.div
+              key={m.label}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+              whileHover={{ y: -2, borderColor: `${m.color}30` }}
+              className="glass p-4 rounded-xl border border-navy-800 flex items-center justify-between card-spotlight"
+              style={{ borderLeftWidth: '3px', borderLeftColor: m.color }}
+            >
+              <div>
+                <p className="text-[10px] text-navy-400 uppercase tracking-widest font-mono font-semibold">{m.label}</p>
+                <p className="text-2xl font-bold text-white font-display mt-1">{m.value}</p>
+              </div>
+              <span className="text-2xl opacity-20">{m.icon}</span>
+            </motion.div>
+          ))}
         </motion.div>
       )}
 
@@ -185,14 +213,26 @@ export default function CaseList() {
             onChange={e => setSearch(e.target.value)}
             className="input-cyber flex-1 min-w-[240px]"
           />
-          <div className="flex gap-1.5 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap relative">
             {(['All', ...STATUS_OPTIONS] as const).map(s => (
               <button
                 key={s}
                 id={`filter-status-${s.toLowerCase()}`}
                 onClick={() => setFilterStatus(s as CaseStatus | 'All')}
-                className={`btn-cyber text-xs py-1.5 px-3.5 ${filterStatus === s ? 'btn-cyan' : 'btn-ghost'}`}
+                className={`btn-cyber text-xs py-1.5 px-3.5 relative ${filterStatus === s ? 'btn-cyan' : 'btn-ghost'}`}
               >
+                {filterStatus === s && (
+                  <motion.div
+                    layoutId="case-filter-pill"
+                    style={{
+                      position: 'absolute', inset: 0, borderRadius: '100px',
+                      background: 'rgba(26,47,251,0.08)',
+                      border: '1px solid rgba(26,47,251,0.2)',
+                      zIndex: -1,
+                    }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  />
+                )}
                 {s}
               </button>
             ))}
@@ -202,7 +242,9 @@ export default function CaseList() {
 
       {/* Cases grid */}
       {loading ? (
-        <div className="flex justify-center py-20"><Spinner size="lg" label="Loading cases vault..." /></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} height={180} />)}
+        </div>
       ) : filtered.length === 0 ? (
         <EmptyState icon="📂" title="No investigations found" description="No cases match your search or filter criteria." action={
           <button className="btn-cyber btn-primary" onClick={() => setShowForm(true)}>Create First Case</button>

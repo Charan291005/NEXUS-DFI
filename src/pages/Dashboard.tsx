@@ -6,7 +6,7 @@ import {
 } from 'recharts';
 import { casesApi, newsApi } from '../utils/api';
 import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
-import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
+import { StatCard, Card, SectionHeader, Spinner, RiskBadge, SkeletonCard } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import { useRealtimeStats } from '../hooks/useRealtimeStats';
@@ -44,6 +44,14 @@ const ACTIVITY_TYPE_LABEL: Record<string, string> = {
   report_generated: 'Report',
 };
 
+const ACTIVITY_TYPE_COLOR: Record<string, string> = {
+  evidence_uploaded: '#3B82F6',
+  alert: '#EF4444',
+  analysis_complete: '#22C55E',
+  case_created: '#1a2ffb',
+  report_generated: '#F59E0B',
+};
+
 const AnimatedCounter = memo(function AnimatedCounter({ target, duration = 1.2 }: { target: number; duration?: number }) {
   const [count, setCount] = useState(0);
   useEffect(() => {
@@ -69,9 +77,17 @@ interface CustomTooltipProps {
 const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="px-3 py-2 text-xs rounded-lg" style={{ background: '#1E293B', border: '1px solid #334155' }}>
-      <p className="text-navy-400">{label}</p>
-      <p className="font-semibold text-sm text-accent-400 mt-0.5">{payload[0]?.value} cases</p>
+    <div style={{
+      padding: '8px 12px',
+      borderRadius: '12px',
+      background: 'rgba(15,15,25,0.9)',
+      backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255,255,255,0.08)',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+      fontSize: '12px',
+    }}>
+      <p style={{ color: '#7a7d8e', marginBottom: '2px' }}>{label}</p>
+      <p style={{ color: '#1a2ffb', fontWeight: 700, fontSize: '14px' }}>{payload[0]?.value} cases</p>
     </div>
   );
 });
@@ -84,6 +100,7 @@ export default function Dashboard() {
   
   const [news,    setNews]    = useState<NewsArticle[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
+  const [loadingNews, setLoadingNews] = useState(true);
 
   useEffect(() => {
     // Fetch stats instantly
@@ -95,12 +112,22 @@ export default function Dashboard() {
     // Fetch news independently without blocking the UI
     newsApi.getLatest()
       .then(r => setNews(r.data))
-      .catch(() => setNews([]));
+      .catch(() => setNews([]))
+      .finally(() => setLoadingNews(false));
   }, [setStats]);
 
   if (loadingStats) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <Spinner size="lg" label="Loading dashboard..." />
+    <div className="space-y-6">
+      <div className="flex justify-between items-end">
+        <div>
+          <div className="skeleton skeleton-text" style={{ width: '120px' }} />
+          <div className="skeleton skeleton-text" style={{ width: '280px', height: '24px' }} />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => <SkeletonCard key={i} height={100} />)}
+      </div>
+      <SkeletonCard height={240} />
     </div>
   );
 
@@ -109,8 +136,8 @@ export default function Dashboard() {
     show: { transition: { staggerChildren: 0.06 } },
   };
   const itemVariants = {
-    hidden: { opacity: 0, y: 12 },
-    show:   { opacity: 1, y: 0, transition: { duration: 0.3 } },
+    hidden: { opacity: 0, y: 16, filter: 'blur(4px)' },
+    show:   { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const } },
   };
 
   return (
@@ -119,43 +146,58 @@ export default function Dashboard() {
       {/* ── Page Header ─────────────────────────────────── */}
       <motion.div variants={itemVariants} className="flex justify-between items-end">
         <div>
-          <p className="text-xs text-navy-400 mb-1">Overview</p>
+          <p className="text-xs text-navy-400 mb-1" style={{ fontFamily: "'IBM Plex Mono', monospace", letterSpacing: '0.1em', textTransform: 'uppercase' }}>Overview</p>
           <h1 className="text-2xl font-bold text-white font-display">
-            Welcome back, <span className="text-accent-400">{user?.username}</span>
+            Welcome back, <span style={{
+              background: 'linear-gradient(135deg, #1a2ffb, #c1ff00)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}>{user?.username}</span>
           </h1>
           <p className="text-sm text-navy-400 mt-1">
             {new Date().toLocaleDateString('en-IN', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })}
           </p>
         </div>
         {isLive && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1a2ffb]/10 border border-[#1a2ffb]/30">
-            <span className="w-2 h-2 rounded-full bg-[#c1ff00] animate-pulse"></span>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#1a2ffb]/10 border border-[#1a2ffb]/30"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#c1ff00]" style={{
+              boxShadow: '0 0 8px rgba(193,255,0,0.5)',
+              animation: 'riskDotPulse 2s ease-in-out infinite',
+            }} />
             <span className="text-xs font-mono text-[#c1ff00]">SYNCED</span>
-          </div>
+          </motion.div>
         )}
       </motion.div>
 
       {/* ── Investigation Workflow Tracker ───────────────── */}
       <motion.div variants={itemVariants}>
-        <Card>
+        <Card className="animated-border">
           <SectionHeader title="Active Investigation Pipeline" subtitle="Cross-layer correlation tracking" />
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mt-2">
             {[
-              { label: 'Open Cases', count: stats?.pipeline?.open_cases || 0, icon: <FiFolder />, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-              { label: 'Pending Evidence', count: stats?.pipeline?.pending_evidence || 0, icon: <FiFileText />, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
-              { label: 'Analysis Running', count: stats?.pipeline?.analysis_in_progress || 0, icon: <FiClock />, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-              { label: 'Ready for Report', count: stats?.pipeline?.ready_for_report || 0, icon: <FiCheckCircle />, color: 'text-[#c1ff00]', bg: 'bg-[#c1ff00]/10' },
+              { label: 'Open Cases', count: stats?.pipeline?.open_cases || 0, icon: <FiFolder size={18} />, color: 'text-blue-400', bg: 'bg-blue-400/10', borderColor: 'rgba(59,130,246,0.3)' },
+              { label: 'Pending Evidence', count: stats?.pipeline?.pending_evidence || 0, icon: <FiFileText size={18} />, color: 'text-yellow-400', bg: 'bg-yellow-400/10', borderColor: 'rgba(250,204,21,0.3)' },
+              { label: 'Analysis Running', count: stats?.pipeline?.analysis_in_progress || 0, icon: <FiClock size={18} />, color: 'text-purple-400', bg: 'bg-purple-400/10', borderColor: 'rgba(168,85,247,0.3)' },
+              { label: 'Ready for Report', count: stats?.pipeline?.ready_for_report || 0, icon: <FiCheckCircle size={18} />, color: 'text-[#c1ff00]', bg: 'bg-[#c1ff00]/10', borderColor: 'rgba(193,255,0,0.3)' },
             ].map((step, idx, arr) => (
               <div key={step.label} className="flex-1 flex items-center justify-between md:justify-center relative group">
-                <div className="flex flex-col items-center p-4 rounded-xl border border-dashed border-navy-700 bg-navy-900/30 hover:border-navy-500 hover:bg-navy-800/50 transition-all w-full md:w-auto min-w-[140px]">
+                <motion.div
+                  whileHover={{ scale: 1.03, borderColor: step.borderColor }}
+                  transition={{ duration: 0.2 }}
+                  className="flex flex-col items-center p-4 rounded-xl border border-dashed border-navy-700 bg-navy-900/30 transition-all w-full md:w-auto min-w-[140px]"
+                >
                   <div className={`p-3 rounded-full ${step.bg} ${step.color} mb-3 group-hover:scale-110 transition-transform`}>
                     {step.icon}
                   </div>
                   <h4 className="text-2xl font-bold text-white font-display mb-1">{step.count}</h4>
                   <p className="text-[10px] uppercase tracking-wider text-navy-400 font-medium text-center">{step.label}</p>
-                </div>
+                </motion.div>
                 {idx < arr.length - 1 && (
-                  <div className="hidden md:flex absolute -right-6 z-10 text-navy-600">
+                  <div className="hidden md:flex absolute -right-6 z-10 text-navy-600 arrow-pulse">
                     <FiArrowRight size={24} />
                   </div>
                 )}
@@ -167,8 +209,8 @@ export default function Dashboard() {
 
       {/* ── Stat Cards ───────────────────────────────────── */}
       <motion.div variants={itemVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Total Cases"           value={<AnimatedCounter target={stats?.total_cases || 0} />}           color="#2563EB"  delta={`+${stats?.cases_this_week || 0}`} />
-        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats?.active_investigations || 0} />} color="#3B82F6" />
+        <StatCard label="Total Cases"           value={<AnimatedCounter target={stats?.total_cases || 0} />}           color="#1a2ffb"  delta={`+${stats?.cases_this_week || 0}`} />
+        <StatCard label="Active Investigations" value={<AnimatedCounter target={stats?.active_investigations || 0} />} color="#3d4fff" />
         <StatCard label="Evidence Files"        value={<AnimatedCounter target={stats?.evidence_files || 0} />}        color="#22C55E" />
         <StatCard label="Critical Findings"     value={<AnimatedCounter target={stats?.high_risk_findings || 0} />}    color="#EF4444" />
       </motion.div>
@@ -184,15 +226,15 @@ export default function Dashboard() {
               <AreaChart data={stats?.weekly_cases || []}>
                 <defs>
                   <linearGradient id="caseGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#2563EB" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                    <stop offset="5%"  stopColor="#1a2ffb" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#1a2ffb" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(51,65,85,0.4)" />
-                <XAxis dataKey="day" tick={{ fill:'#64748B', fontSize:11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill:'#64748B', fontSize:11 }} axisLine={false} tickLine={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                <XAxis dataKey="day" tick={{ fill:'#4a4d5c', fontSize:11 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill:'#4a4d5c', fontSize:11 }} axisLine={false} tickLine={false} />
                 <Tooltip content={<CustomTooltip />} />
-                <Area type="monotone" dataKey="count" stroke="#2563EB" strokeWidth={2} fill="url(#caseGrad)" />
+                <Area type="monotone" dataKey="count" stroke="#1a2ffb" strokeWidth={2} fill="url(#caseGrad)" dot={{ fill: '#1a2ffb', strokeWidth: 0, r: 3 }} activeDot={{ r: 5, fill: '#c1ff00', stroke: '#1a2ffb', strokeWidth: 2 }} />
               </AreaChart>
             </ResponsiveContainer>
           </Card>
@@ -211,10 +253,12 @@ export default function Dashboard() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    background: '#1E293B',
-                    border: '1px solid #334155',
-                    borderRadius: 8,
+                    background: 'rgba(15,15,25,0.9)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 12,
                     fontSize: 11,
+                    backdropFilter: 'blur(12px)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   }}
                 />
               </PieChart>
@@ -222,7 +266,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 gap-1.5 mt-2">
               {(stats?.risk_distribution || []).map((r) => (
                 <div key={r.level} className="flex items-center gap-1.5 text-xs text-navy-300">
-                  <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: RISK_PIE_COLORS[r.level] }} />
+                  <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ background: RISK_PIE_COLORS[r.level], boxShadow: `0 0 6px ${RISK_PIE_COLORS[r.level]}40` }} />
                   <span>{r.level}</span>
                   <span className="ml-auto text-white font-medium">{r.count}</span>
                 </div>
@@ -241,11 +285,19 @@ export default function Dashboard() {
               {stats?.recent_activity?.length ? stats.recent_activity.map((item: ActivityItem, i: number) => (
                 <motion.div
                   key={item.id}
-                  initial={{ opacity:0, x: 8 }}
+                  initial={{ opacity:0, x: 12 }}
                   animate={{ opacity:1, x: 0 }}
-                  transition={{ delay: i * 0.04 }}
-                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-navy-800/50 transition-colors"
+                  transition={{ delay: i * 0.04, duration: 0.3 }}
+                  className="flex items-start gap-3 p-3 rounded-lg hover:bg-navy-800/50 transition-colors group"
                 >
+                  {/* Color indicator */}
+                  <div style={{
+                    width: '3px', height: '100%', minHeight: '32px', borderRadius: '4px',
+                    background: ACTIVITY_TYPE_COLOR[item.type] || '#4a4d5c',
+                    opacity: 0.6,
+                    flexShrink: 0,
+                    marginTop: '2px',
+                  }} />
                   <div className="mt-1">
                     <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider bg-navy-800 text-navy-400 border border-navy-700">
                       {ACTIVITY_TYPE_LABEL[item.type] || item.type}
@@ -272,10 +324,20 @@ export default function Dashboard() {
             <SectionHeader 
               title="Live Intelligence Feed" 
               subtitle="Real-time cybercrime & forensics news" 
-              action={<span className="flex items-center gap-1 text-[10px] text-[#c1ff00] font-mono uppercase tracking-wider"><span className="w-1.5 h-1.5 rounded-full bg-[#c1ff00] animate-pulse" /> Live</span>}
+              action={<span className="flex items-center gap-1 text-[10px] text-[#c1ff00] font-mono uppercase tracking-wider"><span className="w-1.5 h-1.5 rounded-full bg-[#c1ff00]" style={{ boxShadow: '0 0 8px rgba(193,255,0,0.5)', animation: 'riskDotPulse 2s ease-in-out infinite' }} /> Live</span>}
             />
             <div className="space-y-3 mt-2 h-[320px] overflow-y-auto pr-2 custom-scrollbar">
-              {news.length > 0 ? news.map((article, i) => (
+              {loadingNews ? (
+                <div className="space-y-3">
+                  {[1,2,3].map(i => (
+                    <div key={i} className="p-3 rounded-xl">
+                      <div className="skeleton skeleton-text" style={{ width: '80%', height: '14px' }} />
+                      <div className="skeleton skeleton-text" style={{ width: '100%', marginTop: '8px' }} />
+                      <div className="skeleton skeleton-text" style={{ width: '40%', marginTop: '8px' }} />
+                    </div>
+                  ))}
+                </div>
+              ) : news.length > 0 ? news.map((article, i) => (
                 <motion.a
                   key={i}
                   href={article.link}
@@ -317,13 +379,20 @@ export default function Dashboard() {
               { label: 'API Server',     status: 'Cloud Run', ok: true },
               { label: 'AI Engine',      status: 'Gemini Ready', ok: true },
             ].map((s) => (
-              <div key={s.label} className="p-3 rounded-lg bg-navy-950/50 border border-navy-800">
+              <motion.div
+                key={s.label}
+                whileHover={{ y: -2, borderColor: 'rgba(26,47,251,0.15)' }}
+                className="p-3 rounded-lg bg-navy-950/50 border border-navy-800 transition-all"
+              >
                 <p className="text-[10px] text-navy-400 uppercase tracking-wider mb-1">{s.label}</p>
                 <div className="flex items-center gap-1.5">
-                  <div className={`w-1.5 h-1.5 rounded-full ${s.ok ? 'bg-green-400' : 'bg-red-400'}`} />
+                  <div
+                    className={`w-1.5 h-1.5 rounded-full ${s.ok ? 'bg-green-400' : 'bg-red-400'}`}
+                    style={s.ok ? { boxShadow: '0 0 6px rgba(74,222,128,0.5)', animation: 'riskDotPulse 3s ease-in-out infinite' } : undefined}
+                  />
                   <span className="text-xs text-navy-200 font-medium">{s.status}</span>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </Card>
