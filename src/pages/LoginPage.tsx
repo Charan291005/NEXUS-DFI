@@ -300,32 +300,6 @@ function DnaHelix() {
   );
 }
 
-// ── GSAP Character Reveal Component ──────────────────────
-function GsapCharReveal({ text, style, delay = 0, isReady }: {
-  text: string; className?: string; style?: React.CSSProperties; delay?: number; isReady: boolean;
-}) {
-  const containerRef = useRef<HTMLSpanElement>(null);
-  useEffect(() => {
-    if (!isReady || !containerRef.current) return;
-    const chars = containerRef.current.querySelectorAll('.gsap-char');
-    gsap.set(chars, { opacity: 0, y: 60, rotateX: -90 });
-    gsap.to(chars, {
-      opacity: 1, y: 0, rotateX: 0,
-      duration: 0.8, stagger: 0.025, delay,
-      ease: 'power4.out',
-    });
-  }, [isReady, delay]);
-  return (
-    <span ref={containerRef} style={{ ...style, display: 'inline-block', perspective: '600px' }}>
-      {text.split('').map((char, i) => (
-        <span key={i} className="gsap-char" style={{ display: 'inline-block', willChange: 'transform, opacity' }}>
-          {char === ' ' ? '\u00A0' : char}
-        </span>
-      ))}
-    </span>
-  );
-}
-
 // ── Animated Stat Counter ────────────────────────────────
 function AnimatedCounter({ end, label, suffix = '', isReady, delay = 0 }: {
   end: number; label: string; suffix?: string; isReady: boolean; delay?: number;
@@ -796,18 +770,21 @@ export default function LoginPage() {
                 fontWeight: 800, color: '#f0f1fa', lineHeight: 1.05,
                 letterSpacing: '-0.04em', marginBottom: '24px',
               }}>
-                <GsapCharReveal text="Digital Forensics" isReady={isReady} delay={0.5} style={{ display: 'block' }} />
-                <GsapCharReveal
-                  text="Intelligence Platform"
-                  isReady={isReady}
-                  delay={0.9}
+                <motion.span variants={slideUp} style={{ display: 'block' }}>
+                  Digital Forensics
+                </motion.span>
+                <motion.span
+                  variants={slideUp}
                   style={{
                     display: 'block',
-                    background: 'linear-gradient(135deg, #1a2ffb, #6670ff)',
+                    background: 'linear-gradient(135deg, #1a2ffb, #c1ff00)',
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
+                    marginTop: '4px'
                   }}
-                />
+                >
+                  Intelligence Platform
+                </motion.span>
               </div>
 
               <motion.p variants={slideUp} style={{
