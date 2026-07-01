@@ -14,7 +14,7 @@ export default function EvidencePage() {
   const [activeFilter, setActiveFilter] = useState<'All' | 'image' | 'video' | 'log' | 'pdf' | 'document' | 'other'>('All');
 
   useEffect(() => {
-    evidenceApi.list(1) // Showing all for demo
+    evidenceApi.listAll() // Show all evidence for the current user
       .then(res => { setEvidence(res.data); if (res.data.length > 0) setSelected(res.data[0]); })
       .catch(console.error)
       .finally(() => setLoading(false));
