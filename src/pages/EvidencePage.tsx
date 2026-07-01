@@ -20,6 +20,19 @@ export default function EvidencePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!selected || selected.analysis) return;
+    analysisApi.getResult(selected.id)
+      .then(res => {
+        const updated = { ...selected, analysis: res.data };
+        setSelected(updated);
+        setEvidence(prev => prev.map(e => e.id === selected.id ? updated : e));
+      })
+      .catch(() => {
+        // No analysis result exists yet
+      });
+  }, [selected?.id]);
+
   const runAnalysis = async (module: string) => {
     if (!selected) return;
     setAnalyzing(true);
