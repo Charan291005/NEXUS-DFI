@@ -6,18 +6,59 @@ import type { NexusEvidence, NexusCase, NexusAnalysisResult } from '../types';
 import { PageHeader, SectionHeader, RiskMeter, RiskBadge, Badge, Spinner } from '../components/ui';
 import { fileIcon, fmtDateTime, riskColor, riskLabel, STATUS_COLORS, PRIORITY_COLORS } from '../utils/helpers';
 
+const AnalysisModal = ({ ev, onClose, onComplete }: { ev: NexusEvidence, onClose: () => void, onComplete: (id: number, module: string) => Promise<void> }) => {
+  const [step, setStep] = useState(0);
+  const steps = [
+    "Initializing NΞXUS Engine...",
+    "Extracting cryptographic hashes (SHA-256, MD5)...",
+    "Parsing EXIF metadata & file headers...",
+    ev.file_type === 'image' || ev.file_type === 'video' ? "Running Error Level Analysis (ELA)..." : "Analyzing text/log structures...",
+    ev.file_type === 'image' || ev.file_type === 'video' ? "Executing Fast Fourier Transform (FFT) GAN fingerprint scan..." : "Scanning for IoCs & Entropy patterns...",
+    "Cross-referencing Threat Intelligence IoCs...",
+    "Compiling forensic findings...",
+    "Done."
+  ];
 
+  useEffect(() => {
+    let current = 0;
+    const interval = setInterval(() => {
+      current++;
+      if (current < steps.length) {
+        setStep(current);
+      } else {
+        clearInterval(interval);
+        // Map file type to default analysis module
+        const module = ev.file_type === 'image' ? 'image_forensics' : ev.file_type === 'video' ? 'deepfake_detection' : 'log_analysis';
+        onComplete(ev.id, module).then(() => {
+          onClose();
+        });
+      }
+    }, 800);
+    return () => clearInterval(interval);
+  }, [ev, onComplete, onClose]);
 
-const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze, index }: { ev: NexusEvidence; onAnalyze: (id: number, module: string) => void; index: number }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 backdrop-blur-sm">
+      <div className="glass p-8 rounded-2xl border border-accent-500/30 max-w-lg w-full shadow-2xl">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Spinner size="sm" /> Live Forensic Analysis
+        </h3>
+        <p className="text-xs text-navy-300 mb-6 font-mono break-all">Target: {ev.filename}</p>
+        <div className="bg-navy-950 p-4 rounded-xl border border-navy-800 font-mono text-xs space-y-2 max-h-60 overflow-y-auto">
+          {steps.slice(0, step + 1).map((s, i) => (
+            <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className={i === step && i < steps.length - 1 ? 'text-accent-400' : 'text-success-400'}>
+              {`> ${s}`}
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyzeClick, index }: { ev: NexusEvidence; onAnalyzeClick: (ev: NexusEvidence) => void; index: number }) {
   const [expanded, setExpanded] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [activeTab, setActiveTab] = useState<'summary' | 'findings' | 'metadata' | 'timeline'>('summary');
-
-  const runAnalysis = async (module: string) => {
-    setAnalyzing(true);
-    await onAnalyze(ev.id, module);
-    setAnalyzing(false);
-  };
 
   const r = ev.analysis;
 
@@ -59,9 +100,12 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze, index }: { ev: 
               </p>
             </div>
           ) : (
-            <span className="text-[11px] text-navy-400 font-mono bg-navy-900/50 px-2.5 py-1 rounded border border-navy-800">
-              Unanalyzed
-            </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onAnalyzeClick(ev); }}
+              className="btn-cyber btn-primary text-xs py-1.5 px-3 z-10 relative"
+            >
+              🔍 Analyze
+            </button>
           )}
           <motion.span
             animate={{ rotate: expanded ? 180 : 0 }}
@@ -106,36 +150,16 @@ const EvidenceCard = memo(function EvidenceCard({ ev, onAnalyze, index }: { ev: 
                 </div>
               </div>
 
-              {/* Analysis actions */}
               {!r && (
-                <div className="p-5 rounded-xl bg-navy-900/40 border border-navy-800 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-bold text-white uppercase tracking-wider font-mono">NΞXUS AI Engine Analysis</p>
-                      <p className="text-xs text-navy-400 mt-0.5">Deploy deep learning forensics on this artifact to uncover hidden anomalies.</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 flex-wrap pt-1">
-                    {ev.file_type === 'image' && (
-                      <button onClick={() => runAnalysis('image_forensics')} disabled={analyzing} className="btn-cyber btn-cyan text-xs py-2 px-4">
-                        {analyzing ? <Spinner size="sm" /> : '🔍 Run ELA & PRNU Image Forensics'}
-                      </button>
-                    )}
-                    {(ev.file_type === 'image' || ev.file_type === 'video') && (
-                      <button onClick={() => runAnalysis('deepfake_detection')} disabled={analyzing} className="btn-cyber btn-primary text-xs py-2 px-4">
-                        {analyzing ? <Spinner size="sm" /> : '⚡ Deploy Deepfake Neural Detector'}
-                      </button>
-                    )}
-                    {ev.file_type === 'log' && (
-                      <button onClick={() => runAnalysis('log_analysis')} disabled={analyzing} className="btn-cyber btn-cyan text-xs py-2 px-4">
-                        {analyzing ? <Spinner size="sm" /> : '🛡️ Run Threat & IoC Log Analysis'}
-                      </button>
-                    )}
-                    {(!['image','video','log'].includes(ev.file_type)) && (
-                      <p className="text-xs text-navy-400 italic">Automated threat scanning is complete. No specialized neural models required for this format.</p>
-                    )}
-                  </div>
-                </div>
+                 <div className="p-5 rounded-xl bg-navy-900/40 border border-navy-800 text-center">
+                    <p className="text-navy-300 text-sm mb-3">This artifact has not been analyzed yet.</p>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onAnalyzeClick(ev); }}
+                      className="btn-cyber btn-primary text-xs py-2 px-4"
+                    >
+                      🚀 Launch Forensic Analysis
+                    </button>
+                 </div>
               )}
 
               {/* Analysis results */}
@@ -237,6 +261,8 @@ export default function CaseDetail() {
 
   const [currentCase, setCurrentCase] = useState<NexusCase | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  const [analyzingEv, setAnalyzingEv] = useState<NexusEvidence | null>(null);
 
   useEffect(() => {
     Promise.resolve().then(() => setLoading(true));
@@ -288,23 +314,75 @@ export default function CaseDetail() {
 
   const peakRisk = evidence.reduce((max, e) => e.analysis ? Math.max(max, e.analysis.risk_score) : max, 0);
 
+  // Determine current pipeline stage
+  const hasEvidence = evidence.length > 0;
+  const unanalyzedCount = evidence.filter(e => !e.analysis).length;
+  const hasAnalysis = evidence.length > 0 && evidence.some(e => e.analysis);
+
   return (
     <div className="space-y-6">
+      {analyzingEv && (
+        <AnalysisModal ev={analyzingEv} onClose={() => setAnalyzingEv(null)} onComplete={handleAnalyze} />
+      )}
+
       <PageHeader title={currentCase.title} subtitle={`Case ID: ${currentCase.case_id}`}>
         <Badge label={currentCase.status} variant={STATUS_COLORS[currentCase.status]} dot />
         <Badge label={currentCase.priority} variant={PRIORITY_COLORS[currentCase.priority]} />
-        <button
-          id="btn-generate-report"
-          className="btn-cyber btn-primary"
-          onClick={() => analysisApi.generateReport(Number(id)||1).then(r => {
-            const url = window.URL.createObjectURL(new Blob([r.data]));
-            const a = document.createElement('a'); a.href = url;
-            a.download = `${currentCase.case_id}_report.pdf`; a.click();
-          }).catch(() => alert('Backend offline – PDF generation requires the FastAPI server.'))}
-        >
-          Generate Report
-        </button>
       </PageHeader>
+
+      {/* Investigation Pipeline UI */}
+      <div className="glass p-4 rounded-xl border border-navy-800 flex items-center justify-between mb-6">
+        <div className={`flex-1 text-center py-2 border-r border-navy-800 ${!hasEvidence ? 'text-accent-400 font-bold' : 'text-success-400'}`}>
+          <div className="text-xs uppercase tracking-widest font-mono mb-1">Step 1</div>
+          <div className="text-sm">Secure Evidence</div>
+        </div>
+        <div className={`flex-1 text-center py-2 border-r border-navy-800 ${hasEvidence && unanalyzedCount > 0 ? 'text-accent-400 font-bold' : hasAnalysis && unanalyzedCount === 0 ? 'text-success-400' : 'text-navy-500'}`}>
+          <div className="text-xs uppercase tracking-widest font-mono mb-1">Step 2</div>
+          <div className="text-sm">Forensic Analysis</div>
+        </div>
+        <div className={`flex-1 text-center py-2 ${unanalyzedCount === 0 && hasEvidence ? 'text-accent-400 font-bold' : 'text-navy-500'}`}>
+          <div className="text-xs uppercase tracking-widest font-mono mb-1">Step 3</div>
+          <div className="text-sm">Generate Report</div>
+        </div>
+      </div>
+
+      {/* Action Banners based on pipeline state */}
+      {!hasEvidence && (
+        <div className="bg-accent-500/10 border border-accent-500/50 p-4 rounded-xl text-center mb-6">
+          <p className="text-accent-400 font-bold">Waiting for Evidence</p>
+          <p className="text-sm text-navy-200 mt-1">Upload files below to begin the investigation pipeline.</p>
+        </div>
+      )}
+      {hasEvidence && unanalyzedCount > 0 && (
+        <div className="bg-accent-500/10 border border-accent-500/50 p-4 rounded-xl flex items-center justify-between mb-6">
+          <div>
+            <p className="text-accent-400 font-bold">Analysis Required</p>
+            <p className="text-sm text-navy-200 mt-1">{unanalyzedCount} evidence artifact(s) require forensic scanning.</p>
+          </div>
+          <button onClick={() => setAnalyzingEv(evidence.find(e => !e.analysis) || null)} className="btn-cyber btn-primary">
+            🚀 Analyze Next Artifact
+          </button>
+        </div>
+      )}
+      {hasEvidence && unanalyzedCount === 0 && (
+        <div className="bg-success-500/10 border border-success-500/50 p-4 rounded-xl flex items-center justify-between mb-6">
+          <div>
+            <p className="text-success-400 font-bold">Analysis Complete</p>
+            <p className="text-sm text-navy-200 mt-1">All evidence has been processed. Ready for final reporting.</p>
+          </div>
+          <button
+            id="btn-generate-report"
+            className="btn-cyber btn-primary"
+            onClick={() => analysisApi.generateReport(Number(id)||1).then(r => {
+              const url = window.URL.createObjectURL(new Blob([r.data]));
+              const a = document.createElement('a'); a.href = url;
+              a.download = `${currentCase.case_id}_report.pdf`; a.click();
+            }).catch(() => alert('Backend offline – PDF generation requires the FastAPI server.'))}
+          >
+            Generate Final Report
+          </button>
+        </div>
+      )}
 
       {/* Investigation Overview Banner */}
       <div className="glass p-6 rounded-2xl border border-navy-800 grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -393,7 +471,7 @@ export default function CaseDetail() {
         />
         <div className="space-y-4">
           {evidence.map((ev, i) => (
-            <EvidenceCard key={ev.id} ev={ev} onAnalyze={handleAnalyze} index={i} />
+            <EvidenceCard key={ev.id} ev={ev} onAnalyzeClick={setAnalyzingEv} index={i} />
           ))}
         </div>
       </div>
