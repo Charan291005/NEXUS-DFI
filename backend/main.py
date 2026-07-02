@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 
 from backend.database import engine, Base
-from backend.routers import auth, cases, evidence, analysis, news
+from backend.routers import auth, cases, evidence, analysis, news, osint
 
 # Create DB tables
 Base.metadata.create_all(bind=engine)
@@ -70,6 +70,7 @@ app.include_router(cases.router,    prefix="/api/cases",    tags=["Cases"])
 app.include_router(evidence.router, prefix="/api/evidence", tags=["Evidence"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["Analysis"])
 app.include_router(news.router,     prefix="/api/news",     tags=["News"])
+app.include_router(osint.router,    prefix="/api/osint",    tags=["OSINT"])
 
 
 @app.get("/", tags=["Health"])

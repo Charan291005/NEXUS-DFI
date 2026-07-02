@@ -14,7 +14,7 @@ from backend.routers.auth import get_current_user
 from backend.models import User
 from backend.ai_engine import (
     run_image_forensics, run_deepfake_detection, run_log_analysis,
-    ask_assistant, analyze_text_evidence, generate_case_summary
+    run_pe_analysis, ask_assistant, analyze_text_evidence, generate_case_summary
 )
 
 router = APIRouter()
@@ -69,6 +69,14 @@ def log_analysis(evidence_id: int, db: Session = Depends(get_db), current: User 
     ev   = _get_evidence_or_404(evidence_id, db)
     data = run_log_analysis(ev.file_path)
     ar   = _save_result(db, evidence_id, "log_analysis", data)
+    return _format_result(ar)
+
+
+@router.post("/pe-analysis/{evidence_id}", response_model=AnalysisResultOut)
+def pe_analysis(evidence_id: int, db: Session = Depends(get_db), current: User = Depends(get_current_user)):
+    ev   = _get_evidence_or_404(evidence_id, db)
+    data = run_pe_analysis(ev.file_path)
+    ar   = _save_result(db, evidence_id, "pe_analysis", data)
     return _format_result(ar)
 
 

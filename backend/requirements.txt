@@ -14,3 +14,4 @@ numpy
 opencv-python-headless
 aiosqlite
 gunicorn
+pefile

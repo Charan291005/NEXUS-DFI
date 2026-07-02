@@ -8,12 +8,13 @@ import { fileIcon, fmtDateTime, riskColor, riskLabel, STATUS_COLORS, PRIORITY_CO
 
 const AnalysisModal = ({ ev, onClose, onComplete }: { ev: NexusEvidence, onClose: () => void, onComplete: (id: number, module: string) => Promise<void> }) => {
   const [step, setStep] = useState(0);
+  const isExe = ev.file_type === 'executable' || ev.filename.endsWith('.exe') || ev.filename.endsWith('.dll');
   const steps = [
     "Initializing NΞXUS Engine...",
     "Extracting cryptographic hashes (SHA-256, MD5)...",
     "Parsing EXIF metadata & file headers...",
-    ev.file_type === 'image' || ev.file_type === 'video' ? "Running Error Level Analysis (ELA)..." : "Analyzing text/log structures...",
-    ev.file_type === 'image' || ev.file_type === 'video' ? "Executing Fast Fourier Transform (FFT) GAN fingerprint scan..." : "Scanning for IoCs & Entropy patterns...",
+    ev.file_type === 'image' || ev.file_type === 'video' ? "Running Error Level Analysis (ELA)..." : isExe ? "Running Static PE Analysis & unpacking..." : "Analyzing text/log structures...",
+    ev.file_type === 'image' || ev.file_type === 'video' ? "Executing Fast Fourier Transform (FFT) GAN fingerprint scan..." : isExe ? "Calculating Shannon Entropy and extracting IAT..." : "Scanning for IoCs & Entropy patterns...",
     "Cross-referencing Threat Intelligence IoCs...",
     "Compiling forensic findings...",
     "Done."
@@ -28,14 +29,14 @@ const AnalysisModal = ({ ev, onClose, onComplete }: { ev: NexusEvidence, onClose
       } else {
         clearInterval(interval);
         // Map file type to default analysis module
-        const module = ev.file_type === 'image' ? 'image_forensics' : ev.file_type === 'video' ? 'deepfake_detection' : 'log_analysis';
+        const module = ev.file_type === 'image' ? 'image_forensics' : ev.file_type === 'video' ? 'deepfake_detection' : isExe ? 'pe_analysis' : 'log_analysis';
         onComplete(ev.id, module).then(() => {
           onClose();
         });
       }
     }, 800);
     return () => clearInterval(interval);
-  }, [ev, onComplete, onClose]);
+  }, [ev, onComplete, onClose, steps.length, isExe]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 backdrop-blur-sm">
@@ -296,6 +297,7 @@ export default function CaseDetail() {
       let res: { data: NexusAnalysisResult };
       if (module === 'image_forensics')   res = await analysisApi.runImageForensics(evidenceId);
       else if (module === 'deepfake_detection') res = await analysisApi.runDeepfake(evidenceId);
+      else if (module === 'pe_analysis') res = await analysisApi.runPeAnalysis(evidenceId);
       else res = await analysisApi.runLogAnalysis(evidenceId);
       setEvidence(prev => prev.map(e => e.id === evidenceId ? { ...e, analysis: res.data } : e));
     } catch (e) {

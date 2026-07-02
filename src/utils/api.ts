@@ -87,6 +87,8 @@ export const analysisApi = {
     api.post(`/analysis/deepfake/${evidenceId}`, {}, { timeout: 60000 }),
   runLogAnalysis:    (evidenceId: number) =>
     api.post(`/analysis/log-analysis/${evidenceId}`, {}, { timeout: 60000 }),
+  runPeAnalysis:       (evidenceId: number) =>
+    api.post(`/analysis/pe-analysis/${evidenceId}`, {}, { timeout: 60000 }),
   getResult:         (evidenceId: number) =>
     api.get(`/analysis/result/${evidenceId}`),
   generateReport:    (caseId: number) =>
@@ -122,4 +124,9 @@ export const analysisApi = {
 // ── News ────────────────────────────────────────────────
 export const newsApi = {
   getLatest: () => api.get('/news'),
+};
+
+// ── OSINT ───────────────────────────────────────────────
+export const osintApi = {
+  analyze: (indicator: string) => api.get(`/osint/analyze`, { params: { indicator }, timeout: 15000 }),
 };

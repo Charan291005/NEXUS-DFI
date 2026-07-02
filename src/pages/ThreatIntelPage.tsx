@@ -99,6 +99,18 @@ export default function ThreatIntelPage() {
     const currentProvider = localStorage.getItem('nexus_ai_provider') || 'pollinations';
     const currentApiKey = localStorage.getItem('nexus_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '';
 
+    if (type !== 'text' && type !== 'unknown') {
+      try {
+        const { osintApi } = await import('../utils/api');
+        const res = await osintApi.analyze(target);
+        setResult(res.data);
+        setLoading(false);
+        return;
+      } catch (err) {
+        console.warn('OSINT API failed, falling back to local simulation:', err);
+      }
+    }
+
     const geminiPrompt = `You are a forensic AI threat intelligence analyst. Analyze this ${type === 'ip' ? 'IP address' : type === 'domain' ? 'domain' : type === 'hash' ? 'file hash' : 'text'} for threat intelligence: ${target}
 
 Provide a concise 3-4 sentence analysis covering:

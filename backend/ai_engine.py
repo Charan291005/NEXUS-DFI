@@ -30,6 +30,12 @@ try:
 except ImportError:
     CV2_AVAILABLE = False
 
+try:
+    import pefile
+    PEFILE_AVAILABLE = True
+except ImportError:
+    PEFILE_AVAILABLE = False
+
 
 # ── Image Forensics (ELA) ─────────────────────────────────
 def run_image_forensics(filepath: str) -> Dict[str, Any]:
@@ -205,6 +211,103 @@ def run_deepfake_detection(filepath: str) -> Dict[str, Any]:
         }
     except Exception as e:
         raise RuntimeError(f"Authentic deepfake detection failed: {e}")
+
+
+# ── Static PE Malware Analysis ─────────────────────────────
+def run_pe_analysis(filepath: str) -> Dict[str, Any]:
+    """Authentic Static Malware Analysis for Windows Executables (PE)."""
+    if not PEFILE_AVAILABLE:
+        raise RuntimeError("PE analysis requires 'pefile' to be installed.")
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"File not found: {filepath}")
+
+    try:
+        pe = pefile.PE(filepath)
+        findings = []
+        risk_score = 0
+        
+        # 1. Section Entropy (Detecting Packers)
+        high_entropy_sections = []
+        for section in pe.sections:
+            ent = section.get_entropy()
+            name = section.Name.decode('utf-8', errors='ignore').rstrip('\x00')
+            if ent > 7.2: # High entropy implies packed/encrypted
+                high_entropy_sections.append(f"{name} ({ent:.2f})")
+                risk_score += 20
+        
+        if high_entropy_sections:
+            findings.append({
+                "category": "Section Entropy (Packer Detection)",
+                "severity": "High",
+                "description": f"High entropy detected in sections: {', '.join(high_entropy_sections)}. This strongly suggests the executable is packed (e.g. UPX) or encrypted to evade detection.",
+                "value": str(len(high_entropy_sections)),
+                "location": "PE Sections",
+                "analystNote": "Malware authors use packers to obfuscate their code. Legitimate software rarely has section entropy > 7.2."
+            })
+        else:
+            findings.append({
+                "category": "Section Entropy",
+                "severity": "Safe",
+                "description": "Section entropy is within normal bounds. Binary does not appear packed.",
+                "value": "Normal",
+                "location": "PE Sections",
+                "analystNote": "Normal entropy indicates standard compilation without obfuscation layers."
+            })
+
+        # 2. Suspicious Imports (IAT)
+        suspicious_apis = ['VirtualAlloc', 'VirtualProtect', 'CreateRemoteThread', 'WriteProcessMemory', 'LoadLibraryA', 'GetProcAddress', 'URLDownloadToFile', 'InternetOpen', 'ShellExecute', 'RegSetValue']
+        found_suspicious = []
+        
+        if hasattr(pe, 'DIRECTORY_ENTRY_IMPORT'):
+            for entry in pe.DIRECTORY_ENTRY_IMPORT:
+                for imp in entry.imports:
+                    if imp.name:
+                        api_name = imp.name.decode('utf-8', errors='ignore')
+                        if any(s.lower() in api_name.lower() for s in suspicious_apis):
+                            found_suspicious.append(api_name)
+                            
+        if found_suspicious:
+            risk_score += min(len(found_suspicious) * 5, 40)
+            findings.append({
+                "category": "Suspicious API Imports (IAT)",
+                "severity": "Medium" if len(found_suspicious) < 3 else "High",
+                "description": f"Found {len(found_suspicious)} suspicious API calls commonly used for process injection, downloading payloads, or persistence.",
+                "value": f"{len(found_suspicious)} APIs",
+                "location": "Import Address Table (IAT)",
+                "analystNote": f"APIs like {', '.join(found_suspicious[:3])} are frequently abused by malware."
+            })
+            
+        # 3. Compile Time / Timestomp check
+        timestamp = pe.FILE_HEADER.TimeDateStamp
+        dt = time.gmtime(timestamp)
+        year = dt.tm_year
+        if year < 2000 or year > time.gmtime().tm_year + 1:
+            risk_score += 10
+            findings.append({
+                "category": "File Header Anomalies",
+                "severity": "Medium",
+                "description": f"Suspicious compilation timestamp: {year}. Likely timestomped.",
+                "value": str(year),
+                "location": "FILE_HEADER",
+                "analystNote": "Attackers often alter compile times to evade timeline-based forensics."
+            })
+
+        risk_score = min(risk_score, 100)
+        summary = (
+            f"Authentic PE static analysis complete. Peak risk score: {risk_score}/100. " +
+            ("High probability of malicious obfuscation or behavior." if risk_score >= 60 else "Some suspicious API imports or entropy found." if risk_score >= 30 else "Binary structure appears typical.")
+        )
+        
+        return {
+            "risk_score": risk_score,
+            "result": {
+                "summary": summary,
+                "findings": findings,
+                "recommendation": "Perform dynamic analysis in a sandbox immediately." if risk_score >= 60 else "Monitor execution behavior."
+            }
+        }
+    except Exception as e:
+        raise RuntimeError(f"Authentic PE analysis failed: {e}")
 
 
 # ── Log Analysis ─────────────────────────────────────────
