@@ -190,7 +190,7 @@ def generate_report(case_id: int, db: Session = Depends(get_db), current: User =
         from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
         from reportlab.lib.units import mm
         from reportlab.lib import colors
-        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable, PageBreak
         from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
         buf = io.BytesIO()
@@ -203,8 +203,8 @@ def generate_report(case_id: int, db: Session = Depends(get_db), current: User =
         RED  = colors.HexColor("#ff3366")
 
         title_style = ParagraphStyle("Title", parent=styles["Title"],  fontSize=22, textColor=colors.white,      backColor=DARK, alignment=TA_CENTER, spaceAfter=6)
-        h1_style    = ParagraphStyle("H1",    parent=styles["Heading1"], fontSize=14, textColor=CYAN,             spaceBefore=12, spaceAfter=6)
-        body_style  = ParagraphStyle("Body",  parent=styles["Normal"],   fontSize=10, textColor=colors.HexColor("#94a3b8"), spaceAfter=4)
+        h1_style    = ParagraphStyle("H1",    parent=styles["Heading1"], fontSize=14, textColor=CYAN,             spaceBefore=16, spaceAfter=8)
+        body_style  = ParagraphStyle("Body",  parent=styles["Normal"],   fontSize=10, textColor=colors.HexColor("#94a3b8"), spaceAfter=6, leading=14)
         mono_style  = ParagraphStyle("Mono",  parent=styles["Code"],     fontSize=8,  textColor=colors.HexColor("#00d4ff"), backColor=colors.HexColor("#050810"), spaceAfter=4)
 
         story = []
@@ -252,34 +252,72 @@ def generate_report(case_id: int, db: Session = Depends(get_db), current: User =
             f"forensics pipeline. The overall risk assessment is <b>{risk_label}</b> with a peak score of {max_risk}/100.",
             body_style
         ))
+        story.append(Spacer(1, 4*mm))
+
+        # Methodology & Scope
+        story.append(Paragraph("METHODOLOGY & SCOPE", h1_style))
+        story.append(Paragraph(
+            "The artifacts detailed in this report have undergone rigorous analysis through the NΞXUS-DFI Artificial Intelligence Engine. "
+            "Depending on the evidence type, one or more of the following methodologies were strictly applied:",
+            body_style
+        ))
+        story.append(Paragraph("• <b>Cryptographic Hashing:</b> Immediate SHA-256 and MD5 generation to establish an immutable chain of custody.", body_style))
+        story.append(Paragraph("• <b>Image Forensics (ELA):</b> Error Level Analysis to detect differing compression ratios indicative of digital manipulation and splicing.", body_style))
+        story.append(Paragraph("• <b>Deepfake Detection:</b> Fast Fourier Transform (FFT) analysis to identify synthetic Generative Adversarial Network (GAN) fingerprints, combined with edge noise variance tracking.", body_style))
+        story.append(Paragraph("• <b>Log & Text Analysis:</b> Shannon Entropy profiling for obfuscated payloads and signature matching against known threat actor IoCs.", body_style))
         story.append(Spacer(1, 6*mm))
 
-        # Evidence inventory
-        story.append(Paragraph("EVIDENCE INVENTORY", h1_style))
-        for ev in ev_list:
-            story.append(Paragraph(f"• <b>{ev.filename}</b> ({ev.file_type.upper()}) — Uploaded: {ev.uploaded_at.strftime('%Y-%m-%d %H:%M UTC')}", body_style))
-            story.append(Paragraph(f"  SHA-256: {ev.sha256_hash}", mono_style))
-
+        # Chain of Custody Log
+        story.append(Paragraph("CHAIN OF CUSTODY LOG", h1_style))
+        if ev_list:
+            coc_data = [["Filename", "Type", "SHA-256 Checksum", "Acquisition Time"]]
+            for ev in ev_list:
+                coc_data.append([
+                    ev.filename[:20] + ("..." if len(ev.filename)>20 else ""),
+                    ev.file_type.upper(),
+                    ev.sha256_hash[:20] + "...",
+                    ev.uploaded_at.strftime('%Y-%m-%d %H:%M')
+                ])
+                
+            coc_table = Table(coc_data, colWidths=[45*mm, 20*mm, 55*mm, 40*mm])
+            coc_table.setStyle(TableStyle([
+                ("BACKGROUND",  (0,0), (-1,0), colors.HexColor("#0f1629")),
+                ("TEXTCOLOR",   (0,0), (-1,0), CYAN),
+                ("FONTNAME",    (0,0), (-1,0), "Helvetica-Bold"),
+                ("FONTSIZE",    (0,0), (-1,-1), 8),
+                ("GRID",        (0,0), (-1,-1), 0.5, colors.HexColor("#1e2d4a")),
+                ("ROWBACKGROUNDS",(0,1),(-1,-1),[colors.HexColor("#0a0f1e"), colors.HexColor("#0f1629")]),
+                ("TEXTCOLOR",   (0,1), (-1,-1), colors.white),
+            ]))
+            story.append(coc_table)
+        else:
+            story.append(Paragraph("No evidence acquired for this case.", body_style))
+            
         story.append(Spacer(1, 6*mm))
+        story.append(PageBreak())
 
         # Analysis findings
-        story.append(Paragraph("FORENSIC FINDINGS", h1_style))
+        story.append(Paragraph("DETAILED FORENSIC FINDINGS", h1_style))
         if results:
             for ar in results:
                 ev = db.query(Evidence).filter(Evidence.id == ar.evidence_id).first()
                 result_data = json.loads(ar.result) if isinstance(ar.result, str) else ar.result
-                story.append(Paragraph(f"{ar.module.replace('_',' ').title()} — {ev.filename if ev else 'Unknown'}", ParagraphStyle("sub_h", parent=styles["Heading2"], fontSize=11, textColor=colors.HexColor("#7b2fff"))))
-                story.append(Paragraph(f"Risk Score: {ar.risk_score}/100 | {result_data.get('summary','')}", body_style))
-                for f in result_data.get("findings", [])[:5]:
-                    story.append(Paragraph(f"  [{f.get('severity','?')}] {f.get('category','')}: {f.get('description','')}", body_style))
-                story.append(Spacer(1, 4*mm))
+                story.append(Paragraph(f"{ar.module.replace('_',' ').title()} — {ev.filename if ev else 'Unknown'}", ParagraphStyle("sub_h", parent=styles["Heading2"], fontSize=12, textColor=colors.HexColor("#7b2fff"), spaceBefore=10, spaceAfter=4)))
+                story.append(Paragraph(f"<b>Risk Score:</b> {ar.risk_score}/100 | {result_data.get('summary','')}", body_style))
+                
+                findings_list = result_data.get("findings", [])
+                if findings_list:
+                    story.append(Spacer(1, 2*mm))
+                    for f in findings_list[:5]:
+                        story.append(Paragraph(f"• <b>[{f.get('severity','?')}] {f.get('category','')}</b>: {f.get('description','')}", body_style))
+                story.append(Spacer(1, 6*mm))
         else:
             story.append(Paragraph("No analysis results available for this case.", body_style))
 
         story.append(Spacer(1, 6*mm))
 
         # Recommendations
-        story.append(Paragraph("RECOMMENDATIONS", h1_style))
+        story.append(Paragraph("TACTICAL RECOMMENDATIONS", h1_style))
         recs = [
             "Preserve all evidence with documented chain-of-custody before any court proceedings.",
             "Submit physical storage media to a certified digital forensics laboratory for verification.",
