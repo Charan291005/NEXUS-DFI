@@ -15,6 +15,7 @@ import time
 import math
 from pathlib import Path
 from typing import Dict, Any, List
+import collections
 
 # Optional heavy deps — graceful fallback if not installed
 try:
@@ -325,12 +326,14 @@ SUSPICIOUS_PATTERNS = [
 ]
 
 def _shannon_entropy(data: str) -> float:
-    """Calculates Shannon entropy of a string."""
+    """Calculates Shannon entropy of a string efficiently."""
     if not data:
         return 0.0
     entropy = 0.0
-    for x in set(data):
-        p_x = float(data.count(x)) / len(data)
+    length = len(data)
+    counts = collections.Counter(data)
+    for count in counts.values():
+        p_x = count / length
         entropy -= p_x * math.log(p_x, 2)
     return entropy
 
@@ -340,15 +343,17 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"File not found: {filepath}")
 
     try:
+        # Optimize: Read only first 500KB to prevent memory exhaustion and timeouts on huge/binary files
         with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
-            lines = f.readlines()
+            content = f.read(500 * 1024) 
+        
+        lines = content.split('\n')
         
         findings = []
         events = []
         risk_score = 0
         
         # 1. IoC Extraction
-        content = "".join(lines)
         ip_pattern = r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
         ips = list(set(re.findall(ip_pattern, content)))
         email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
