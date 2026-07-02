@@ -2,9 +2,9 @@
 
 export type CaseStatus   = 'Open' | 'Active' | 'Closed' | 'Archived';
 export type CasePriority = 'Low' | 'Medium' | 'High' | 'Critical';
-export type EvidenceType = 'image' | 'video' | 'pdf' | 'zip' | 'log' | 'document' | 'other';
+export type EvidenceType = 'image' | 'video' | 'pdf' | 'zip' | 'log' | 'document' | 'executable' | 'other';
 export type RiskLevel    = 'Safe' | 'Low' | 'Medium' | 'High' | 'Critical';
-export type AnalysisModule = 'image_forensics' | 'deepfake_detection' | 'log_analysis' | 'metadata' | 'risk_assessment';
+export type AnalysisModule = 'image_forensics' | 'deepfake_detection' | 'log_analysis' | 'pe_analysis' | 'metadata' | 'risk_assessment';
 
 export type UserRole = 'Admin' | 'Investigator' | 'Viewer';
 
