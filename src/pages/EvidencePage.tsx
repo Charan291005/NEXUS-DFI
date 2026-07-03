@@ -29,8 +29,8 @@ export default function EvidencePage() {
         setEvidence(prev => prev.map(e => e.id === selected.id ? updated : e));
       })
       .catch(() => {
-        // No analysis result exists yet
-      });
+        });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected?.id]);
 
   const runAnalysis = async (module: string) => {

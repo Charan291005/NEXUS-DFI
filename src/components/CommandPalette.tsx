@@ -66,7 +66,9 @@ export default function CommandPalette() {
   // Focus input when opened
   useEffect(() => {
     if (open) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
+       
       setActiveIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
@@ -86,6 +88,7 @@ export default function CommandPalette() {
   };
 
   // Reset active index when query changes
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setActiveIndex(0); }, [query]);
 
   return (

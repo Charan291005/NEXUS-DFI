@@ -15,7 +15,7 @@ function useSpotlight() {
     ref.current.style.setProperty('--spotlight-x', `${x}px`);
     ref.current.style.setProperty('--spotlight-y', `${y}px`);
   }, []);
-  return { ref, onMouseMove: handleMouse };
+  return [ref, handleMouse] as const;
 }
 
 // ─── Stat Card — Enhanced with spotlight + glow ───────────
@@ -28,11 +28,11 @@ interface StatCardProps {
   subtitle?: string;
 }
 export function StatCard({ label, value, color, delta, subtitle }: StatCardProps) {
-  const spotlight = useSpotlight();
+  const [spotlightRef, onMouseMove] = useSpotlight();
   return (
     <motion.div
-      ref={spotlight.ref}
-      onMouseMove={spotlight.onMouseMove}
+      ref={spotlightRef}
+      onMouseMove={onMouseMove}
       className="stat-card card-spotlight"
       whileHover={{ y: -4, boxShadow: `0 12px 40px rgba(0,0,0,0.5), 0 0 20px ${color}15` }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
@@ -99,12 +99,12 @@ export function StatCard({ label, value, color, delta, subtitle }: StatCardProps
 // ─── Glass Card — Enhanced with spotlight ─────────────────
 type CardProps = HTMLMotionProps<'div'>;
 export function Card({ children, className = '', id, ...props }: CardProps) {
-  const spotlight = useSpotlight();
+  const [spotlightRef, onMouseMove] = useSpotlight();
   return (
     <motion.div
       id={id}
-      ref={spotlight.ref}
-      onMouseMove={spotlight.onMouseMove}
+      ref={spotlightRef}
+      onMouseMove={onMouseMove}
       initial={{ opacity: 0, y: 12, filter: 'blur(4px)' }}
       animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
