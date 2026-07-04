@@ -36,6 +36,8 @@ if _is_sqlite and not settings.disable_wal:
         cursor.execute("PRAGMA synchronous=NORMAL")
         cursor.execute("PRAGMA cache_size=-64000")  # 64MB cache
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA temp_store=MEMORY")  # Store temp tables and indices in memory
+        cursor.execute("PRAGMA mmap_size=2147483648") # 2GB mmap for faster I/O
         cursor.close()
 
 # Ensure the directory exists if it's a file-based SQLite database
