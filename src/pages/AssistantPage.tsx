@@ -335,11 +335,13 @@ How can I assist you with your investigation today?`;
         timestamp: new Date().toISOString()
       }]);
 
-      let extractedContext = '';
-      for (const file of attachedFiles) {
-        const text = await extractTextFromFile(file);
-        extractedContext += `\n\n--- Content of ${file.name} ---\n${text}\n---`;
-      }
+      const extractedTexts = await Promise.all(
+        attachedFiles.map(async (file) => {
+          const text = await extractTextFromFile(file);
+          return `\n\n--- Content of ${file.name} ---\n${text}\n---`;
+        })
+      );
+      let extractedContext = extractedTexts.join('');
 
       // Remove the temporary loading message
       setMessages(prev => prev.filter(m => m.content !== 'Extracting data from attached files... Please wait.'));
