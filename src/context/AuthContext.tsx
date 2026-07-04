@@ -136,7 +136,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Session Timeout (15 mins)
     let lastActivityTime = Date.now();
+    let throttleTimer: ReturnType<typeof setTimeout> | null = null;
+    
     const updateActivity = () => { 
+      if (throttleTimer) return;
+      throttleTimer = setTimeout(() => { throttleTimer = null; }, 1000);
+      
       lastActivityTime = Date.now(); 
       if (showTimeoutWarning) setShowTimeoutWarning(false); 
     };
