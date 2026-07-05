@@ -330,12 +330,16 @@ export default function ParticleCanvas() {
         }
 
         // ── Particle-to-particle connections ────────────────
+        const CONN_DIST_SQ = CONNECTION_DIST * CONNECTION_DIST;
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
           const cdx = p.x - p2.x;
+          if (Math.abs(cdx) > CONNECTION_DIST) continue;
           const cdy = p.y - p2.y;
-          const cdist = Math.sqrt(cdx * cdx + cdy * cdy);
-          if (cdist < CONNECTION_DIST) {
+          if (Math.abs(cdy) > CONNECTION_DIST) continue;
+          const distSq = cdx * cdx + cdy * cdy;
+          if (distSq < CONN_DIST_SQ) {
+            const cdist = Math.sqrt(distSq);
             const lineAlpha = (1 - cdist / CONNECTION_DIST) * 0.18;
             // Color the connection line based on node types
             let lineColor: string;
