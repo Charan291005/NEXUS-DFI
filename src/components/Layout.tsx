@@ -33,18 +33,42 @@ const PAGE_TITLES: Record<string, string> = {
   '/guide':        'Investigation Workflow',
 };
 
+function LiveClock() {
+  const [time, setTime] = useState(new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  
+  return (
+    <>
+      <span style={{
+        fontSize: '11px',
+        color: '#4a4d5c',
+        fontFamily: "'IBM Plex Mono', monospace",
+        letterSpacing: '0.04em',
+      }}>
+        {time.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
+      </span>
+      <div style={{ height: '16px', width: '1px', background: 'rgba(255,255,255,0.06)' }} />
+      <span style={{
+        fontSize: '11px',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontVariantNumeric: 'tabular-nums',
+        color: '#c1ff00',
+        letterSpacing: '0.04em',
+      }}>
+        {time.toLocaleTimeString('en-IN', { hour12: false })}
+      </span>
+    </>
+  );
+}
+
 export default function Layout() {
   const { user, logout, showTimeoutWarning } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
-  const [time, setTime] = useState(new Date());
-
-  // Live clock
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
@@ -401,24 +425,7 @@ export default function Layout() {
               <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: '10px' }}>⌘K</span>
             </button>
 
-            <span style={{
-              fontSize: '11px',
-              color: '#4a4d5c',
-              fontFamily: "'IBM Plex Mono', monospace",
-              letterSpacing: '0.04em',
-            }}>
-              {time.toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })}
-            </span>
-            <div style={{ height: '16px', width: '1px', background: 'rgba(255,255,255,0.06)' }} />
-            <span style={{
-              fontSize: '11px',
-              fontFamily: "'IBM Plex Mono', monospace",
-              fontVariantNumeric: 'tabular-nums',
-              color: '#c1ff00',
-              letterSpacing: '0.04em',
-            }}>
-              {time.toLocaleTimeString('en-IN', { hour12: false })}
-            </span>
+            <LiveClock />
           </div>
         </header>
 
