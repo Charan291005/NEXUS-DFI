@@ -325,6 +325,8 @@ SUSPICIOUS_PATTERNS = [
     (r'(root|admin|administrator)',                                   'ADMIN_ACTIVITY',         'Medium',   'Administrative account activity'),
 ]
 
+COMPILED_SUSPICIOUS_PATTERNS = [(re.compile(p, re.IGNORECASE), et, sev, desc) for p, et, sev, desc in SUSPICIOUS_PATTERNS]
+
 def _shannon_entropy(data: str) -> float:
     """Calculates Shannon entropy of a string efficiently."""
     if not data:
@@ -366,7 +368,6 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
         # 2. Shannon Entropy & 3. Signature/Pattern Matching (Combined for performance)
         high_entropy_count = 0
         finding_counts = {}
-        compiled_patterns = [(re.compile(p, re.IGNORECASE), et, sev, desc) for p, et, sev, desc in SUSPICIOUS_PATTERNS]
         
         for i, line in enumerate(lines[:10000]):
             stripped_line = line.strip()
@@ -379,7 +380,7 @@ def run_log_analysis(filepath: str) -> Dict[str, Any]:
                     events.append({"timestamp": f"Line {i+1}", "type": "OBFUSCATION", "message": stripped_line[:100] + "...", "severity": "High"})
             
             # Signature Matching
-            for pattern, event_type, severity, description in compiled_patterns:
+            for pattern, event_type, severity, description in COMPILED_SUSPICIOUS_PATTERNS:
                 if pattern.search(line):
                     finding_counts[event_type] = finding_counts.get(event_type, 0) + 1
                     if finding_counts[event_type] <= 3:
