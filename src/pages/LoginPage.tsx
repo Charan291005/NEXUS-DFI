@@ -5,7 +5,33 @@ import { useAuth } from '../context/AuthContext';
 import { Spinner } from '../components/ui';
 import ParticleCanvas from '../components/ParticleCanvas';
 import CustomCursor from '../components/CustomCursor';
+import TerminalLog from '../components/TerminalLog';
+import FingerprintScanner from '../components/FingerprintScanner';
 import gsap from 'gsap';
+
+// ── Neon ScanLine that sweeps the page on load ────────────
+function ScanLine({ isReady }: { isReady: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isReady || !ref.current) return;
+    gsap.fromTo(ref.current,
+      { top: '-2px', opacity: 0 },
+      {
+        top: '100%', opacity: 1, duration: 1.6,
+        delay: 0.2, ease: 'power1.inOut',
+        onComplete: () => { if (ref.current) gsap.to(ref.current, { opacity: 0, duration: 0.3 }); },
+      }
+    );
+  }, [isReady]);
+  return (
+    <div ref={ref} style={{
+      position: 'fixed', left: 0, right: 0, height: '2px',
+      background: 'linear-gradient(90deg, transparent, rgba(193,255,0,0.8), rgba(26,47,251,0.9), transparent)',
+      boxShadow: '0 0 20px rgba(26,47,251,0.6), 0 0 40px rgba(193,255,0,0.2)',
+      pointerEvents: 'none', zIndex: 150,
+    }} />
+  );
+}
 
 // ── Lusion-style stagger animation variants ─────────────
 const lusionEase: [number, number, number, number] = [0.16, 1, 0.3, 1];
@@ -571,6 +597,8 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loadProgress, setLoadProgress] = useState(0);
   const [isReady, setIsReady] = useState(false);
+  const [fpScanning, setFpScanning] = useState(false);
+  const [fpSuccess, setFpSuccess] = useState(false);
 
   const magneticBtnRef = useMagneticRef();
   const formRef = useRef<HTMLDivElement>(null);
@@ -646,9 +674,13 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
+    setFpScanning(true);
     try {
       await login();
+      setFpSuccess(true);
     } catch {
+      setFpScanning(false);
+      setFpSuccess(false);
       setError('Google Sign-In failed. Please try again.');
     } finally {
       setLoading(false);
@@ -664,10 +696,14 @@ export default function LoginPage() {
 
     setError('');
     setLoading(true);
+    setFpScanning(true);
     try {
       if (isSignUp) { await signupWithEmail(email, password); }
       else { await loginWithEmail(email, password); }
+      setFpSuccess(true);
     } catch (err: unknown) {
+      setFpScanning(false);
+      setFpSuccess(false);
       const errorObj = err as { code?: string; message?: string };
       const code = errorObj.code || '';
       if (code === 'auth/user-not-found' || code === 'auth/invalid-credential') setError('Incorrect email or password.');
@@ -683,6 +719,12 @@ export default function LoginPage() {
 
   return (
     <div className="noise-overlay" style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden', background: '#000000' }}>
+      <ScanLine isReady={isReady} />
+      <FingerprintScanner
+        scanning={fpScanning}
+        success={fpSuccess}
+        onDismiss={() => { setFpScanning(false); setFpSuccess(false); }}
+      />
       <CustomCursor />
 
       {/* ── Loading Overlay ─────────────────────────────────── */}
@@ -816,6 +858,11 @@ export default function LoginPage() {
                 ].map((item, i) => (
                   <WorkflowStep key={item.step} step={item.step} label={item.label} index={i} isReady={isReady} />
                 ))}
+              </motion.div>
+
+              {/* Terminal Boot Log */}
+              <motion.div variants={fadeIn} style={{ marginTop: '24px' }}>
+                <TerminalLog isReady={isReady} />
               </motion.div>
             </motion.div>
 
