@@ -307,8 +307,9 @@ def generate_report(case_id: int, db: Session = Depends(get_db), current: User =
         # Analysis findings
         story.append(Paragraph("DETAILED FORENSIC FINDINGS", h1_style))
         if results:
+            ev_map = {ev.id: ev for ev in ev_list}
             for ar in results:
-                ev = db.query(Evidence).filter(Evidence.id == ar.evidence_id).first()
+                ev = ev_map.get(ar.evidence_id)
                 result_data = json.loads(ar.result) if isinstance(ar.result, str) else ar.result
                 story.append(Paragraph(f"{ar.module.replace('_',' ').title()} — {ev.filename if ev else 'Unknown'}", ParagraphStyle("sub_h", parent=styles["Heading2"], fontSize=12, textColor=colors.HexColor("#7b2fff"), spaceBefore=10, spaceAfter=4)))
                 story.append(Paragraph(f"<b>Risk Score:</b> {ar.risk_score}/100 | {result_data.get('summary','')}", body_style))
