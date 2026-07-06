@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
+import traceback
 
 from backend.database import engine, Base
 from backend.routers import auth, cases, evidence, analysis, news, osint
@@ -55,7 +56,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
-    import traceback
     traceback.print_exc()
     return JSONResponse(
         status_code=500,
