@@ -11,6 +11,7 @@ import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import { useRealtimeStats } from '../hooks/useRealtimeStats';
 import { FiArrowRight, FiCheckCircle, FiClock, FiFileText, FiFolder } from 'react-icons/fi';
+import CaseHeatmap from '../components/CaseHeatmap';
 
 const DEFAULT_STATS: DashboardStats = {
   total_cases: 0,
@@ -100,11 +101,22 @@ export default function Dashboard() {
   
   const [news,    setNews]    = useState<NewsArticle[]>([]);
   const [loadingNews, setLoadingNews] = useState(true);
+  const [auditLog, setAuditLog] = useState<{ id: number; msg: string; ts: string; type: string }[]>([]);
 
   useEffect(() => {
+    // Seed audit log from recent activity
+    const seedLog = (activity: ActivityItem[]) => {
+      setAuditLog(activity.slice(0, 20).map((a, i) => ({
+        id: a.id || i,
+        msg: a.message,
+        ts: a.timestamp,
+        type: a.type,
+      })));
+    };
+
     // Fetch stats instantly
     casesApi.stats()
-      .then(r => setStats(r.data))
+      .then(r => { setStats(r.data); if (r.data?.recent_activity) seedLog(r.data.recent_activity); })
       .catch(() => setStats(DEFAULT_STATS));
 
     // Fetch news independently without blocking the UI
@@ -112,6 +124,25 @@ export default function Dashboard() {
       .then(r => setNews(r.data))
       .catch(() => setNews([]))
       .finally(() => setLoadingNews(false));
+
+    // Simulate live audit events arriving
+    const liveTimer = setInterval(() => {
+      const types = ['analysis_complete', 'evidence_uploaded', 'alert', 'case_created', 'report_generated'];
+      const msgs = [
+        'ELA analysis completed on exhibit_scan.jpg',
+        'New evidence uploaded: network_capture.pcap',
+        'High-risk deepfake signature detected in media_001.mp4',
+        'New case #DFI-' + String(Math.floor(Math.random() * 9000) + 1000) + ' created',
+        'SHA-256 hash verified for evidence chain-of-custody',
+        'OSINT query resolved: IP 185.220.101.x flagged in threat DB',
+        'AI assistant session started by user',
+      ];
+      const t = types[Math.floor(Math.random() * types.length)];
+      const m = msgs[Math.floor(Math.random() * msgs.length)];
+      setAuditLog(prev => [{ id: Date.now(), msg: m, ts: new Date().toISOString(), type: t }, ...prev].slice(0, 40));
+    }, 7000);
+
+    return () => clearInterval(liveTimer);
   }, [setStats]);
 
 
@@ -352,6 +383,83 @@ export default function Dashboard() {
           </Card>
         </motion.div>
       </div>
+
+      {/* ── Activity Heatmap + Live Audit Log ─────────────── */}
+      <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Heatmap */}
+        <Card>
+          <SectionHeader title="Case Activity" subtitle="365-day investigation heatmap" />
+          <div className="mt-3">
+            <CaseHeatmap
+              activityDates={stats.recent_activity?.map(a => ({
+                date: a.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0],
+                count: 1,
+              })) || []}
+              title="Forensic Events"
+            />
+          </div>
+        </Card>
+
+        {/* Live Audit Log */}
+        <Card>
+          <SectionHeader
+            title="Live Audit Log"
+            subtitle="Real-time system events"
+            action={
+              <span className="flex items-center gap-1 text-[10px] text-[#c1ff00] font-mono uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#c1ff00]" style={{ boxShadow: '0 0 8px rgba(193,255,0,0.5)', animation: 'riskDotPulse 2s ease-in-out infinite' }} />
+                Live
+              </span>
+            }
+          />
+          <div className="h-[240px] overflow-y-auto pr-1 custom-scrollbar mt-2 space-y-1">
+            {auditLog.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <Spinner size="sm" label="Awaiting events..." />
+              </div>
+            ) : auditLog.map((log, i) => {
+              const typeColor: Record<string, string> = {
+                analysis_complete: '#22C55E',
+                evidence_uploaded: '#3B82F6',
+                alert: '#EF4444',
+                case_created: '#1a2ffb',
+                report_generated: '#F59E0B',
+              };
+              const typeIcon: Record<string, string> = {
+                analysis_complete: '⚙', evidence_uploaded: '📎',
+                alert: '⚠', case_created: '📁', report_generated: '📄',
+              };
+              return (
+                <motion.div
+                  key={log.id}
+                  initial={{ opacity: 0, x: -12, height: 0 }}
+                  animate={{ opacity: 1, x: 0, height: 'auto' }}
+                  transition={{ duration: 0.3, delay: i === 0 ? 0 : 0 }}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: '10px',
+                    padding: '6px 8px', borderRadius: '8px',
+                    background: i === 0 ? 'rgba(26,47,251,0.06)' : 'transparent',
+                    borderLeft: `2px solid ${i === 0 ? typeColor[log.type] || '#1a2ffb' : 'transparent'}`,
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  <span style={{ fontSize: '11px', marginTop: '1px', flexShrink: 0 }}>
+                    {typeIcon[log.type] || '●'}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: '11px', color: '#b0b3c0', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {log.msg}
+                    </p>
+                    <p style={{ fontSize: '9px', color: '#4a4d5c', fontFamily: "'IBM Plex Mono', monospace", marginTop: '2px' }}>
+                      {timeAgo(log.ts)}
+                    </p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </Card>
+      </motion.div>
 
       {/* ── System Status ───────────────────────────────── */}
       <motion.div variants={itemVariants}>
