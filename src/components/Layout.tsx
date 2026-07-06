@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
@@ -72,9 +72,13 @@ export default function Layout() {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
-  const currentPage = Object.entries(PAGE_TITLES).find(([path]) =>
+  const currentPage = useMemo(() => Object.entries(PAGE_TITLES).find(([path]) =>
     location.pathname.startsWith(path)
-  )?.[1] ?? 'NexusDFI';
+  )?.[1] ?? 'NexusDFI', [location.pathname]);
+
+  const filteredNavItems = useMemo(() => {
+    return NAV_ITEMS.filter(item => !user || item.allowedRoles.includes(user.role));
+  }, [user]);
 
   // Page transition variants
   const pageVariants = {
@@ -167,7 +171,7 @@ export default function Layout() {
 
         {/* Nav links */}
         <nav style={{ flex: 1, padding: '4px 8px', display: 'flex', flexDirection: 'column', gap: '2px', overflowY: 'auto' }}>
-          {NAV_ITEMS.filter(item => !user || item.allowedRoles.includes(user.role)).map((item) => {
+          {filteredNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
