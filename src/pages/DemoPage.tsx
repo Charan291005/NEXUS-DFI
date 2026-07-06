@@ -103,12 +103,13 @@ export default function DemoPage() {
   const [selectedCase, setSelectedCase] = useState<CaseDef | null>(null);
   const [step, setStep] = useState<SimulationStep>('idle');
   const [progress, setProgress] = useState(0);
+  const [isSimulating, setIsSimulating] = useState(false);
 
-  // Auto-advance simulation steps
-  useEffect(() => {
-    if (step === 'idle' || step === 'complete') return;
-    
+  const runStep = () => {
+    if (isSimulating || progress === 100) return;
+    setIsSimulating(true);
     setProgress(0);
+    
     let current = 0;
     const speed = step === 'hashing' ? 3 : step === 'ledger' ? 2 : 1;
     
@@ -116,20 +117,21 @@ export default function DemoPage() {
       current += speed;
       if (current >= 100) {
         setProgress(100);
+        setIsSimulating(false);
         clearInterval(interval);
-        setTimeout(() => {
-          if (step === 'upload') setStep('hashing');
-          else if (step === 'hashing') setStep('ledger');
-          else if (step === 'ledger') setStep('analysis');
-          else if (step === 'analysis') setStep('complete');
-        }, 800);
       } else {
         setProgress(current);
       }
     }, 50);
+  };
 
-    return () => clearInterval(interval);
-  }, [step]);
+  const nextStep = () => {
+    setProgress(0);
+    if (step === 'upload') setStep('hashing');
+    else if (step === 'hashing') setStep('ledger');
+    else if (step === 'ledger') setStep('analysis');
+    else if (step === 'analysis') setStep('complete');
+  };
 
   const reset = () => {
     setSelectedCase(null);
@@ -320,6 +322,41 @@ export default function DemoPage() {
                       </motion.div>
                     )}
                   </AnimatePresence>
+
+                  {/* Manual Controls */}
+                  {step !== 'complete' && (
+                    <div style={{ position: 'absolute', bottom: '32px', display: 'flex', gap: '16px', zIndex: 20 }}>
+                      {progress < 100 ? (
+                        <button
+                          onClick={runStep}
+                          disabled={isSimulating}
+                          style={{
+                            background: isSimulating ? 'rgba(255,255,255,0.05)' : `${selectedCase.themeColor}20`,
+                            border: `1px solid ${isSimulating ? 'rgba(255,255,255,0.1)' : selectedCase.themeColor}`,
+                            color: isSimulating ? '#7a7d8e' : selectedCase.themeColor,
+                            padding: '12px 24px', borderRadius: '100px', cursor: isSimulating ? 'not-allowed' : 'pointer',
+                            fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '12px',
+                            transition: 'all 0.3s'
+                          }}
+                        >
+                          {isSimulating ? `EXECUTING... ${progress}%` : `EXECUTE PHASE: ${step.toUpperCase()}`}
+                        </button>
+                      ) : (
+                        <motion.button
+                          initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                          onClick={nextStep}
+                          style={{
+                            background: selectedCase.themeColor, color: '#000',
+                            border: 'none', padding: '12px 24px', borderRadius: '100px', cursor: 'pointer',
+                            fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '12px',
+                            boxShadow: `0 0 20px ${selectedCase.themeColor}40`
+                          }}
+                        >
+                          PROCEED TO NEXT PHASE →
+                        </motion.button>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Right: Progress Tracker & Report */}
