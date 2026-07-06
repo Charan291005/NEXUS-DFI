@@ -5,6 +5,7 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
+from sqlalchemy import func, case
 import io
 
 from backend.database import get_db
@@ -163,21 +164,30 @@ def global_stats(
     current: User = Depends(get_current_user),
 ):
     """Return global analysis statistics for the dashboard."""
-    total_results = db.query(AnalysisResult).join(Evidence).join(Case).filter(
-        Case.owner_id == current.id
-    ).all()
+    
+    stats = db.query(
+        func.count(AnalysisResult.id).label("total"),
+        func.avg(AnalysisResult.risk_score).label("avg_risk"),
+        func.sum(case((AnalysisResult.risk_score >= 70, 1), else_=0)).label("high"),
+        func.sum(case((AnalysisResult.risk_score >= 40) & (AnalysisResult.risk_score < 70, 1), else_=0)).label("medium"),
+        func.sum(case((AnalysisResult.risk_score < 40, 1), else_=0)).label("low")
+    ).join(Evidence).join(Case).filter(Case.owner_id == current.id).first()
 
-    high_risk = sum(1 for r in total_results if r.risk_score >= 70)
-    medium_risk = sum(1 for r in total_results if 40 <= r.risk_score < 70)
-    low_risk = sum(1 for r in total_results if r.risk_score < 40)
-    avg_risk = round(sum(r.risk_score for r in total_results) / len(total_results), 1) if total_results else 0
+    total = stats.total or 0
+    avg_risk = round(stats.avg_risk, 1) if stats.avg_risk else 0
+    high_risk = stats.high or 0
+    medium_risk = stats.medium or 0
+    low_risk = stats.low or 0
 
-    modules: dict = {}
-    for r in total_results:
-        modules[r.module] = modules.get(r.module, 0) + 1
+    module_counts = db.query(
+        AnalysisResult.module,
+        func.count(AnalysisResult.id)
+    ).join(Evidence).join(Case).filter(Case.owner_id == current.id).group_by(AnalysisResult.module).all()
+    
+    modules = {module: count for module, count in module_counts}
 
     return {
-        "total_analyses": len(total_results),
+        "total_analyses": total,
         "high_risk_count": high_risk,
         "medium_risk_count": medium_risk,
         "low_risk_count": low_risk,
