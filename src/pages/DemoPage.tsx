@@ -233,7 +233,7 @@ export default function DemoPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '32px', flex: 1 }}>
                 
                 {/* Left: Visualization */}
-                <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${selectedCase.themeColor}30`, borderRadius: '16px', padding: '32px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ background: 'rgba(0,0,0,0.4)', border: `1px solid ${selectedCase.themeColor}30`, borderRadius: '16px', padding: '32px 32px 100px 32px', minHeight: '450px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   
                   {/* Scan Line Overlay */}
                   {step !== 'complete' && (
