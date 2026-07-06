@@ -391,10 +391,10 @@ export default function Dashboard() {
           <SectionHeader title="Case Activity" subtitle="365-day investigation heatmap" />
           <div className="mt-3">
             <CaseHeatmap
-              activityDates={stats.recent_activity?.map(a => ({
+              activityDates={(stats?.recent_activity ?? []).map(a => ({
                 date: a.timestamp?.split('T')[0] || new Date().toISOString().split('T')[0],
                 count: 1,
-              })) || []}
+              }))}
               title="Forensic Events"
             />
           </div>
