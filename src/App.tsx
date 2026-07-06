@@ -15,6 +15,7 @@ const AssistantPage = lazy(() => import('./pages/AssistantPage'));
 const ThreatIntelPage = lazy(() => import('./pages/ThreatIntelPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const GuidePage = lazy(() => import('./pages/GuidePage'));
+const DemoPage = lazy(() => import('./pages/DemoPage'));
 
 // ── Error Boundary ────────────────────────────────────────
 interface ErrorBoundaryState { hasError: boolean; error?: Error; }
@@ -82,6 +83,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/demo" element={<Suspense fallback={<PageLoader />}><DemoPage /></Suspense>} />
             <Route path="/" element={
               <PrivateRoute>
                 <Layout />

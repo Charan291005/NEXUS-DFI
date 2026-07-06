@@ -1066,6 +1066,35 @@ export default function LoginPage() {
                 )}
               </motion.button>
 
+              {/* Interactive Demo Mode */}
+              <motion.div variants={slideUp} style={{ marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => navigate('/demo')}
+                  data-cursor="CLICK"
+                  style={{
+                    width: '100%', padding: '12px', borderRadius: '100px',
+                    background: 'rgba(193,255,0,0.1)', color: '#c1ff00', fontWeight: 600,
+                    fontSize: '12px', letterSpacing: '0.04em', textTransform: 'uppercase',
+                    border: '1px solid rgba(193,255,0,0.2)', cursor: 'pointer',
+                    transition: 'all 0.3s ease', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.target as HTMLElement).style.background = 'rgba(193,255,0,0.2)';
+                    (e.target as HTMLElement).style.boxShadow = '0 0 20px rgba(193,255,0,0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.target as HTMLElement).style.background = 'rgba(193,255,0,0.1)';
+                    (e.target as HTMLElement).style.boxShadow = 'none';
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                  Try Interactive Demo
+                </button>
+              </motion.div>
+
               {/* Toggle Sign Up / Sign In */}
               <motion.div variants={fadeIn} style={{ textAlign: 'center', marginTop: '16px' }}>
                 <button
