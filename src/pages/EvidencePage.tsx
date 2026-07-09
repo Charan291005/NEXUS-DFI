@@ -30,8 +30,7 @@ export default function EvidencePage() {
       })
       .catch(() => {
         });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selected?.id]);
+  }, [selected]);
 
   const runAnalysis = async (module: string) => {
     if (!selected) return;
