@@ -336,7 +336,7 @@ def _shannon_entropy(data: str) -> float:
     counts = collections.Counter(data)
     for count in counts.values():
         p_x = count / length
-        entropy -= p_x * math.log(p_x, 2)
+        entropy -= p_x * math.log2(p_x)
     return entropy
 
 def run_log_analysis(filepath: str) -> Dict[str, Any]:
