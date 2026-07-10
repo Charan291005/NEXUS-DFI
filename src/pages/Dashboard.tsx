@@ -1,16 +1,16 @@
 import { useEffect, useState, memo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { casesApi, newsApi } from '../utils/api';
 import type { DashboardStats, ActivityItem, RiskLevel } from '../types';
-import { StatCard, Card, SectionHeader, Spinner, RiskBadge } from '../components/ui';
+import { StatCard, Card, SectionHeader, Spinner, RiskBadge, ThreatRadar } from '../components/ui';
 import { timeAgo } from '../utils/helpers';
 import { useAuth } from '../context/AuthContext';
 import { useRealtimeStats } from '../hooks/useRealtimeStats';
-import { FiArrowRight, FiCheckCircle, FiClock, FiFileText, FiFolder } from 'react-icons/fi';
+import { FiCheckCircle, FiFileText, FiFolder, FiActivity } from 'react-icons/fi';
 import CaseHeatmap from '../components/CaseHeatmap';
 
 const DEFAULT_STATS: DashboardStats = {
@@ -192,30 +192,60 @@ export default function Dashboard() {
       {/* ── Investigation Workflow Tracker ───────────────── */}
       <motion.div variants={itemVariants}>
         <Card className="animated-border">
-          <SectionHeader title="Active Investigation Pipeline" subtitle="Cross-layer correlation tracking" />
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mt-2">
+          <div className="flex items-start justify-between mb-1">
+            <SectionHeader title="Active Investigation Pipeline" subtitle="Cross-layer correlation tracking" />
+            {/* Threat Radar */}
+            <ThreatRadar />
+          </div>
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between mt-2" style={{ gap: 0 }}>
             {[
-              { label: 'Open Cases', count: stats?.pipeline?.open_cases || 0, icon: <FiFolder size={18} />, color: 'text-blue-400', bg: 'bg-blue-400/10', borderColor: 'rgba(59,130,246,0.3)' },
-              { label: 'Pending Evidence', count: stats?.pipeline?.pending_evidence || 0, icon: <FiFileText size={18} />, color: 'text-yellow-400', bg: 'bg-yellow-400/10', borderColor: 'rgba(250,204,21,0.3)' },
-              { label: 'Analysis Running', count: stats?.pipeline?.analysis_in_progress || 0, icon: <FiClock size={18} />, color: 'text-purple-400', bg: 'bg-purple-400/10', borderColor: 'rgba(168,85,247,0.3)' },
-              { label: 'Ready for Report', count: stats?.pipeline?.ready_for_report || 0, icon: <FiCheckCircle size={18} />, color: 'text-[#c1ff00]', bg: 'bg-[#c1ff00]/10', borderColor: 'rgba(193,255,0,0.3)' },
+              { label: 'Open Cases',       count: stats?.pipeline?.open_cases || 0,           icon: <FiFolder size={18} />,      hexColor: '#3B82F6', borderColor: 'rgba(59,130,246,0.35)' },
+              { label: 'Pending Evidence', count: stats?.pipeline?.pending_evidence || 0,     icon: <FiFileText size={18} />,    hexColor: '#F59E0B', borderColor: 'rgba(250,204,21,0.35)' },
+              { label: 'Analysis Running', count: stats?.pipeline?.analysis_in_progress || 0, icon: <FiActivity size={18} />,    hexColor: '#A78BFA', borderColor: 'rgba(168,85,247,0.35)' },
+              { label: 'Ready for Report', count: stats?.pipeline?.ready_for_report || 0,     icon: <FiCheckCircle size={18} />, hexColor: '#c1ff00', borderColor: 'rgba(193,255,0,0.35)' },
             ].map((step, idx, arr) => (
-              <div key={step.label} className="flex-1 flex items-center justify-between md:justify-center relative group">
+              <div key={step.label} className="flex-1 flex items-center" style={{ minWidth: 0 }}>
                 <motion.div
-                  whileHover={{ scale: 1.03, borderColor: step.borderColor }}
-                  transition={{ duration: 0.2 }}
-                  className="flex flex-col items-center p-4 rounded-xl border border-dashed border-navy-700 bg-navy-900/30 transition-all w-full md:w-auto min-w-[140px]"
+                  whileHover={{ scale: 1.04, borderColor: step.borderColor, boxShadow: `0 0 20px ${step.hexColor}20` }}
+                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+                  style={{
+                    flex: 1,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center',
+                    padding: '16px', borderRadius: '14px',
+                    border: `1px solid rgba(255,255,255,0.06)`,
+                    background: `${step.hexColor}08`,
+                    position: 'relative', overflow: 'hidden',
+                    margin: '0 4px',
+                  }}
                 >
-                  <div className={`p-3 rounded-full ${step.bg} ${step.color} mb-3 group-hover:scale-110 transition-transform`}>
+                  {/* Corner glow */}
+                  <div style={{
+                    position: 'absolute', top: 0, right: 0,
+                    width: '48px', height: '48px',
+                    background: `radial-gradient(circle at top right, ${step.hexColor}20, transparent 70%)`,
+                    borderRadius: '0 14px 0 48px', pointerEvents: 'none',
+                  }} />
+                  <motion.div
+                    animate={{ boxShadow: [`0 0 0px ${step.hexColor}00`, `0 0 12px ${step.hexColor}50`, `0 0 0px ${step.hexColor}00`] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: idx * 0.5 }}
+                    style={{
+                      padding: '10px', borderRadius: '50%',
+                      background: `${step.hexColor}15`,
+                      color: step.hexColor, marginBottom: '10px',
+                    }}
+                  >
                     {step.icon}
-                  </div>
-                  <h4 className="text-2xl font-bold text-white font-display mb-1">{step.count}</h4>
-                  <p className="text-[10px] uppercase tracking-wider text-navy-400 font-medium text-center">{step.label}</p>
+                  </motion.div>
+                  <h4 style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-0.04em', color: step.hexColor, lineHeight: 1, textShadow: `0 0 16px ${step.hexColor}40` }}>
+                    {step.count}
+                  </h4>
+                  <p style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#4a4d5c', fontWeight: 600, marginTop: '6px', textAlign: 'center', fontFamily: "'IBM Plex Mono', monospace" }}>
+                    {step.label}
+                  </p>
                 </motion.div>
+                {/* Animated pipeline connector */}
                 {idx < arr.length - 1 && (
-                  <div className="hidden md:flex absolute -right-6 z-10 text-navy-600 arrow-pulse">
-                    <FiArrowRight size={24} />
-                  </div>
+                  <div className="hidden md:block pipeline-connector" style={{ flexShrink: 0, width: '24px', margin: '0 -4px', alignSelf: 'center' }} />
                 )}
               </div>
             ))}
@@ -417,46 +447,79 @@ export default function Dashboard() {
               <div className="flex items-center justify-center h-full">
                 <Spinner size="sm" label="Awaiting events..." />
               </div>
-            ) : auditLog.map((log, i) => {
-              const typeColor: Record<string, string> = {
-                analysis_complete: '#22C55E',
-                evidence_uploaded: '#3B82F6',
-                alert: '#EF4444',
-                case_created: '#1a2ffb',
-                report_generated: '#F59E0B',
-              };
-              const typeIcon: Record<string, string> = {
-                analysis_complete: '⚙', evidence_uploaded: '📎',
-                alert: '⚠', case_created: '📁', report_generated: '📄',
-              };
-              return (
-                <motion.div
-                  key={log.id}
-                  initial={{ opacity: 0, x: -12, height: 0 }}
-                  animate={{ opacity: 1, x: 0, height: 'auto' }}
-                  transition={{ duration: 0.3, delay: i === 0 ? 0 : 0 }}
-                  style={{
-                    display: 'flex', alignItems: 'flex-start', gap: '10px',
-                    padding: '6px 8px', borderRadius: '8px',
-                    background: i === 0 ? 'rgba(26,47,251,0.06)' : 'transparent',
-                    borderLeft: `2px solid ${i === 0 ? typeColor[log.type] || '#1a2ffb' : 'transparent'}`,
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  <span style={{ fontSize: '11px', marginTop: '1px', flexShrink: 0 }}>
-                    {typeIcon[log.type] || '●'}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '11px', color: '#b0b3c0', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {log.msg}
-                    </p>
-                    <p style={{ fontSize: '9px', color: '#4a4d5c', fontFamily: "'IBM Plex Mono', monospace", marginTop: '2px' }}>
-                      {timeAgo(log.ts)}
-                    </p>
-                  </div>
-                </motion.div>
-              );
-            })}
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {auditLog.map((log, i) => {
+                  const typeColor: Record<string, string> = {
+                    analysis_complete: '#22C55E',
+                    evidence_uploaded: '#3B82F6',
+                    alert: '#EF4444',
+                    case_created: '#1a2ffb',
+                    report_generated: '#F59E0B',
+                  };
+                  const typeIcon: Record<string, string> = {
+                    analysis_complete: '⚙', evidence_uploaded: '📎',
+                    alert: '⚠', case_created: '📁', report_generated: '📄',
+                  };
+                  const color = typeColor[log.type] || '#1a2ffb';
+                  const isNew = i === 0;
+                  return (
+                    <motion.div
+                      key={log.id}
+                      layout
+                      initial={{ opacity: 0, x: -16, height: 0, marginBottom: 0 }}
+                      animate={{ opacity: 1, x: 0, height: 'auto', marginBottom: 4 }}
+                      exit={{ opacity: 0, x: 16, height: 0, marginBottom: 0 }}
+                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                      style={{
+                        display: 'flex', alignItems: 'flex-start', gap: '10px',
+                        padding: '7px 10px', borderRadius: '10px',
+                        background: isNew ? `${color}0d` : 'transparent',
+                        border: `1px solid ${isNew ? `${color}25` : 'transparent'}`,
+                        borderLeft: `2px solid ${isNew ? color : 'rgba(255,255,255,0.04)'}`,
+                        boxShadow: isNew ? `0 0 12px ${color}08` : 'none',
+                      }}
+                    >
+                      <motion.span
+                        initial={isNew ? { scale: 0 } : { scale: 1 }}
+                        animate={{ scale: 1 }}
+                        transition={{ duration: 0.3, type: 'spring', stiffness: 400, damping: 20 }}
+                        style={{ fontSize: '12px', marginTop: '1px', flexShrink: 0 }}
+                      >
+                        {typeIcon[log.type] || '●'}
+                      </motion.span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          fontSize: '11px',
+                          color: isNew ? '#d8dae3' : '#b0b3c0',
+                          lineHeight: 1.4,
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          fontWeight: isNew ? 500 : 400,
+                        }}>
+                          {log.msg}
+                        </p>
+                        <p style={{ fontSize: '9px', color: '#4a4d5c', fontFamily: "'IBM Plex Mono', monospace", marginTop: '2px' }}>
+                          {timeAgo(log.ts)}
+                        </p>
+                      </div>
+                      {isNew && (
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          style={{
+                            fontSize: '8px', padding: '1px 6px', borderRadius: '100px',
+                            background: `${color}15`, color, border: `1px solid ${color}30`,
+                            fontFamily: "'IBM Plex Mono', monospace",
+                            letterSpacing: '0.06em', textTransform: 'uppercase',
+                            flexShrink: 0, alignSelf: 'center',
+                          }}
+                        >new</motion.span>
+                      )}
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            )}
           </div>
         </Card>
       </motion.div>
@@ -464,27 +527,63 @@ export default function Dashboard() {
       {/* ── System Status ───────────────────────────────── */}
       <motion.div variants={itemVariants}>
         <Card>
-          <SectionHeader title="System Status" />
+          <SectionHeader title="System Status" subtitle="All systems nominal" />
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Frontend',       status: 'Operational', ok: true },
-              { label: 'Authentication', status: 'Firebase Active', ok: true },
-              { label: 'API Server',     status: 'Cloud Run', ok: true },
-              { label: 'AI Engine',      status: 'Gemini Ready', ok: true },
-            ].map((s) => (
+              { label: 'Frontend',       status: 'Operational',   ok: true,  uptime: '99.9%' },
+              { label: 'Authentication', status: 'Firebase',       ok: true,  uptime: '100%' },
+              { label: 'API Server',     status: 'Cloud Run',      ok: true,  uptime: '99.7%' },
+              { label: 'AI Engine',      status: 'Gemini Ready',   ok: true,  uptime: '99.5%' },
+            ].map((s, idx) => (
               <motion.div
                 key={s.label}
-                whileHover={{ y: -2, borderColor: 'rgba(26,47,251,0.15)' }}
-                className="p-3 rounded-lg bg-navy-950/50 border border-navy-800 transition-all"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ y: -3, borderColor: s.ok ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)' }}
+                style={{
+                  padding: '14px', borderRadius: '12px',
+                  background: s.ok ? 'rgba(34,197,94,0.04)' : 'rgba(239,68,68,0.04)',
+                  border: `1px solid ${s.ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)'}`,
+                  position: 'relative', overflow: 'hidden',
+                }}
               >
-                <p className="text-[10px] text-navy-400 uppercase tracking-wider mb-1">{s.label}</p>
-                <div className="flex items-center gap-1.5">
-                  <div
-                    className={`w-1.5 h-1.5 rounded-full ${s.ok ? 'bg-green-400' : 'bg-red-400'}`}
-                    style={s.ok ? { boxShadow: '0 0 6px rgba(74,222,128,0.5)', animation: 'riskDotPulse 3s ease-in-out infinite' } : undefined}
-                  />
-                  <span className="text-xs text-navy-200 font-medium">{s.status}</span>
+                {/* Corner accent */}
+                <div style={{
+                  position: 'absolute', top: 0, right: 0,
+                  width: '32px', height: '32px',
+                  background: `radial-gradient(circle at top right, ${s.ok ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)'}, transparent 70%)`,
+                  borderRadius: '0 12px 0 32px',
+                }} />
+                <p style={{ fontSize: '9px', color: '#4a4d5c', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 600, marginBottom: '8px', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {s.label}
+                </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  {/* Ping ring status dot */}
+                  <div style={{ position: 'relative', width: '8px', height: '8px', flexShrink: 0 }}>
+                    <div
+                      style={{
+                        position: 'absolute', inset: 0, borderRadius: '50%',
+                        background: s.ok ? '#4ADE80' : '#F87171',
+                        boxShadow: s.ok ? '0 0 6px rgba(74,222,128,0.6)' : '0 0 6px rgba(248,113,113,0.6)',
+                      }}
+                    />
+                    {s.ok && (
+                      <div
+                        style={{
+                          position: 'absolute', inset: 0, borderRadius: '50%',
+                          background: 'rgba(74,222,128,0.5)',
+                          animation: 'ping 2s cubic-bezier(0, 0, 0.2, 1) infinite',
+                          animationDelay: `${idx * 0.4}s`,
+                        }}
+                      />
+                    )}
+                  </div>
+                  <span style={{ fontSize: '12px', color: '#b0b3c0', fontWeight: 600 }}>{s.status}</span>
                 </div>
+                <p style={{ fontSize: '9px', color: s.ok ? '#4ADE80' : '#F87171', fontFamily: "'IBM Plex Mono', monospace", opacity: 0.7 }}>
+                  ↑ {s.uptime} uptime
+                </p>
               </motion.div>
             ))}
           </div>
