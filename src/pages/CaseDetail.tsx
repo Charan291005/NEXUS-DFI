@@ -9,7 +9,7 @@ import { fileIcon, fmtDateTime, riskColor, riskLabel, STATUS_COLORS, PRIORITY_CO
 const AnalysisModal = ({ ev, onClose, onComplete }: { ev: NexusEvidence, onClose: () => void, onComplete: (id: number, module: string) => Promise<void> }) => {
   const [step, setStep] = useState(0);
   const isExe = ev.file_type === 'executable' || ev.filename.endsWith('.exe') || ev.filename.endsWith('.dll');
-  const steps = [
+  const steps = useMemo(() => [
     "Initializing NΞXUS Engine...",
     "Extracting cryptographic hashes (SHA-256, MD5)...",
     "Parsing EXIF metadata & file headers...",
@@ -18,7 +18,7 @@ const AnalysisModal = ({ ev, onClose, onComplete }: { ev: NexusEvidence, onClose
     "Cross-referencing Threat Intelligence IoCs...",
     "Compiling forensic findings...",
     "Done."
-  ];
+  ], [ev.file_type, isExe]);
 
   useEffect(() => {
     let current = 0;
