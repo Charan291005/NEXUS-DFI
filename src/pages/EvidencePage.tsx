@@ -5,6 +5,15 @@ import type { NexusEvidence } from '../types';
 import { PageHeader, Card, Spinner, RiskMeter, RiskBadge, Badge } from '../components/ui';
 import { fileIcon, fmtDateTime, riskColor } from '../utils/helpers';
 
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.05 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, x: -16, filter: 'blur(4px)' },
+  show:   { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const } },
+};
+
 export default function EvidencePage() {
   const [evidence, setEvidence] = useState<NexusEvidence[]>([]);
   const [loading, setLoading]   = useState(true);
@@ -68,14 +77,7 @@ export default function EvidencePage() {
 
   const filteredEvidence = useMemo(() => evidence.filter(e => activeFilter === 'All' || e.file_type === activeFilter), [evidence, activeFilter]);
 
-  const containerVariants = {
-    hidden: {},
-    show: { transition: { staggerChildren: 0.05 } },
-  };
-  const itemVariants = {
-    hidden: { opacity: 0, x: -16, filter: 'blur(4px)' },
-    show:   { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] as const } },
-  };
+
 
   return (
     <div className="space-y-6 flex flex-col h-[calc(100vh-8rem)]">
