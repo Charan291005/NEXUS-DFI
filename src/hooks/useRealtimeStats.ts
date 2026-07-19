@@ -17,6 +17,7 @@ export function useRealtimeStats(initialStats: DashboardStats | null, intervalMs
     let mounted = true;
 
     const fetchStats = async () => {
+      if (document.visibilityState !== 'visible') return;
       try {
         const res = await casesApi.stats();
         if (mounted) {
